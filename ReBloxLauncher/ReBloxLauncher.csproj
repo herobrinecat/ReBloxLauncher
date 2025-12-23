@@ -41,9 +41,6 @@
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>rebloxstrongname.pfx</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="DiscordRPC">
       <HintPath>..\..\..\..\discord-rpc-csharp\DiscordRPC\bin\Release\net45\DiscordRPC.dll</HintPath>
@@ -114,7 +111,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <None Include="rebloxstrongname.pfx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
