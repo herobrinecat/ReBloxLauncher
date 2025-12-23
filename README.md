@@ -21,4 +21,4 @@ You can download the latest stable release in the [Discord server](https://disco
 The application supports Windows 7 and above since it's made with .NET Framework 4.8, but Windows 7 has not been tested.
 
 ## Contributing
-You can contribute to this project by making a pull request with the changes you want to be on the master branch. You could also make an issue telling us a bug and we may fix it! However, use common sense when writing your pull request and issues, as we may ignore or close them if you are a problem. We also accept bug report from our Discord server.
+You can contribute to this project by making a pull request with the changes you want to be on the master branch. You could also make an issue telling us a bug and we may fix it! However, use common sense when writing your pull request and issues, as we may ignore or close them if you are a problem. We also accept bug reports from our Discord server.
