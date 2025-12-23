@@ -250,7 +250,7 @@ namespace ReBloxLauncher
                         label30.Visible = true;
                     }
                     Console.WriteLine("<INFO> Adding maps to the list");
-                    if (Directory.Exists(datafolder + @"\maps")) 
+                    if (Directory.Exists(datafolder + @"\maps") && directories2 != null && directories2.Length > 0)) 
                     {
                         foreach (string directory in directories2)
                         {
