@@ -1,4 +1,4 @@
-# <img src="https://github.com/herobrinecat/ReBloxLauncher/blob/main/ReBloxIcon.png?raw=true" alt="A logo of ReBlox" width="50" height="50"> ReBlox
+# <img src="https://raw.githubusercontent.com/herobrinecat/ReBloxLauncher/refs/heads/master/ReBloxIcon.png" alt="A logo of ReBlox" width="50" height="50"> ReBlox
 
 A launcher for old ROBLOX that is built from scratch and is currently under development
 
