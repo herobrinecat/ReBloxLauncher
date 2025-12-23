@@ -218,7 +218,8 @@ namespace ReBloxLauncher
                         button7.Visible = false;
                         MessageBox.Show("It appears you're running on Wine, we recommend running the RobloxAssetFixer natively on Linux! Please do not send bug reports of Studio crashing if you're on Wine, we will ignore or close your issue. To prevent using sudo in node.js, please run \"sudo setcap CAP_NET_BIND_SERVICE=+eip /path/to/nodejs\" in your terminal. RobloxAssetFixer will not run in favor of running it natively instead of Wine! You also need to set the hosts file manually in /etc/hosts!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
-                    string[] directories2 = Directory.GetFiles(datafolder + @"\maps");
+                    string[] directories2 = null;
+                    if (Directory.Exists(datafolder + @"\maps")) directories2 = Directory.GetDirectories(datafolder + @"\maps");
                     string[] directories = null;
                     if (Directory.Exists(datafolder + @"\clients")) directories = Directory.GetDirectories(datafolder + @"\clients");
                     Console.WriteLine("<INFO> Adding and sorting clients to the list");
@@ -249,14 +250,17 @@ namespace ReBloxLauncher
                         label30.Visible = true;
                     }
                     Console.WriteLine("<INFO> Adding maps to the list");
-                    foreach (string directory in directories2)
+                    if (Directory.Exists(datafolder + @"\maps") && directories2 != null && directories2.Length > 0) 
                     {
-                        if (directory.EndsWith(".rbxl") || directory.EndsWith(".rbxlx"))
+                        foreach (string directory in directories2)
                         {
-                            listBox2.Items.Add(Path.GetFileName(directory));
-                            if (Properties.Settings.Default.lastselectedmap == Path.GetFileName(directory))
+                            if (directory.EndsWith(".rbxl") || directory.EndsWith(".rbxlx"))
                             {
-                                listBox2.SetSelected(listBox2.Items.Count - 1, true);
+                                listBox2.Items.Add(Path.GetFileName(directory));
+                                if (Properties.Settings.Default.lastselectedmap == Path.GetFileName(directory))
+                                {
+                                    listBox2.SetSelected(listBox2.Items.Count - 1, true);
+                                }
                             }
                         }
                     }
@@ -869,25 +873,32 @@ namespace ReBloxLauncher
 
         private void RemoveGameFiles()
         {
-            statusText.Invoke(new Action(() => { statusText.Text = "Cleaning up files..."; }));
-            Console.WriteLine("<INFO> Cleaning up game files and removing the ClientAppSettings file");
-            if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
-            if (File.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak"))
+           try
             {
-                File.Delete(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json");
-                File.Move(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak", datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json");
-            }
-            if (File.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json.bak"))
-            {
-                File.Delete(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json");
-                File.Move(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json.bak", datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json");
-            }
-            if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\clothes") == true) Directory.Delete(datafolder + @"\tools\RobloxAssetFixer\clothes", true);
+                statusText.Invoke(new Action(() => { statusText.Text = "Cleaning up files..."; }));
+                Console.WriteLine("<INFO> Cleaning up game files and removing the ClientAppSettings file");
+                if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
+                if (File.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak"))
+                {
+                    File.Delete(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json");
+                    File.Move(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak", datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json");
+                }
+                if (File.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json.bak"))
+                {
+                    File.Delete(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json");
+                    File.Move(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json.bak", datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json");
+                }
+                if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\clothes") == true) Directory.Delete(datafolder + @"\tools\RobloxAssetFixer\clothes", true);
 
-            if (UseJoinJSONLink == true)
+                if (UseJoinJSONLink == true)
+                {
+                    if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\game") == true) Directory.Delete(datafolder + @"\tools\RobloxAssetFixer\game", true);
+                    if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt");
+                }
+            }
+            catch
             {
-                if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\game") == true) Directory.Delete(datafolder + @"\tools\RobloxAssetFixer\game", true);
-                if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt");
+                //do nothing
             }
         }
 
@@ -3272,22 +3283,25 @@ namespace ReBloxLauncher
 
         private void button10_Click(object sender, EventArgs e)
         {
-            listBox2.BeginUpdate();
-            listBox2.Items.Clear();
-            string[] directories2 = Directory.GetFiles(datafolder + @"\maps");
-            foreach (string directory in directories2)
+            if (Directory.Exists(datafolder + @"\maps")) 
             {
-                if (directory.EndsWith(".rbxl") || directory.EndsWith(".rbxlx")) 
+                listBox2.BeginUpdate();
+                listBox2.Items.Clear();
+                string[] directories2 = Directory.GetFiles(datafolder + @"\maps");
+                foreach (string directory in directories2)
                 {
-                    listBox2.Items.Add(Path.GetFileName(directory));
-                    if (Properties.Settings.Default.lastselectedmap == Path.GetFileName(directory))
+                    if (directory.EndsWith(".rbxl") || directory.EndsWith(".rbxlx"))
                     {
-                        listBox2.SetSelected(listBox2.Items.Count - 1, true);
+                        listBox2.Items.Add(Path.GetFileName(directory));
+                        if (Properties.Settings.Default.lastselectedmap == Path.GetFileName(directory))
+                        {
+                            listBox2.SetSelected(listBox2.Items.Count - 1, true);
+                        }
                     }
                 }
+                directories2 = null;
+                listBox2.EndUpdate();
             }
-            directories2 = null;
-            listBox2.EndUpdate();
         }
 
         private void textBox4_KeyPress(object sender, KeyPressEventArgs e)
