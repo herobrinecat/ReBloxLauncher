@@ -219,7 +219,7 @@ namespace ReBloxLauncher
                         MessageBox.Show("It appears you're running on Wine, we recommend running the RobloxAssetFixer natively on Linux! Please do not send bug reports of Studio crashing if you're on Wine, we will ignore or close your issue. To prevent using sudo in node.js, please run \"sudo setcap CAP_NET_BIND_SERVICE=+eip /path/to/nodejs\" in your terminal. RobloxAssetFixer will not run in favor of running it natively instead of Wine! You also need to set the hosts file manually in /etc/hosts!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
                     string[] directories2 = null;
-                    if (Directory.Exists(datafolder + @"\maps")) directories2 = Directory.GetDirectories(datafolder + @"\maps");
+                    if (Directory.Exists(datafolder + @"\maps")) directories2 = Directory.GetFiles(datafolder + @"\maps");
                     string[] directories = null;
                     if (Directory.Exists(datafolder + @"\clients")) directories = Directory.GetDirectories(datafolder + @"\clients");
                     Console.WriteLine("<INFO> Adding and sorting clients to the list");
