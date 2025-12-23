@@ -1,0 +1,35 @@
+name: CI
+on:
+    push:
+      branches: [ master ]
+    pull_request:
+      branches: [ master ]
+
+
+jobs:
+  build:
+
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
+
+    - name: Restore Packages
+      run: nuget restore ReBloxLauncher.sln
+
+    - name: Build solution
+      run: msbuild ReBloxLauncher.sln -t:rebuild -property:Configuration=Debug -property:Optimize=true
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v5
+      with:
+          name: result
+          path: |
+              ReBloxLauncher/bin/Debug
