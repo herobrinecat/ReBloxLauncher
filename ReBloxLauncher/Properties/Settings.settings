@@ -1,0 +1,90 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="ReBloxLauncher.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="version" Type="System.String" Scope="User">
+      <Value Profile="(Default)">0.0.1310</Value>
+    </Setting>
+    <Setting Name="lastselectedversion" Type="System.String" Scope="User">
+      <Value Profile="(Default)">2017L</Value>
+    </Setting>
+    <Setting Name="ROBLOSECURITY" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="useAuth" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="UsePatchInStudio" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ClearTemp" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ShowConsole" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="lastselectedmap" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="username" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Player</Value>
+    </Setting>
+    <Setting Name="UserId" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="AccountOver13" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="AssetPackEnabled" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="avatarR15" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="HeadColor" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">194</Value>
+    </Setting>
+    <Setting Name="TorsoColor" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">194</Value>
+    </Setting>
+    <Setting Name="RightArmColor" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">194</Value>
+    </Setting>
+    <Setting Name="RightLegColor" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">194</Value>
+    </Setting>
+    <Setting Name="LeftArmColor" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">194</Value>
+    </Setting>
+    <Setting Name="LeftLegColor" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">194</Value>
+    </Setting>
+    <Setting Name="EnableDataStore" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="EnableBadges" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ChatStyle" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ClassicAndBubble</Value>
+    </Setting>
+    <Setting Name="ClothesArray" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="DiscordRPC" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="EnableFollowing" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="CADontShow" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="assetFromServer" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="Membership" Type="System.String" Scope="User">
+      <Value Profile="(Default)">None</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
