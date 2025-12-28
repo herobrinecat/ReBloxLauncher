@@ -86,5 +86,8 @@
     <Setting Name="Membership" Type="System.String" Scope="User">
       <Value Profile="(Default)">None</Value>
     </Setting>
+    <Setting Name="UpdateURL" Type="System.String" Scope="User">
+      <Value Profile="(Default)">http://f3xfileserver.servehttp.com:81</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
