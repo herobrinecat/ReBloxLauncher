@@ -15,7 +15,7 @@ namespace ReBloxLauncher
         {
             try
             {
-                if (wine_get_version() != null || wine_get_version() != "")
+                if (wine_get_version() != null && wine_get_version() != "")
                 {
                     return true;
                 }

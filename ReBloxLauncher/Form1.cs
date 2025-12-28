@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -17,6 +16,9 @@ using System.Text.RegularExpressions;
 using DiscordRPC;
 using System.Net.Http;
 using Newtonsoft.Json;
+using System.Net;
+using System.Globalization;
+
 namespace ReBloxLauncher
 {
     public partial class Form1 : Form
@@ -30,7 +32,6 @@ namespace ReBloxLauncher
         //Variables
         bool starting = true;
         bool onetime = false;
-        bool listonetime = false;
         int previousIndexAsset = -1;
         string datafolder = Path.GetDirectoryName(Application.ExecutablePath) + @"\data";
         string hostargument = "";
@@ -52,7 +53,7 @@ namespace ReBloxLauncher
         bool launchershortcut = false;
         bool useNewRoblox = false;
         bool isJoiningOrStudio = false;
-
+        string updateurl = Properties.Settings.Default.UpdateURL;
         //Functions
 
         System.Reflection.Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs e)
@@ -92,7 +93,7 @@ namespace ReBloxLauncher
                 {
                     bool compatible = true;
                     string[] config = File.ReadAllLines(s + @"\ReBlox.ini");
-                    for (int i = 0; i < config.Length; i++) 
+                    for (int i = 0; i < config.Length; i++)
                     {
                         if (config[i].Trim().StartsWith("Clients="))
                         {
@@ -103,31 +104,31 @@ namespace ReBloxLauncher
                                 break;
                             }
                             else if (splited1[1].Contains(","))
+                            {
+                                bool valuefound = false;
+                                string[] splitedtwo = splited1[1].Split(',');
+                                foreach (string version in splitedtwo)
                                 {
-                                    bool valuefound = false;
-                                    string[] splitedtwo = splited1[1].Split(',');
-                                    foreach (string version in splitedtwo)
+                                    if (version == Properties.Settings.Default.lastselectedversion)
                                     {
-                                        if (version == Properties.Settings.Default.lastselectedversion)
-                                        {
-                                            valuefound = true;
-                                            compatible = true;
-                                            break;
-                                        }
+                                        valuefound = true;
+                                        compatible = true;
+                                        break;
                                     }
-                                    if (valuefound == false) compatible = false; break;
                                 }
-                                else if (splited1[1] == Properties.Settings.Default.lastselectedversion)
-                                {
-                                    compatible = true; break;
-                                }
-                                else
-                                {
-                                    compatible = false; break;
-                                }
+                                if (valuefound == false) compatible = false; break;
+                            }
+                            else if (splited1[1] == Properties.Settings.Default.lastselectedversion)
+                            {
+                                compatible = true; break;
+                            }
+                            else
+                            {
+                                compatible = false; break;
+                            }
                         }
                     }
-                   if (compatible)
+                    if (compatible)
                     {
                         string[] files = Directory.GetFiles(s);
                         foreach (string file in files)
@@ -145,13 +146,32 @@ namespace ReBloxLauncher
                             }
                         }
                     }
-                    
+
                 }
                 else
                 {
                     Console.WriteLine("<WARN> Unable to load asset in \"" + s + "\", does it even exist?");
                 }
             }
+                if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\assets"))
+                {
+                    string[] files = Directory.GetFiles(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\assets");
+                    if (files.Length > 0 )
+                    {
+                        foreach (string file in files)
+                        {
+                            if (ReserveAssetIdForMap && Path.GetFileNameWithoutExtension(file) != placeid.ToString() || ReserveAssetIdForMap == false || isJoiningOrStudio == true)
+                            {
+                                File.Copy(file, datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(file), true);
+                            }
+                            else
+                            {
+                                File.Copy(datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem), datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(file), true);
+                            }
+                        }
+                        
+                    }
+                }
             if (ReserveAssetIdForMap && isJoiningOrStudio == false)
             {
                 if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\assets\" + placeid + ".rbxl") == false) File.Copy(datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem), datafolder + @"\tools\RobloxAssetFixer\assets\" + placeid + ".rbxl", true);
@@ -198,11 +218,11 @@ namespace ReBloxLauncher
                             writer = new StreamWriter(ostrm);
                             success = true;
                         }
-                        catch (UnauthorizedAccessException e)
+                        catch (UnauthorizedAccessException _)
                         {
                             MessageBox.Show("Failed to open log.log for logging! Another launcher may be using the log file, please check your processes and make sure that the folder is not read-only and has proper permission.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
-                        catch (Exception e)
+                        catch (Exception _)
                         {
                             MessageBox.Show("Failed to open log.log for logging, make sure the folder is not read-only!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
@@ -769,6 +789,36 @@ namespace ReBloxLauncher
                 return Guid.NewGuid().ToString();
             }
         }
+
+        public static bool CheckForInternetConnection(int timeoutMs = 10000, string url = null)
+        {
+            try 
+            {
+                url ??= CultureInfo.InstalledUICulture switch
+                {
+                    { Name: var n } when n.StartsWith("fa") => //Iran
+                        "http://www.aparat.com",
+                    { Name: var n } when n.StartsWith("zh") => //China (is there even china users???)
+                        "http://www.baidu.com",
+                    _ =>
+                        "http://www.gstatic.com/generate_204"
+                };
+
+                var request = (HttpWebRequest)WebRequest.Create(url);
+                request.KeepAlive = false;
+                request.Timeout = timeoutMs;
+                using (var response = (HttpWebResponse)request.GetResponse())
+                {
+                    Console.WriteLine("<INFO> Internet test successful!");
+                    return true;
+                }
+            }
+            catch
+            {
+                Console.WriteLine("<INFO> Failed to check the internet, not checking updates...");
+                return false;
+            }
+        }
         private void SetupJoinScript(string ipaddr, int port)
         {
             Console.WriteLine("<INFO> Setting up join script for " + Properties.Settings.Default.lastselectedversion);
@@ -776,7 +826,7 @@ namespace ReBloxLauncher
             string waitingForCharacterGuid = GenerateUUID().ToLower();
             string sessionId = GenerateUUID().ToLower();
             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt");
-            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt", @"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + Properties.Settings.Default.UserId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + Properties.Settings.Default.UserId + @"&placeId=1"",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|204.236.226.210|8|" + DateTime.UtcNow.ToString("")+ @"Z|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt", @"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + Properties.Settings.Default.UserId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + Properties.Settings.Default.UserId + @"&placeId=1"",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":true,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|204.236.226.210|8|" + DateTime.UtcNow.ToString("")+ @"Z|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
         }
 
         private void SetupGameFiles(bool studio = false)
@@ -997,6 +1047,12 @@ namespace ReBloxLauncher
             }
         }
 
+        public static bool ValidateUrlWithUrlCreate(string url, out Uri? uri)
+        {
+            var success = Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out uri);
+
+            return success;
+        }
         private void Form1_Load(object sender, EventArgs e)
         {
                 label2.Text = "v" + Properties.Settings.Default.version;
@@ -1004,46 +1060,57 @@ namespace ReBloxLauncher
                 for (int i = 0; i < args.Length; i++)
                 {
 
-                    if (args[i] == "-datafolder")
+                if (args[i] == "-datafolder")
+                {
+                    if (Directory.Exists(args[i + 1]))
                     {
-                        if (Directory.Exists(args[i + 1]))
-                        {
-                            datafolder = args[i + 1];
-                            i++;
-                        }
-                        else
-                        {
-                            MessageBox.Show("This is an invalid data folder! Please try a different data folder or rename it without spaces!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
+                        datafolder = args[i + 1];
+                        i++;
                     }
-                    else if (args[i] == "--savekeys")
+                    else
                     {
-                        using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
-                        {
-                            byte[] publicdata = RSA.ExportCspBlob(false);
-                            byte[] privatedata = RSA.ExportCspBlob(true);
-                            File.WriteAllText(datafolder + @"\public.txt", Convert.ToBase64String(publicdata));
-                            File.WriteAllText(datafolder + @"\private.txt", Convert.ToBase64String(privatedata));
-                            using (TextWriter w = File.CreateText(datafolder + @"\private.pem"))
-                            {
-                                ExportPrivateKey(RSA, w);
-                            }
-                            MessageBox.Show("BLOB created", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Question);
-                        }
+                        MessageBox.Show("This is an invalid data folder! Please try a different data folder or rename it without spaces!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-                    else if (args[i] == "-launch")
+                }
+                else if (args[i] == "--savekeys")
+                {
+                    using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
                     {
-                        if (Directory.Exists(datafolder + @"\clients\" + args[i + 1])) 
+                        byte[] publicdata = RSA.ExportCspBlob(false);
+                        byte[] privatedata = RSA.ExportCspBlob(true);
+                        File.WriteAllText(datafolder + @"\public.txt", Convert.ToBase64String(publicdata));
+                        File.WriteAllText(datafolder + @"\private.txt", Convert.ToBase64String(privatedata));
+                        using (TextWriter w = File.CreateText(datafolder + @"\private.pem"))
                         {
-                            launchershortcut = true;
-                            new LaunchScreen(args[i + 1], datafolder).Show();
-                            i++;
+                            ExportPrivateKey(RSA, w);
                         }
-                        else
-                        {
-                            MessageBox.Show("This is an invalid version!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
+                        MessageBox.Show("BLOB created", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Question);
                     }
+                }
+                else if (args[i] == "-launch")
+                {
+                    if (Directory.Exists(datafolder + @"\clients\" + args[i + 1]))
+                    {
+                        launchershortcut = true;
+                        new LaunchScreen(args[i + 1], datafolder).Show();
+                        i++;
+                    }
+                    else
+                    {
+                        MessageBox.Show("This is an invalid version!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                else if (args[i] == "-updateurl") 
+                {
+                    if (ValidateUrlWithUrlCreate(args[i + 1], out _))
+                    {
+                        updateurl = args[i + 1];
+                    }
+                    else
+                    {
+                        Console.WriteLine("<WARN> The URL for the update server is not valid! Reverting to the default...");
+                    }
+                }
                 }
                 if (File.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\ca.pem"))
                 {
@@ -1089,7 +1156,34 @@ namespace ReBloxLauncher
                         }
                     }
                 }
-                Initialize();
+            Thread thread = new Thread(() =>
+            {
+                if (CheckForInternetConnection())
+                {
+                    try
+                    {
+                        WebClient client = new WebClient();
+                        Console.WriteLine("<INFO> Checking the version of the client and the server reports...");
+                        if (client.DownloadString(updateurl + @"/version.txt") != Properties.Settings.Default.version)
+                        {
+                            label33.Invoke(new Action(() => { label33.Visible = true; }));
+                            button6.Invoke(new Action(() => { button6.Visible = true; }));
+                            Console.WriteLine("<INFO> Update is available for the ReBlox Launcher!");
+                        }
+                        else
+                        {
+                            Console.WriteLine("<INFO> No update is available.");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("<ERROR> Something when wrong while trying to check for updates! Look in the error for details!\r\n" + e);
+                    }
+                }
+            });
+            thread.TrySetApartmentState(ApartmentState.STA);
+            thread.Start();
+            Initialize();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -4324,5 +4418,59 @@ namespace ReBloxLauncher
             Properties.Settings.Default.Membership = comboBox3.Text;
             Properties.Settings.Default.Save();
         }
+
+        private void button6_Click_1(object sender, EventArgs e)
+        {
+            Process.Start(new WebClient().DownloadString(updateurl + "/ updatelink.txt"));
+        }
+
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control == true && e.KeyCode == Keys.U)
+            {
+                Thread thread = new Thread(async () =>
+                {
+                    if (CheckForInternetConnection())
+                    {
+                        try
+                        {
+                            WebClient client = new WebClient();
+                            Console.WriteLine("<INFO> Checking the version of the client and the server reports...");
+                            if (client.DownloadString(updateurl + @"/version.txt") != Properties.Settings.Default.version)
+                            {
+                                label33.Invoke(new Action(() => { label33.Text = "A new version is available!"; }));
+                                label33.Invoke(new Action(() => { label33.Visible = true; }));
+                                button6.Invoke(new Action(() => { button6.Visible = true; }));
+                                Console.WriteLine("<INFO> Update is available for the ReBlox Launcher!");
+                            }
+                            else
+                            {
+                                label33.Invoke(new Action(() => { label33.Text = "This version is up to date!"; }));
+                                label33.Invoke(new Action(() => { label33.Visible = true; }));
+                                button6.Invoke(new Action(() => { button6.Visible = false; }));
+                                Console.WriteLine("<INFO> No update is available.");
+                                await Task.Delay(3000);
+                                label33.Invoke(new Action(() => { label33.Visible = false; }));
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("<ERROR> Something when wrong while trying to check for updates! Look in the error for details!\r\n" + e);
+                        }
+                    }
+                    else
+                    {
+                        label33.Invoke(new Action(() => { label33.Text = "Please check your internet."; }));
+                        label33.Invoke(new Action(() => { label33.Visible = true; }));
+                        button6.Invoke(new Action(() => { button6.Visible = false; }));
+                        Console.WriteLine("<INFO> No internet detected.");
+                        await Task.Delay(3000);
+                        label33.Invoke(new Action(() => { label33.Visible = false; }));
+                    }
+                });
+                thread.TrySetApartmentState(ApartmentState.STA);
+                thread.Start();
+            }
+        }
     }
-}      
+}

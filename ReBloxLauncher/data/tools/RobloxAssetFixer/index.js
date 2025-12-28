@@ -1687,6 +1687,9 @@ app.get("/Asset/CharacterFetch.ashx", (req, res) => {
                 if (tempclothes == ";") tempclothes = ""
                  res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + tempclothes)
             }
+            else {
+             res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId)
+        }
         }
         else {
              res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId)
@@ -1821,7 +1824,7 @@ app.get("/v1.1/avatar-fetch", (req, res) => {
             }
     }
     else {
-        console.log("\x1b[32m", "<INFO> Getting the avatar of " + req.query.userId)
+        console.log("\x1b[32m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1.1/avatar-fetch")
         if (localClothes == true) {
             var tempclothes = ""
             if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
@@ -1837,6 +1840,9 @@ app.get("/v1.1/avatar-fetch", (req, res) => {
                 }
                 }
                  res.status(200).send("{\"resolvedAvatarType\":\"" + json["bodyType"] + "\",\"accessoryVersionIds\":[" + tempclothes +"],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":" + json["colors"]["headColor"] + ",\"LeftArmColor\":" + json["colors"]["leftArmColor"] + ",\"LeftLegColor\":" + json["colors"]["leftLegColor"] + ",\"RightArmColor\":" + json["colors"]["rightArmColor"] + ",\"RightLegColor\":" + json["colors"]["rightLegColor"] + ",\"TorsoColor\":" + json["colors"]["torsoColor"] + "},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
+            }
+            else {
+                res.status(200).send("{\"resolvedAvatarType\":\"" + ((avatarR15) ? "R15" : "R6") + "\",\"accessoryVersionIds\":[],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":194,\"LeftArmColor\":194,\"LeftLegColor\":194,\"RightArmColor\":194,\"RightLegColor\":194,\"TorsoColor\":194},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
             }
         }
         else {
@@ -1878,7 +1884,7 @@ app.get("/v1/avatar-fetch", (req, res) => {
             }
     }
     else {
-        console.log("\x1b[32m", "<INFO> Getting the avatar of " + req.query.userId)
+        console.log("\x1b[32m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1/avatar-fetch")
         if (localClothes == true) {
             var tempclothes = ""
             if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
@@ -1935,19 +1941,20 @@ app.get("/Asset/BodyColors.ashx", (req, res) => {
     }
     else {
         if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
-        var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json", "utf8"))
-        res.setHeader("content-type", "text/plain")
-         res.status(200).send("<roblox xmlns:xmime=\"http://www.w3.org/2005/05/xmlmime\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://www.roblox.com/roblox.xsd\" version=\"4\">\r\n <External>null</External>\r\n <External>nil</External>\r\n <Item class=\"BodyColors\">\r\n  <Properties>\r\n   <int name=\"HeadColor\">" + json["colors"]["headColor"] + "</int>\r\n   <int name=\"LeftArmColor\">" + json["colors"]["leftArmColor"] + "</int>\r\n   <int name=\"LeftLegColor\">" + json["colors"]["leftLegColor"] + "</int>\r\n   <string name=\"Name\">Body Colors</string>\r\n   <int name=\"RightArmColor\">" + json["colors"]["rightArmColor"] + "</int>\r\n   <int name=\"RightLegColor\">" + json["colors"]["rightLegColor"] + "</int>\r\n   <int name=\"TorsoColor\">" + json["colors"]["torsoColor"] + "</int>\r\n   <bool name=\"archivable\">true</bool>\r\n  </Properties>\r\n </Item>\r\n</roblox>")
-    }
-    else {
-        res.status(200).send("<roblox xmlns:\"http://www.w3.org/2005/05/xmlmime\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://www.roblox.com/roblox.xsd\" version=\"4\"> <External>null</External> <External>nil</External> <Item class=\"BodyColors\"> <Properties> <int name=\"HeadColor\">194</int> <int name=\"LeftArmColor\">194</int> <int name=\"LeftLegColor\">194</int> <string name=\"Name\">Body Colors</string> <int name=\"RightArmColor\">194</int> <int name=\"RightLegColor\">194</int> <int name=\"TorsoColor\">194</int> <bool name=\"archivable\">true</bool> </Properties> </Item> </roblox>")
-    }
+            var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json", "utf8"))
+            res.setHeader("content-type", "text/plain")
+            res.status(200).send("<roblox xmlns:xmime=\"http://www.w3.org/2005/05/xmlmime\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://www.roblox.com/roblox.xsd\" version=\"4\">\r\n <External>null</External>\r\n <External>nil</External>\r\n <Item class=\"BodyColors\">\r\n  <Properties>\r\n   <int name=\"HeadColor\">" + json["colors"]["headColor"] + "</int>\r\n   <int name=\"LeftArmColor\">" + json["colors"]["leftArmColor"] + "</int>\r\n   <int name=\"LeftLegColor\">" + json["colors"]["leftLegColor"] + "</int>\r\n   <string name=\"Name\">Body Colors</string>\r\n   <int name=\"RightArmColor\">" + json["colors"]["rightArmColor"] + "</int>\r\n   <int name=\"RightLegColor\">" + json["colors"]["rightLegColor"] + "</int>\r\n   <int name=\"TorsoColor\">" + json["colors"]["torsoColor"] + "</int>\r\n   <bool name=\"archivable\">true</bool>\r\n  </Properties>\r\n </Item>\r\n</roblox>")
+        }
+        else {
+            res.setHeader("content-type", "text/plain")
+            res.status(200).send("<roblox xmlns:\"http://www.w3.org/2005/05/xmlmime\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://www.roblox.com/roblox.xsd\" version=\"4\"> <External>null</External> <External>nil</External> <Item class=\"BodyColors\"> <Properties> <int name=\"HeadColor\">194</int> <int name=\"LeftArmColor\">194</int> <int name=\"LeftLegColor\">194</int> <string name=\"Name\">Body Colors</string> <int name=\"RightArmColor\">194</int> <int name=\"RightLegColor\">194</int> <int name=\"TorsoColor\">194</int> <bool name=\"archivable\">true</bool> </Properties> </Item> </roblox>")
+        }
     }
 })
 app.get("/userblock/getblockedusers", (req, res) => {
 	if (req.get("host") == "api.roblox.com" || ignoreUrl == true) 
 	{
-	res.status(200).send("{\"data\":{\"blockedUserIds\":[],\"blockedUsers\":[],\"cursor\":null},\"error\":null}")
+	    res.status(200).send("{\"data\":{\"blockedUserIds\":[],\"blockedUsers\":[],\"cursor\":null},\"error\":null}")
 	}
 	else {
 		res.status(404).end()
@@ -1984,16 +1991,144 @@ app.post("/v1/avatar/set-avatar", (req, res) => {
                 try {
                     console.log("\x1b[32m", "<INFO> Saving the avatar of " + req.query.userId + " to file...")
                     if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) filesystem.unlinkSync("./clothes/" + req.query.userId + ".json")
-                if (filesystem.existsSync("./clothes") == false) filesystem.mkdirSync("./clothes")
-                filesystem.writeFileSync("./clothes/" + req.query.userId + ".json", JSON.stringify(req.body))
-                res.status(200).end()
-                } catch (ex){
-                    res.status(500).end()
-                    console.error(ex)
-                }
+                    if (filesystem.existsSync("./clothes") == false) filesystem.mkdirSync("./clothes")
+                        filesystem.writeFileSync("./clothes/" + req.query.userId + ".json", JSON.stringify(req.body))
+                        res.status(200).end()
+                    } catch (ex){
+                        res.status(500).end()
+                        console.error(ex)
+                    }
         }
 })
 
+app.post("/universes/create", (req, res) => {
+    res.status(200).send("{ \"universeId\": 2, \"rootPlaceId\": 1 }")
+})
+
+app.get("/users/get-by-username", (req, res) => {
+    res.setHeader("Cache-Control", "no-cache")
+    if (req.query.username == username) {
+        res.status(200).send("{ \"Id\": " + userId + ", \"Username\":\"" + username + "\",\"AvatarUri\":null, \"AvatarFinal\":false, \"IsOnline\":true }")
+    }
+    else {
+        if (joining) {
+        try {
+                var options = {
+                host: ip,
+                port: 80,
+                path: "/users/get-by-username?username=" + req.query.username,
+                method: "GET"
+            }
+
+            http.get(options, (res1) => {
+                res1.setEncoding("utf-8")
+                var data = ""
+                res1.on("data", (chunk) => {
+                    data += chunk
+                })
+                res1.on("end", () => {
+                    res.status(res1.statusCode).send(data)
+                })
+            })
+
+            } catch {
+                res.status(500).end()
+            }
+    }
+       else {
+         if (filesystem.existsSync("./users.json")) {
+            try {
+                var userjson = JSON.parse(filesystem.readFileSync("./users.json", "utf8"))
+                var objectKeys = Object.keys(userjson)
+
+                for (var i = 0; i < objectKeys.length; i++) {
+                    if (userjson[objectKeys[i].toString()] == req.query.username) {
+                        res.status(200).send("{ \"Id\": " + objectKeys[i] + ", \"Username\":\"" + req.query.username + "\",\"AvatarUri\":null, \"AvatarFinal\":false, \"IsOnline\":true }")
+                        return
+                    }
+                }
+                res.status(200).send("{}")
+            userjson = null
+            } catch {
+                res.status(200).send("{}")
+            }
+         }
+         else {
+            res.status(200).send("{}")
+         }
+       }
+    }
+})
+
+app.get("/users/account-info", (req, res) => {
+    res.status(200).send("{ \"Id\": " + userId + ", \"Username\": \"" + username + "\",\"MembershipType\":3}")
+})
+
+app.get("/users/" + ":userid" + "/canmanage/" + ":id", (req, res) => {
+    res.send("{ \"Success\": true, \"CanManage\": true }")
+})
+
+app.get("/users/:id", (req, res) => {
+    res.setHeader("Cache-Control", "no-cache")
+    if (isNumeric(req.params.id)) {
+        if (req.params.id == userId) {
+        res.status(200).send("{ \"Id\": " + userId + ", \"Username\":\"" + username + "\",\"AvatarUri\":null, \"AvatarFinal\":false, \"IsOnline\":true }")
+    }
+    else {
+        if (joining) {
+        try {
+                var options = {
+                host: ip,
+                port: 80,
+                path: "/users/" + req.params.id,
+                method: "GET"
+            }
+
+            http.get(options, (res1) => {
+                res1.setEncoding("utf-8")
+                var data = ""
+                res1.on("data", (chunk) => {
+                    data += chunk
+                })
+                res1.on("end", () => {
+                    res.status(res1.statusCode).send(data)
+                })
+            })
+
+            } catch {
+                res.status(500).end()
+            }
+    }
+       else {
+         if (filesystem.existsSync("./users.json")) {
+            try {
+                var userjson = JSON.parse(filesystem.readFileSync("./users.json", "utf8"))
+
+            if (userjson[req.params.id.toString()] != undefined) {
+                res.status(200).send("{ \"Id\": " + req.params.id + ", \"Username\":\"" + userjson[req.params.id] + "\",\"AvatarUri\":null, \"AvatarFinal\":false, \"IsOnline\":true }")
+            }
+            else {
+                res.status(200).send("{}")
+            }
+            userjson = null
+            } catch {
+                res.status(200).send("{}")
+            }
+         }
+         else {
+            res.status(200).send("{}")
+         }
+       }
+    }
+    }
+	else {
+		res.status(400).end()
+	}
+})
+
+app.get("/users/:id/friends", (req, res) => {
+    res.status(200).send("[]") //STUB
+})
 app.get("/IDE/Toolbox/Items", (req, res) => {
     res.send("{\"TotalResults\":0,\"Results\":[]}")
 })
@@ -2017,7 +2152,7 @@ app.post("/v2/login", (req,res) =>
 	{
         res.setHeader("roblox-machine-id", crypto.randomUUID())
         res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({"username": username}, "thisisarebloxprivatekeyforjwtchange",{algorithm: "HS256"}))
-		res.status(200).send("{\"user\": { \"id\": " + userId + ", \"name\": \"" + username + "\", \"displayName\": \"" + username + "\"},\"accountBlob\":\"\",\"isBanned\": false }")
+        res.status(200).send("{\"user\": { \"id\": " + userId + ", \"name\": \"" + username + "\", \"displayName\": \"" + username + "\"},\"accountBlob\":\"\",\"isBanned\": false }")
 	}
 	else 
 	{
@@ -2056,6 +2191,7 @@ app.get("/Game/LuaWebService/HandleSocialRequest.ashx", (req, res) => {
 app.get("/universes/" + ":id" + "/cloudeditenabled", (req, res) => {
     res.status(200).send("{\"enabled\":false}") //required for creating place in 2018+ studio
 })
+
 app.get("/v1/users/" + ":userid" + "/groups/roles", (req, res) => {
     res.status(200).send("{\"data\":[]}")
 })
@@ -2256,6 +2392,10 @@ app.get("/v1/gametemplates", (req, res) => {
     res.status(200).send("{\"data\":[{\"gameTemplateType\":\"Generic\",\"hasTutorials\":false,\"universe\":{\"id\":28220420,\"name\":\"Baseplate\",\"description\":\"\",\"isArchived\":false,\"rootPlaceId\":95206881,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2013-11-01T03:47:14.07\",\"updated\":\"2019-07-08T11:53:21.81\"}},{\"gameTemplateType\":\"Generic\",\"hasTutorials\":false,\"universe\":{\"id\":2464612126,\"name\":\"Classic Baseplate\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":6560363541,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2021-03-23T19:56:45.957\",\"updated\":\"2021-04-16T13:55:13.82\"}},{\"gameTemplateType\":\"Generic\",\"hasTutorials\":false,\"universe\":{\"id\":28223770,\"name\":\"Flat Terrain\",\"description\":\"\",\"isArchived\":false,\"rootPlaceId\":95206192,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2013-11-01T03:47:18.013\",\"updated\":\"2019-07-08T11:53:53.47\"}},{\"gameTemplateType\":\"Theme\",\"hasTutorials\":true,\"universe\":{\"id\":202770430,\"name\":\"Village\",\"description\":\"\",\"isArchived\":false,\"rootPlaceId\":520390648,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2016-10-10T16:32:42.78\",\"updated\":\"2019-11-19T14:07:36.98\"}},{\"gameTemplateType\":\"Theme\",\"hasTutorials\":true,\"universe\":{\"id\":93411794,\"name\":\"Castle\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":203810088,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2015-01-14T15:46:11.363-06:00\",\"updated\":\"2019-04-04T10:19:51.703-05:00\"}},{\"gameTemplateType\":\"Theme\",\"hasTutorials\":false,\"universe\":{\"id\":138962641,\"name\":\"Suburban\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":366130569,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2016-02-19T18:02:36.483\",\"updated\":\"2019-06-20T16:27:14.113\"}},{\"gameTemplateType\":\"Gameplay\",\"hasTutorials\":false,\"universe\":{\"id\":95830130,\"name\":\"Racing\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":215383192,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2015-02-12T18:36:49.8\",\"updated\":\"2019-04-04T11:15:46.39\"}},{\"gameTemplateType\":\"Theme\",\"hasTutorials\":true,\"universe\":{\"id\":107387509,\"name\":\"Pirate Island\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":264719325,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2015-07-01T17:54:38.927-05:00\",\"updated\":\"2019-04-05T09:54:25.077-05:00\"}},{\"gameTemplateType\":\"Theme\",\"hasTutorials\":false,\"universe\":{\"id\":138958533,\"name\":\"Western\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":366120910,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2016-02-19T17:47:34.103\",\"updated\":\"2019-04-05T04:32:47.2\"}},{\"gameTemplateType\":\"Theme\",\"hasTutorials\":false,\"universe\":{\"id\":93404984,\"name\":\"City\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":203783329,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2015-01-14T14:10:46.387-06:00\",\"updated\":\"2019-04-04T10:19:43.16-05:00\"}},{\"gameTemplateType\":\"Gameplay\",\"hasTutorials\":false,\"universe\":{\"id\":93412282,\"name\":\"Obby\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":203812057,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2015-01-14T15:51:25.83-06:00\",\"updated\":\"2019-04-05T04:27:08.9-05:00\"}},{\"gameTemplateType\":\"Theme\",\"hasTutorials\":true,\"universe\":{\"id\":142606178,\"name\":\"Starting Place\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":379736082,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2016-03-09T13:04:30.723-06:00\",\"updated\":\"2019-04-05T05:46:24.003-05:00\"}},{\"gameTemplateType\":\"Gameplay\",\"hasTutorials\":false,\"universe\":{\"id\":115791780,\"name\":\"Line Runner\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":301530843,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2015-09-28T17:16:52.42-05:00\",\"updated\":\"2019-04-04T19:28:06.833-05:00\"}},{\"gameTemplateType\":\"Gameplay\",\"hasTutorials\":false,\"universe\":{\"id\":37613887,\"name\":\"Capture The Flag\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":92721754,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2013-11-01T06:57:04.153-05:00\",\"updated\":\"2019-04-04T06:18:14.89-05:00\"}},{\"gameTemplateType\":\"Gameplay\",\"hasTutorials\":false,\"universe\":{\"id\":115791512,\"name\":\"Team/FFA Arena\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":301529772,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2015-09-28T17:14:08.107-05:00\",\"updated\":\"2019-11-19T14:09:27.037-06:00\"}},{\"gameTemplateType\":\"Gameplay\",\"hasTutorials\":false,\"universe\":{\"id\":93431584,\"name\":\"Combat\",\"description\":null,\"isArchived\":false,\"rootPlaceId\":203885589,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":998796,\"creatorName\":\"Templates\",\"created\":\"2015-01-14T19:21:33.01\",\"updated\":\"2019-11-19T14:09:18.557\"}}]}")
 })
 
+app.get("/IDE/Upload.aspx", (_, res) => {
+    res.status(200).send("Uploading maps is not supported, since it's supposed to be local anyways")
+})
+
 app.get("/v1/user/groups/canmanage", (req, res) => {
     res.status(200).send("{\"data\":[]}")
 })
@@ -2273,9 +2413,6 @@ app.get("/universes/get-universe-containing-place", (req, res) => {
     }
 })
 
-app.get("/users/account-info", (req, res) => {
-    res.status(200).end("{ \"Id\": " + userId + ", \"Username\": \"" + username + "\" }")
-})
 app.get("/v1.1/game-start-info/", (req, res) => {
     if (req.get("host") == "api.roblox.com" || ignoreUrl == true) {
         res.status(200).send("{\"gameAvatarType\":\"PlayerChoice\",\"allowCustomAnimations\":\"True\",\"universeAvatarCollisionType\":\"OuterBox\",\"universeAvatarBodyType\":\"Standard\",\"jointPositioningType\":\"ArtistIntent\",\"message\":\"\",\"universeAvatarAssetOverrides\":[],\"moderationStatus\":null}")
@@ -2333,9 +2470,6 @@ app.get("/v1/user/studiodata", (req,res) => {
 app.get("/v1/universes/" + ":id", (req, res) => {
     res.status(200).send("{\"id\":" + req.params.id + ",\"name\":\"ReBlox Place\",\"description\"A ReBlox place launched from the launcher\",\"isArchived\":false,\"rootPlaceId\":1,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":1,\"creatorName\":\"ROBLOX\",\"created\":\"2013-10-31T17:46:37.747Z\",\"updated\":\"2019-04-03T00:04:34.373Z\"}")
 })
-app.get("/users/" + ":userid" + "/canmanage/" + ":id", (req, res) => {
-    res.send("{ \"Success\": true, \"CanManage\": true }")
-})
 
 app.get("/My/Places.aspx", (req,res) => {
     //STUB
@@ -2362,6 +2496,15 @@ app.get("/Setting/QuietGet/ClientAppSettings/", (req, res) => {
 })
 
 app.get("/v2/settings/application/PCDesktopClient", (req, res) => {
+    if (filesystem.existsSync("./ClientAppSettings.json")) {
+        res.status(200).send("{\"applicationSettings\":" + filesystem.readFileSync("./ClientAppSettings.json","utf-8").replaceAll("{id}", userId) + "}")
+    }
+    else {
+        res.status(200).send("{}")
+    }
+})
+
+app.get("/v1/settings/application", (req, res) => {
     if (filesystem.existsSync("./ClientAppSettings.json")) {
         res.status(200).send("{\"applicationSettings\":" + filesystem.readFileSync("./ClientAppSettings.json","utf-8").replaceAll("{id}", userId) + "}")
     }
