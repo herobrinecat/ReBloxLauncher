@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="version" Type="System.String" Scope="User">
-      <Value Profile="(Default)">0.0.1310</Value>
+      <Value Profile="(Default)">0.0.1313</Value>
     </Setting>
     <Setting Name="lastselectedversion" Type="System.String" Scope="User">
       <Value Profile="(Default)">2017L</Value>
