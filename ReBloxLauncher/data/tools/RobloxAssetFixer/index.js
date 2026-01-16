@@ -167,7 +167,7 @@ console.log("\x1b[37m", "<INFO> Using Auth: " + useAuth.toString())
 
 if (joining && ip != "") console.log("\x1b[37m", "<INFO> Server IP: " + ip)
 
-//if (verbose) { app.use(function (req, res, next) { console.log(console.log("\x1b[32m", "<INFO> " + req.ip + " requested: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")")); next(); }) }
+//if (verbose) { app.use(function (req, res, next) { console.log("\x1b[32m", "<INFO> " + req.ip + " requested: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")"); next(); }) }
 function getAsset(id, callback) {
     try {
         if (notWorkingAssetIds.indexOf(id) > -1) {
@@ -1467,156 +1467,69 @@ app.get("/v1/asset/", (req, res) => {
     }
 })
 
-app.post("/v1/assets/batch", (req, res) => {
-    var edit = ""
-    res.setHeader("cache-control", "no-cache")
-    res.setHeader("content-type", "application/json; charset=utf-8")
-    for (var i = 0; i < req.body.length; i++) {
-        if (i == req.body.length - 1) {
-            if (filesystem.existsSync("./assettype.json", "utf8")) {
-                var jsonrsult = JSON.parse(filesystem.readFileSync("./assettype.json", "utf8"))
-                if (jsonrsult[req.body[i]["assetTypeId"]] != undefined) {
-                    edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false, \"assetTypeId\": " + jsonrsult[req.body[i]["assetTypeId"].toString()] + " }"
+function translateAssetTypeToAssetTypeId(assetType) {
+    switch (assetType) {
+        case "Image": return 1;
+        case "TShirt": return 2;
+        case "Mesh": return 3;
+        case "Lua": return 5;
+        case "Hat": return 8;
+        case "Decal": return 13;
+        case "Animation": return 24;
+        case "Shirt": return 11;
+        case "Pants": return 12;
+        case "Model": return 10;
+        case "Video": return 62;
+        case "Audio": return 3;
+        case "Face": return 18;
+        default: return 10;
+    }
+}
+
+async function createBatchResponse(request) {
+   var edit = ""
+   var assetTypeJSON = []
+   if (filesystem.existsSync("./assettype.json")) assetTypeJSON = JSON.parse(filesystem.readFileSync("./assettype.json", "utf8"))
+    request.forEach((requestAsset) => {
+        if (filesystem.existsSync("./assettype.json") || requestAsset["assetType"] != undefined) {
+            if (requestAsset["assetType"] != undefined) {
+                if (requestAsset != request[request.length - 1]) {
+                    edit = edit + "{\"location\": \"http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"] + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + translateAssetTypeToAssetTypeId(requestAsset["assetType"]).toString() + ", \"isRecordable\": true }, "
                 }
                 else {
-                    if (useAuth == true) {
-                        var options = {
-                            host: "assetdelivery.roblox.com",
-                            port: 443,
-                            path: "/v2/asset/?id=" + req.body[i]["assetId"],
-                            method: "GET"
-                        }
-                        https.get(options, (res1) => {
-                            var result = ""
-                            res1.setEncoding("utf8")
-                            res1.on("data", (chunk) => {
-                                result += chunk
-                            })
-                            res1.on("end", () => {
-                                var jsonresult = JSON.parse(result)
-                                if (jsonresult["locations"][0]["assetTypeId"] != undefined) {
-                                    edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false, \"assetTypeId\": " + jsonresult["locations"][0]["assetTypeId"] + "}"
-                                }
-                                else {
-                                    edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}"
-                                }
-                            })
-                            res1.on("error", (err) => {
-                                edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}"
-                            })
-                        })
-                    }
-                    else {
-                        edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}"
-                    }
+                    edit += "{\"location\": \"http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"] + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + translateAssetTypeToAssetTypeId(requestAsset["assetType"]).toString() + ", \"isRecordable\": true }"
                 }
             }
             else {
-                if (useAuth == true) {
-                    var options = {
-                        host: "assetdelivery.roblox.com",
-                        port: 443,
-                        path: "/v2/asset/?id=" + req.body[i]["assetId"],
-                        method: "GET"
-                    }
-                    https.get(options, (res1) => {
-                        var result = ""
-                        res1.setEncoding("utf8")
-                        res1.on("data", (chunk) => {
-                            result += chunk
-                        })
-                        res1.on("end", () => {
-                            var jsonresult = JSON.parse(result)
-                            if (jsonresult["locations"][0]["assetTypeId"] != undefined) {
-                                edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false, \"assetTypeId\": " + jsonresult["locations"][0]["assetTypeId"] + "}"
-                            }
-                            else {
-                                edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}"
-                            }
-                        })
-                        res1.on("error", (err) => {
-                            edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}"
-                        })
-                    })
+                if (requestAsset != request[request.length - 1]) {
+                    edit += "{\"location\": \"http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"] + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + getAssetType(requestAsset["assetId"]).toString() + ", \"isRecordable\": true }, "
                 }
                 else {
-                    edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}"
-                }
-            }
-        } else {
-            if (filesystem.existsSync("./assettype.json", "utf8")) {
-                var jsonrsult = JSON.parse(filesystem.readFileSync("./assettype.json", "utf8"))
-                if (jsonrsult[req.body[i]["assetTypeId"]] != undefined) {
-                    edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false, \"assetTypeId\": " + jsonrsult[req.body[i]["assetTypeId"].toString()] + " }, "
-                }
-                else {
-                    if (useAuth == true) {
-                        var options = {
-                            host: "assetdelivery.roblox.com",
-                            port: 443,
-                            path: "/v2/asset/?id=" + req.body[i]["assetId"],
-                            method: "GET"
-                        }
-                        https.get(options, (res1) => {
-                            var result = ""
-                            res1.setEncoding("utf8")
-                            res1.on("data", (chunk) => {
-                                result += chunk
-                            })
-                            res1.on("end", () => {
-                                var jsonresult = JSON.parse(result)
-                                if (jsonresult["locations"][0]["assetTypeId"] != undefined) {
-                                    edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false, \"assetTypeId\": " + jsonresult["locations"][0]["assetTypeId"] + "}, "
-                                }
-                                else {
-                                    edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}, "
-                                }
-                            })
-                            res1.on("error", (err) => {
-                                edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}, "
-                            })
-                        })
-                    }
-                    else {
-                        edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}, "
-                    }
-                }
-            }
-            else {
-                if (useAuth == true) {
-                    var options = {
-                        host: "assetdelivery.roblox.com",
-                        port: 443,
-                        path: "/v2/asset/?id=" + req.body[i]["assetId"],
-                        method: "GET"
-                    }
-                    https.get(options, (res1) => {
-                        var result = ""
-                        res1.setEncoding("utf8")
-                        res1.on("data", (chunk) => {
-                            result += chunk
-                        })
-                        res1.on("end", () => {
-                            var jsonresult = JSON.parse(result)
-                            if (jsonresult["locations"][0]["assetTypeId"] != undefined) {
-                                edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false, \"assetTypeId\": " + jsonresult["locations"][0]["assetTypeId"] + "}, "
-                            }
-                            else {
-                                edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}, "
-                            }
-                        })
-                        res1.on("error", (err) => {
-                            edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}, "
-                        })
-                    })
-                }
-                else {
-                    edit += "{\"location\":\"http://assetdelivery.reblox.zip/v1/asset?id=" + req.body[i]["assetId"] + "\",\"requestId\": \"" + req.body[i]["requestId"] + "\",\"isArchived\": false}, "
+                    edit += "{\"location\": \"http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"] + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + getAssetType(requestAsset["assetId"]).toString() + ", \"isRecordable\": true }"
                 }
             }
         }
-    }
-    res.status(200).send("[" + edit + "]")
+        else {
+            if (requestAsset != request[request.length - 1]) {
+                edit += "{\"location\": \"http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"] + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + getAssetType(requestAsset["assetId"]).toString() + ", \"isRecordable\": true }, "
+            }
+            else {
+                edit += "{\"location\": \"http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"] + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + getAssetType(requestAsset["assetId"]).toString() + ", \"isRecordable\": true }"
+            }
+        }
+    })
+ 
+    return "[" + edit + "]"
+}
+app.post("/v1/assets/batch", (req, res) => {
+    
+    var assetTypeJSON = null
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+
+    createBatchResponse(req.body).then((result) => {
+        res.status(200).send(result)
+    })
 })
 
 app.get("/Thumbs/Avatar.ashx", (req, res) => {
@@ -1812,7 +1725,7 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
 })
 
 app.get("/game/GetCurrentUser.ashx", (req, res) => {
-    res.status(200).send(toString(userId))
+    res.status(200).end() //this will cause the 2019+ clients to hang on "Logging In..."
 })
 const options = {
     key: filesystem.readFileSync("cert-key.pem"),
@@ -2360,6 +2273,9 @@ app.post("/universes/create", (req, res) => {
     res.status(200).send("{ \"universeId\": 2, \"rootPlaceId\": 1 }")
 })
 
+app.post("/ide/places/createV2", (req, res) => {
+    res.status(200).send("{\"Success\":true, \"PlaceId\":2763}")
+})
 app.get("/users/get-by-username", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
@@ -2418,7 +2334,7 @@ app.get("/users/get-by-username", (req, res) => {
 
 app.get("/users/account-info", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{ \"Id\": " + userId + ", \"Username\": \"" + username + "\"}")
+    res.status(200).send("{ \"UserId\": " + userId + ", \"Username\": \"" + username + "\",\"HasPasswordSet\": true, \"Email\": {\"Value\": \"r*****@fakerebloxemail.com\", \"IsVerified\": true }, \"AgeBracket\": 0, \"Roles\": [], \"MembershipType\": 0, \"RobuxBalance\": " + robux + ", \"CountryCode\": \"US\"}")
 })
 
 app.get("/users/" + ":userid" + "/canmanage/" + ":id", (req, res) => {
@@ -3043,7 +2959,6 @@ app.get("/ownership/hasasset", async (req, res) => {
     }
 })
 app.post("/marketplace/submitpurchase", (req, res) => {
-    console.log(req.body)
     res.status(200).send("{ \"success\": true }")
 })
 
@@ -3080,11 +2995,15 @@ app.get("/login/RequestAuth.ashx", (req, res) => {
 })
 
 app.get("/Login/Negotiate.ashx", (req, res) => {
-    res.status(200).send("")
+    res.setHeader("roblox-machine-id", crypto.randomUUID())
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }))
+    res.status(200).send()
 })
 
 app.get("/auth/negotiate", (req, res) => {
-    res.status(200).send("")
+    res.setHeader("roblox-machine-id", crypto.randomUUID())
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }))
+    res.status(200).end()
 })
 
 app.post("/auth/invalidate", (req, res) => {

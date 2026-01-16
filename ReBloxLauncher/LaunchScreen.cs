@@ -622,7 +622,8 @@ namespace ReBloxLauncher
                                 {
                                     button1.Invoke(new Action(() => { button1.Visible = false; }));
                                     ProcessStartInfo ps = new ProcessStartInfo();
-                                    ps.UseShellExecute = true;
+                                    ps.UseShellExecute = false;
+                                    ps.CreateNoWindow = false;
                                     ps.FileName = datafolder + @"\clients\" + robloxversion + @"\Studio\RobloxStudioBeta.exe";
                                     ProcessStartInfo ps1 = new ProcessStartInfo();
                                     ps1.UseShellExecute = false;
@@ -728,6 +729,8 @@ namespace ReBloxLauncher
                         {
                             button1.Invoke(new Action(() => { button1.Visible = false; }));
                             ProcessStartInfo ps = new ProcessStartInfo();
+                            ps.UseShellExecute = false;
+                            ps.CreateNoWindow = false;
                             ps.FileName = datafolder + @"\clients\" + robloxversion + @"\Studio\RobloxStudioBeta.exe";
                             ProcessStartInfo ps1 = new ProcessStartInfo();
                             ps1.UseShellExecute = false;

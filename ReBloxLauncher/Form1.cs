@@ -1374,7 +1374,8 @@ namespace ReBloxLauncher
                                         LoadAssets();
                                     }
                                     ProcessStartInfo ps = new ProcessStartInfo();
-                                    ps.UseShellExecute = true;
+                                    ps.UseShellExecute = false;
+                                    ps.CreateNoWindow = false;
                                     listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
                                     ProcessStartInfo ps1 = new ProcessStartInfo();
                                     ps1.UseShellExecute = false;
@@ -1488,6 +1489,8 @@ namespace ReBloxLauncher
                                 LoadAssets();
                             }
                             ProcessStartInfo ps = new ProcessStartInfo();
+                            ps.UseShellExecute = false;
+                            ps.CreateNoWindow = false;
                             listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
                             ProcessStartInfo ps1 = new ProcessStartInfo();
                             ps1.UseShellExecute = false;
@@ -1983,7 +1986,8 @@ namespace ReBloxLauncher
                                         SetupGameFiles();
                                         LoadAssets();
                                         ProcessStartInfo ps = new ProcessStartInfo();
-                                        ps.UseShellExecute = true;
+                                        ps.UseShellExecute = false;
+                                        ps.CreateNoWindow = false;
                                         listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Player\RobloxPlayerBeta.exe"; }));
                                         this.Invoke(new Action(() => { if (UseJoinJSONLink == true) ps.Arguments = joinargument; }));
                                         ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -2125,6 +2129,8 @@ namespace ReBloxLauncher
                                 SetupGameFiles();
                                 LoadAssets();
                                 ProcessStartInfo ps = new ProcessStartInfo();
+                                ps.UseShellExecute = false;
+                                ps.CreateNoWindow = false;
                                 listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Player\RobloxPlayerBeta.exe"; }));
                                 this.Invoke(new Action(() => { if (UseJoinJSONLink == true) ps.Arguments = joinargument; }));
                                 ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -2266,7 +2272,8 @@ namespace ReBloxLauncher
                                         SetupGameFiles();
                                         LoadAssets();
                                         ProcessStartInfo ps = new ProcessStartInfo();
-                                        ps.UseShellExecute = true;
+                                        ps.UseShellExecute = false;
+                                        ps.CreateNoWindow = false;
                                         listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
                                         this.Invoke(new Action(() => { if (UseJoinJSONLink == true) ps.Arguments = joinargument; else ps.Arguments = joinargument + " -server " + textBox1.Text + " -port " + textBox2.Text + " -placeId 1 -universeId 2"; }));
                                         ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -2427,6 +2434,8 @@ namespace ReBloxLauncher
                                 SetupGameFiles();
                                 LoadAssets();
                                 ProcessStartInfo ps = new ProcessStartInfo();
+                                ps.UseShellExecute = false;
+                                ps.CreateNoWindow = false;
                                 listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
                                 this.Invoke(new Action(() => { if (UseJoinJSONLink == true) ps.Arguments = joinargument; else ps.Arguments = joinargument + " -server " + textBox1.Text + " -port " + textBox2.Text + " -placeId 1 -universeId 2"; }));
                                 ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -2601,7 +2610,8 @@ namespace ReBloxLauncher
                                                     SetupGameFiles();
                                                     LoadAssets();
                                                     ProcessStartInfo ps = new ProcessStartInfo();
-                                                    ps.UseShellExecute = true;
+                                                    ps.UseShellExecute = false;
+                                                    ps.CreateNoWindow = false;
                                                     listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Player\RobloxPlayerBeta.exe"; }));
                                                     ps.Arguments = hostargument;
                                                     ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -2712,6 +2722,8 @@ namespace ReBloxLauncher
                                             SetupGameFiles();
                                             LoadAssets();
                                             ProcessStartInfo ps = new ProcessStartInfo();
+                                            ps.UseShellExecute = false;
+                                            ps.CreateNoWindow = false;
                                             listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Player\RobloxPlayerBeta.exe"; }));
                                             ps.Arguments = hostargument;
                                             ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -2816,7 +2828,8 @@ namespace ReBloxLauncher
                                                 SetupGameFiles();
                                                 LoadAssets();
                                                 ProcessStartInfo ps = new ProcessStartInfo();
-                                                ps.UseShellExecute = true;
+                                                ps.UseShellExecute = false;
+                                                ps.CreateNoWindow = false;
                                                 listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Player\RobloxPlayerBeta.exe"; }));
                                                 ps.Arguments = hostargument;
                                                 ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -2934,6 +2947,8 @@ namespace ReBloxLauncher
                                         SetupGameFiles();
                                         LoadAssets();
                                         ProcessStartInfo ps = new ProcessStartInfo();
+                                        ps.UseShellExecute = false;
+                                        ps.CreateNoWindow = false;
                                         listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Player\RobloxPlayerBeta.exe"; }));
                                         ps.Arguments = hostargument;
                                         ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -3041,7 +3056,8 @@ namespace ReBloxLauncher
                                                     SetupGameFiles();
                                                     LoadAssets();
                                                     ProcessStartInfo ps = new ProcessStartInfo();
-                                                    ps.UseShellExecute = true;
+                                                    ps.UseShellExecute = false;
+                                                    ps.CreateNoWindow = false;
                                                     listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
                                                     this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + Properties.Settings.Default.UserId; else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" -rbdf=\"" + openFileDialog1.FileName + "\""; }));
                                                     ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -3266,7 +3282,8 @@ namespace ReBloxLauncher
                                                 SetupGameFiles();
                                                 LoadAssets();
                                                 ProcessStartInfo ps = new ProcessStartInfo();
-                                                ps.UseShellExecute = true;
+                                                ps.UseShellExecute = false;
+                                                ps.CreateNoWindow = false;
                                                 listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
                                                 this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + Properties.Settings.Default.UserId; else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" "; }));
                                                 ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -3383,6 +3400,8 @@ namespace ReBloxLauncher
                                         SetupGameFiles();
                                         LoadAssets();
                                         ProcessStartInfo ps = new ProcessStartInfo();
+                                        ps.UseShellExecute = false;
+                                        ps.CreateNoWindow = false;
                                         listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
                                         this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + Properties.Settings.Default.UserId; else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" "; }));
                                         ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -4775,7 +4794,8 @@ namespace ReBloxLauncher
                                         SetupGameFiles();
                                         LoadAssets();
                                         ProcessStartInfo ps = new ProcessStartInfo();
-                                        ps.UseShellExecute = true;
+                                        ps.UseShellExecute = false;
+                                        ps.CreateNoWindow = false;
                                         listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + (Directory.Exists(datafolder + @"\clients\" + listView1.SelectedItems[0].SubItems[0].Text) ? listView1.SelectedItems[0].SubItems[0].Text : listBox1.GetItemText(listBox1.SelectedItem)) + @"\Player\RobloxPlayerBeta.exe"; }));
                                         this.Invoke(new Action(() => { if (UseJoinJSONLink == true) ps.Arguments = joinargument; }));
                                         ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -4917,6 +4937,8 @@ namespace ReBloxLauncher
                                 SetupGameFiles();
                                 LoadAssets();
                                 ProcessStartInfo ps = new ProcessStartInfo();
+                                ps.UseShellExecute = false;
+                                ps.CreateNoWindow = false;
                                 listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + (Directory.Exists(datafolder + @"\clients\" + listView1.SelectedItems[0].SubItems[0].Text) ? listView1.SelectedItems[0].SubItems[0].Text : listBox1.GetItemText(listBox1.SelectedItem)) + @"\Player\RobloxPlayerBeta.exe"; }));
                                 this.Invoke(new Action(() => { if (UseJoinJSONLink == true) ps.Arguments = joinargument; }));
                                 ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -5058,7 +5080,8 @@ namespace ReBloxLauncher
                                         SetupGameFiles();
                                         LoadAssets();
                                         ProcessStartInfo ps = new ProcessStartInfo();
-                                        ps.UseShellExecute = true;
+                                        ps.UseShellExecute = false;
+                                        ps.CreateNoWindow = false;
                                         listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + (Directory.Exists(datafolder + @"\clients\" + listView1.SelectedItems[0].SubItems[0].Text) ? listView1.SelectedItems[0].SubItems[0].Text : listBox1.GetItemText(listBox1.SelectedItem)) + @"\Studio\RobloxStudioBeta.exe"; }));
                                         this.Invoke(new Action(() => { if (UseJoinJSONLink == true) ps.Arguments = joinargument; else ps.Arguments = joinargument + " -server " + listView1.SelectedItems[0].SubItems[5].Text + " -port " + listView1.SelectedItems[0].SubItems[4].Text + " -placeId 1 -universeId 2"; }));
                                         ProcessStartInfo ps1 = new ProcessStartInfo();
@@ -5219,6 +5242,8 @@ namespace ReBloxLauncher
                                 SetupGameFiles();
                                 LoadAssets();
                                 ProcessStartInfo ps = new ProcessStartInfo();
+                                ps.UseShellExecute = false;
+                                ps.CreateNoWindow = false;
                                 listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + (Directory.Exists(datafolder + @"\clients\" + listView1.SelectedItems[0].SubItems[0].Text) ? listView1.SelectedItems[0].SubItems[0].Text : listBox1.GetItemText(listBox1.SelectedItem)) + @"\Studio\RobloxStudioBeta.exe"; }));
                                 this.Invoke(new Action(() => { if (UseJoinJSONLink == true) ps.Arguments = joinargument; else ps.Arguments = joinargument + " -server " + listView1.SelectedItems[0].SubItems[5].Text + " -port " + listView1.SelectedItems[0].SubItems[4].Text + " -placeId 1 -universeId 2"; }));
                                 ProcessStartInfo ps1 = new ProcessStartInfo();
