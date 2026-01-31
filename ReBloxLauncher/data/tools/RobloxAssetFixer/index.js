@@ -225,7 +225,7 @@ function getAsset(id, callback) {
                                         }
                                         https.get(options2, function (res3) {
 
-                                            var data = []
+                                            var data = [], output
                                             if (res3.headers["content-encoding"] == 'gzip') {
                                                 if (verbose) {
                                                     console.log("\x1b[34m", "<INFO> Getting " + id + " from Roblox server (Image) [gzip compression]")
