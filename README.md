@@ -18,7 +18,7 @@ Building this application requires:
 You can download the latest stable release in the [Discord server](https://discord.gg/74s7U4Sbef), however you can also download the beta version patches by signing up to be a Beta Tester in the Discord server. Even though this repo will be used for the launcher, it will **NOT** contain the clients, asset packs, maps, and node included in the downloads.
 
 ## System Requirements
-The application supports Windows 7 and above since it's made with .NET Framework 4.8, but Windows 7 has not been tested.
+The application supports Windows 7 and above since it's made with .NET Framework 4.8, even though Windows 7 is supported, older version of the server dependencies and Node.js are required in order to run on Windows 7 properly.
 
 ## Contributing
 You can contribute to this project by making a pull request with the changes you want to be on the master branch. You could also make an issue telling us a bug and we may fix it! However, use common sense when writing your pull request and issues, as we may ignore or close them if you are a problem. We also accept bug reports from our Discord server.
