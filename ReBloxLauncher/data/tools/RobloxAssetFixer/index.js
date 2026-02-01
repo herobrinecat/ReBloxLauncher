@@ -604,10 +604,10 @@ app.get("/asset", (req, res) => {
                             }
                             output = res1
                         }
-                        res1.on("data", (chunk) => {
+                        output.on("data", (chunk) => {
                             data.push(chunk)
                         })
-                        res1.on("end", () => {
+                        output.on("end", () => {
                             var buffer = Buffer.concat(data)
                             if (buffer.length < 56) {
                                 if (buffer.toString() == "{\"error\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
@@ -692,10 +692,10 @@ app.get("/asset", (req, res) => {
                             }
                             output = res1
                         }
-                        res1.on("data", (chunk) => {
+                        output.on("data", (chunk) => {
                             data.push(chunk)
                         })
-                        res1.on("end", () => {
+                        output.on("end", () => {
                             var buffer = Buffer.concat(data)
                             if (buffer.length < 56) {
                                 if (buffer.toString() == "{\"error\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
@@ -788,10 +788,10 @@ app.get("/asset/", (req, res) => {
                             }
                             output = res1
                         }
-                        res1.on("data", (chunk) => {
+                        output.on("data", (chunk) => {
                             data.push(chunk)
                         })
-                        res1.on("end", () => {
+                        output.on("end", () => {
                             var buffer = Buffer.concat(data)
                             if (buffer.length < 56) {
                                 if (buffer.toString() == "{\"error\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
@@ -876,10 +876,10 @@ app.get("/asset/", (req, res) => {
                             }
                             output = res1
                         }
-                        res1.on("data", (chunk) => {
+                        output.on("data", (chunk) => {
                             data.push(chunk)
                         })
-                        res1.on("end", () => {
+                        output.on("end", () => {
                             var buffer = Buffer.concat(data)
                             if (buffer.length < 56) {
                                 if (buffer.toString() == "{\"error\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
@@ -1061,10 +1061,10 @@ app.get("//asset/", (req, res) => {
                             }
                             output = res1
                         }
-                        res1.on("data", (chunk) => {
+                        output.on("data", (chunk) => {
                             data.push(chunk)
                         })
-                        res1.on("end", () => {
+                        output.on("end", () => {
                             var buffer = Buffer.concat(data)
                             if (buffer.length < 56) {
                                 if (buffer.toString() == "{\"error\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
@@ -1157,10 +1157,10 @@ app.get("/v1/asset", (req, res) => {
                             }
                             output = res1
                         }
-                        res1.on("data", (chunk) => {
+                        output.on("data", (chunk) => {
                             data.push(chunk)
                         })
-                        res1.on("end", () => {
+                        output.on("end", () => {
                             var buffer = Buffer.concat(data)
                             if (buffer.length < 56) {
                                 if (buffer.toString() == "{\"error\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
@@ -1245,10 +1245,10 @@ app.get("/v1/asset", (req, res) => {
                             }
                             output = res1
                         }
-                        res1.on("data", (chunk) => {
+                        output.on("data", (chunk) => {
                             data.push(chunk)
                         })
-                        res1.on("end", () => {
+                        output.on("end", () => {
                             var buffer = Buffer.concat(data)
                             if (buffer.length < 56) {
                                 if (buffer.toString() == "{\"error\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
@@ -1340,10 +1340,10 @@ app.get("/v1/asset/", (req, res) => {
                             }
                             output = res1
                         }
-                        res1.on("data", (chunk) => {
+                        output.on("data", (chunk) => {
                             data.push(chunk)
                         })
-                        res1.on("end", () => {
+                        output.on("end", () => {
                             var buffer = Buffer.concat(data)
                             if (buffer.length < 56) {
                                 if (buffer.toString() == "{\"error\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
@@ -1427,10 +1427,10 @@ app.get("/v1/asset/", (req, res) => {
                             }
                             output = res1
                         }
-                        res1.on("data", (chunk) => {
+                        output.on("data", (chunk) => {
                             data.push(chunk)
                         })
-                        res1.on("end", () => {
+                        output.on("end", () => {
                             var buffer = Buffer.concat(data)
                             if (buffer.length < 56) {
                                 if (buffer.toString() == "{\"error\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
