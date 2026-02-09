@@ -10,7 +10,7 @@ ReBlox is a offline revival of ROBLOX, with its purpose is to support clients su
 
 Building this application requires:
 
-* Visual Studio 2022 (or 2019, not tested)
+* Visual Studio 2022+ (or 2019, not tested)
 * .NET Framework 4.8
 
 
