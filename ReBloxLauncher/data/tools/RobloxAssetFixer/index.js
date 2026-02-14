@@ -2520,7 +2520,7 @@ app.get("/v1/avatar", async (req, res) => {
         }
     }
     else {
-        console.log("\x1b[32m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1/avatar-fetch")
+        console.log("\x1b[32m", "<INFO> Getting the avatar of " + (req.query.userId != undefined ? req.query.userId : userId) + " via /v1/avatar")
         if (localClothes == true) {
             var tempclothes = "{"
             if (req.query.userId != undefined) {
