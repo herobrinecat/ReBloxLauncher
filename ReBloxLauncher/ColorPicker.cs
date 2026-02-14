@@ -447,7 +447,7 @@ namespace ReBloxLauncher
         private void ColorPicker_Load(object sender, EventArgs e)
         {
             int lastx = -26;
-            int lasty = 34;
+            int lasty = 52;
             for (int i = 0; i < 1033; i++)
             {
                 if (i == 366)
@@ -478,6 +478,27 @@ namespace ReBloxLauncher
         }
 
         private void label1_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.Cancel;
+            this.Close();
+        }
+
+        private void panel1_MouseEnter(object sender, EventArgs e)
+        {
+            panel1.BackColor = Color.FromArgb(70, 70, 70);
+        }
+
+        private void panel1_MouseLeave(object sender, EventArgs e)
+        {
+            panel1.BackColor = Color.FromArgb(60, 60, 60);
+        }
+
+        private void label1_MouseEnter(object sender, EventArgs e)
+        {
+            panel1.BackColor = Color.FromArgb(70, 70, 70);
+        }
+
+        private void panel1_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
             this.Close();

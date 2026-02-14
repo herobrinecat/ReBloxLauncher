@@ -25,7 +25,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1313")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1316")]
         public string version {
             get {
                 return ((string)(this["version"]));
@@ -368,6 +368,42 @@ namespace ReBloxLauncher.Properties {
             }
             set {
                 this["UpdateURL"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5000")]
+        public int Robux {
+            get {
+                return ((int)(this["Robux"]));
+            }
+            set {
+                this["Robux"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EnableFriendships {
+            get {
+                return ((bool)(this["EnableFriendships"]));
+            }
+            set {
+                this["EnableFriendships"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EnableOwnedAssets {
+            get {
+                return ((bool)(this["EnableOwnedAssets"]));
+            }
+            set {
+                this["EnableOwnedAssets"] = value;
             }
         }
     }

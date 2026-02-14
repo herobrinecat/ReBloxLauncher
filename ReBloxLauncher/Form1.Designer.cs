@@ -81,6 +81,8 @@
             this.listBox3 = new System.Windows.Forms.ListBox();
             this.label12 = new System.Windows.Forms.Label();
             this.panel5 = new System.Windows.Forms.Panel();
+            this.label36 = new System.Windows.Forms.Label();
+            this.numericUpDown7 = new System.Windows.Forms.NumericUpDown();
             this.label28 = new System.Windows.Forms.Label();
             this.textBox6 = new System.Windows.Forms.TextBox();
             this.button4 = new System.Windows.Forms.Button();
@@ -126,6 +128,8 @@
             this.tabPage5 = new System.Windows.Forms.TabPage();
             this.tabPage6 = new System.Windows.Forms.TabPage();
             this.panel6 = new System.Windows.Forms.Panel();
+            this.checkBox12 = new System.Windows.Forms.CheckBox();
+            this.checkBox11 = new System.Windows.Forms.CheckBox();
             this.checkBox9 = new System.Windows.Forms.CheckBox();
             this.checkBox8 = new System.Windows.Forms.CheckBox();
             this.checkBox6 = new System.Windows.Forms.CheckBox();
@@ -144,6 +148,7 @@
             this.panel3.SuspendLayout();
             this.panel4.SuspendLayout();
             this.panel5.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown5)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).BeginInit();
@@ -796,6 +801,8 @@
             // panel5
             // 
             this.panel5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.panel5.Controls.Add(this.label36);
+            this.panel5.Controls.Add(this.numericUpDown7);
             this.panel5.Controls.Add(this.label28);
             this.panel5.Controls.Add(this.textBox6);
             this.panel5.Controls.Add(this.button4);
@@ -827,12 +834,41 @@
             this.panel5.Size = new System.Drawing.Size(526, 372);
             this.panel5.TabIndex = 31;
             // 
+            // label36
+            // 
+            this.label36.AutoSize = true;
+            this.label36.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.label36.ForeColor = System.Drawing.Color.White;
+            this.label36.Location = new System.Drawing.Point(383, 10);
+            this.label36.Name = "label36";
+            this.label36.Size = new System.Drawing.Size(52, 17);
+            this.label36.TabIndex = 27;
+            this.label36.Text = "Robux:";
+            this.label36.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // numericUpDown7
+            // 
+            this.numericUpDown7.Location = new System.Drawing.Point(439, 10);
+            this.numericUpDown7.Maximum = new decimal(new int[] {
+            1410065407,
+            2,
+            0,
+            0});
+            this.numericUpDown7.Name = "numericUpDown7";
+            this.numericUpDown7.Size = new System.Drawing.Size(80, 20);
+            this.numericUpDown7.TabIndex = 26;
+            this.numericUpDown7.Value = new decimal(new int[] {
+            5000,
+            0,
+            0,
+            0});
+            // 
             // label28
             // 
             this.label28.AutoSize = true;
             this.label28.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.label28.ForeColor = System.Drawing.Color.White;
-            this.label28.Location = new System.Drawing.Point(336, 34);
+            this.label28.Location = new System.Drawing.Point(334, 34);
             this.label28.Name = "label28";
             this.label28.Size = new System.Drawing.Size(64, 17);
             this.label28.TabIndex = 25;
@@ -900,9 +936,9 @@
             // HeadPanel
             // 
             this.HeadPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(163)))), ((int)(((byte)(162)))), ((int)(((byte)(165)))));
-            this.HeadPanel.Location = new System.Drawing.Point(229, 142);
+            this.HeadPanel.Location = new System.Drawing.Point(227, 144);
             this.HeadPanel.Name = "HeadPanel";
-            this.HeadPanel.Size = new System.Drawing.Size(37, 40);
+            this.HeadPanel.Size = new System.Drawing.Size(40, 40);
             this.HeadPanel.TabIndex = 19;
             this.HeadPanel.Click += new System.EventHandler(this.HeadPanel_Click);
             // 
@@ -1373,6 +1409,8 @@
             // panel6
             // 
             this.panel6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.panel6.Controls.Add(this.checkBox12);
+            this.panel6.Controls.Add(this.checkBox11);
             this.panel6.Controls.Add(this.checkBox9);
             this.panel6.Controls.Add(this.checkBox8);
             this.panel6.Controls.Add(this.checkBox6);
@@ -1383,14 +1421,36 @@
             this.panel6.Size = new System.Drawing.Size(511, 300);
             this.panel6.TabIndex = 0;
             // 
+            // checkBox12
+            // 
+            this.checkBox12.AutoSize = true;
+            this.checkBox12.Location = new System.Drawing.Point(17, 240);
+            this.checkBox12.Name = "checkBox12";
+            this.checkBox12.Size = new System.Drawing.Size(130, 17);
+            this.checkBox12.TabIndex = 7;
+            this.checkBox12.Text = "Enable Owned Assets";
+            this.checkBox12.UseVisualStyleBackColor = true;
+            this.checkBox12.CheckedChanged += new System.EventHandler(this.checkBox12_CheckedChanged);
+            // 
+            // checkBox11
+            // 
+            this.checkBox11.AutoSize = true;
+            this.checkBox11.Location = new System.Drawing.Point(17, 217);
+            this.checkBox11.Name = "checkBox11";
+            this.checkBox11.Size = new System.Drawing.Size(115, 17);
+            this.checkBox11.TabIndex = 6;
+            this.checkBox11.Text = "Enable Friendships";
+            this.checkBox11.UseVisualStyleBackColor = true;
+            this.checkBox11.CheckedChanged += new System.EventHandler(this.checkBox11_CheckedChanged);
+            // 
             // checkBox9
             // 
             this.checkBox9.AutoSize = true;
             this.checkBox9.Location = new System.Drawing.Point(18, 194);
             this.checkBox9.Name = "checkBox9";
-            this.checkBox9.Size = new System.Drawing.Size(106, 17);
+            this.checkBox9.Size = new System.Drawing.Size(111, 17);
             this.checkBox9.TabIndex = 5;
-            this.checkBox9.Text = "Enable Following";
+            this.checkBox9.Text = "Enable Followings";
             this.checkBox9.UseVisualStyleBackColor = true;
             this.checkBox9.CheckedChanged += new System.EventHandler(this.checkBox9_CheckedChanged);
             // 
@@ -1552,6 +1612,7 @@
             this.panel4.PerformLayout();
             this.panel5.ResumeLayout(false);
             this.panel5.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown5)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).EndInit();
@@ -1685,6 +1746,10 @@
         private System.Windows.Forms.Button button8;
         private System.Windows.Forms.Label label34;
         private System.Windows.Forms.Label label35;
+        private System.Windows.Forms.CheckBox checkBox12;
+        private System.Windows.Forms.CheckBox checkBox11;
+        private System.Windows.Forms.Label label36;
+        private System.Windows.Forms.NumericUpDown numericUpDown7;
     }
 }
 

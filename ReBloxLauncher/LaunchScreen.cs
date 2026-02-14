@@ -32,7 +32,8 @@ namespace ReBloxLauncher
         bool useOldSignature = false;
         bool useOldAssetFormat = false;
         bool dontLoadMapinArgument = false;
-        public LaunchScreen(string version, string customDataFolder = null)
+        bool useSystemNode = false;
+        public LaunchScreen(string version, string customDataFolder = null, bool systemNode = false)
         {
             InitializeComponent();
             robloxversion = version;
@@ -40,6 +41,7 @@ namespace ReBloxLauncher
             {
                 datafolder = customDataFolder;
             }
+            useSystemNode = systemNode;
         }
 
         private string GenerateUUID()
@@ -170,7 +172,7 @@ namespace ReBloxLauncher
             }
         }
 
-        private int CountAssets() 
+        private int CountAssets()
         {
             label1.Invoke(new Action(() => { label1.Text = "Loading assets..."; }));
             string[] splited = Properties.Settings.Default.AssetPackEnabled.Split('|');
@@ -210,6 +212,90 @@ namespace ReBloxLauncher
                             {
                                 compatible = true; break;
                             }
+                            else if (splited1[1].EndsWith("+"))
+                            {
+                                try
+                                {
+                                    string year = splited1[1].Substring(0, 4);
+                                    string daterange = splited1[1].Substring(4, 1);
+
+                                    if (int.TryParse(year + convertDateRangeToInt(daterange).ToString(), out _) == true)
+                                    {
+                                        int total = int.Parse(year + convertDateRangeToInt(daterange).ToString());
+                                        string year1 = Properties.Settings.Default.lastselectedversion.Substring(0, 4);
+                                        string daterange1 = Properties.Settings.Default.lastselectedversion.Substring(4, 1);
+                                        if (int.TryParse(year1 + convertDateRangeToInt(daterange1).ToString(), out _) == true)
+                                        {
+                                            int total1 = int.Parse(year1 + convertDateRangeToInt(daterange1).ToString());
+
+                                            if (total1 >= total)
+                                            {
+                                                compatible = true; break;
+                                            }
+                                            else
+                                            {
+                                                compatible = false; break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            compatible = false; break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("<WARN> Skipping asset pack \"" + Path.GetFileName(s) + "\" due to invalid clients");
+                                        compatible = false; break;
+                                    }
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("<WARN> Skipping asset pack \"" + Path.GetFileName(s) + "\" due to invalid clients");
+                                    compatible = false; break;
+                                }
+                            }
+                            else if (splited1[1].EndsWith("-"))
+                            {
+                                try
+                                {
+                                    string year = splited1[1].Substring(0, 4);
+                                    string daterange = splited1[1].Substring(4, 1);
+
+                                    if (int.TryParse(year + convertDateRangeToInt(daterange).ToString(), out _) == true)
+                                    {
+                                        int total = int.Parse(year + convertDateRangeToInt(daterange).ToString());
+                                        string year1 = Properties.Settings.Default.lastselectedversion.Substring(0, 4);
+                                        string daterange1 = Properties.Settings.Default.lastselectedversion.Substring(4, 1);
+                                        if (int.TryParse(year1 + convertDateRangeToInt(daterange1).ToString(), out _) == true)
+                                        {
+                                            int total1 = int.Parse(year1 + convertDateRangeToInt(daterange1).ToString());
+
+                                            if (total1 <= total)
+                                            {
+                                                compatible = true; break;
+                                            }
+                                            else
+                                            {
+                                                compatible = false; break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            compatible = false; break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("<WARN> Skipping asset pack \"" + Path.GetFileName(s) + "\" due to invalid clients");
+                                        compatible = false; break;
+                                    }
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("<WARN> Skipping asset pack \"" + Path.GetFileName(s) + "\" due to invalid clients");
+                                    compatible = false; break;
+                                }
+                            }
                             else
                             {
                                 compatible = false; break;
@@ -219,12 +305,18 @@ namespace ReBloxLauncher
                     if (compatible)
                     {
                         string[] files = Directory.GetFiles(s);
-                        count = count + (files.Length - 1);
+                        for (int i = 0; i < files.Count(); i++)
+                        {
+                            if (IsDigitsOnly(Path.GetFileNameWithoutExtension(files[i])) == false)
+                            {
+                                count = count - 1;
+                            }
+                        }
+                        count = count + files.Length;
                     }
-
                 }
             }
-            return count;
+            return count < 0 ? 0 : count;
         }
 
         private int convertDateRangeToInt(string dateRange)
@@ -241,6 +333,9 @@ namespace ReBloxLauncher
                     return 0;
             }
         }
+
+        bool IsDigitsOnly(string str) { return str.All(c => c >= '0' && c <= '9'); }
+
         private void LoadAssets()
         {
             progressBar1.Invoke(new Action(() => { progressBar1.Style = ProgressBarStyle.Continuous; }));
@@ -378,7 +473,7 @@ namespace ReBloxLauncher
                         string[] files = Directory.GetFiles(s);
                         foreach (string file in files)
                         {
-                            if (file.EndsWith(".ini") == false)
+                            if (file.EndsWith(".ini") == false && IsDigitsOnly(Path.GetFileNameWithoutExtension(file)))
                             {
                                 File.Copy(file, datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(file), true);
                                 progressBar1.Invoke(new Action(() => { progressBar1.Value++; }));
@@ -604,14 +699,14 @@ namespace ReBloxLauncher
             {
                 try
                 {
-                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
+                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
                     {
                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                         {
                             if (IsAdministrator())
                             {
 
-                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip");
+                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
                                 if (Properties.Settings.Default.UsePatchInStudio)
                                 {
                                     if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", 53640);
@@ -627,28 +722,28 @@ namespace ReBloxLauncher
                                     ps.FileName = datafolder + @"\clients\" + robloxversion + @"\Studio\RobloxStudioBeta.exe";
                                     ProcessStartInfo ps1 = new ProcessStartInfo();
                                     ps1.UseShellExecute = false;
-                                    ps1.FileName = datafolder + @"\tools\node\node.exe";
+                                    ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                     ps1.RedirectStandardOutput = true;
                                     ps1.CreateNoWindow = true;
                                     if (Properties.Settings.Default.useAuth)
                                     {
                                         if (Properties.Settings.Default.avatarR15)
                                         {
-                                            if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
-                                            else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
+                                            if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
+                                            else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
                                         }
-                                        else if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
-                                        else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
+                                        else if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
+                                        else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
                                     }
                                     else
                                     {
                                         if (Properties.Settings.Default.avatarR15)
                                         {
-                                            if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
-                                            else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
+                                            if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
+                                            else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
                                         }
-                                        else if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
-                                        else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
+                                        else if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
+                                        else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
                                     }
                                     ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                     ps1.WindowStyle = ProcessWindowStyle.Hidden;
@@ -725,7 +820,7 @@ namespace ReBloxLauncher
                             SetupGameFiles();
                             LoadAssets();
                         }
-                       if (shutdown == false)
+                        if (shutdown == false)
                         {
                             button1.Invoke(new Action(() => { button1.Visible = false; }));
                             ProcessStartInfo ps = new ProcessStartInfo();
@@ -734,7 +829,7 @@ namespace ReBloxLauncher
                             ps.FileName = datafolder + @"\clients\" + robloxversion + @"\Studio\RobloxStudioBeta.exe";
                             ProcessStartInfo ps1 = new ProcessStartInfo();
                             ps1.UseShellExecute = false;
-                            ps1.FileName = datafolder + @"\tools\node\node.exe";
+                            ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                             ps1.RedirectStandardOutput = true;
                             ps1.CreateNoWindow = true;
 
@@ -742,11 +837,11 @@ namespace ReBloxLauncher
                             {
                                 if (Properties.Settings.Default.avatarR15)
                                 {
-                                    if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
-                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
+                                    if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
+                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
                                 }
-                                else if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
-                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset" : "");
+                                else if (Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
+                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)) + " -useAuth -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux;
                             }
                             else
                             {
@@ -837,5 +932,5 @@ namespace ReBloxLauncher
             Application.Exit();
         }
     }
-    }
+}
 

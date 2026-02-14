@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="version" Type="System.String" Scope="User">
-      <Value Profile="(Default)">0.0.1313</Value>
+      <Value Profile="(Default)">0.0.1316</Value>
     </Setting>
     <Setting Name="lastselectedversion" Type="System.String" Scope="User">
       <Value Profile="(Default)">2017L</Value>
@@ -88,6 +88,15 @@
     </Setting>
     <Setting Name="UpdateURL" Type="System.String" Scope="User">
       <Value Profile="(Default)">http://f3xfileserver.servehttp.com:81</Value>
+    </Setting>
+    <Setting Name="Robux" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5000</Value>
+    </Setting>
+    <Setting Name="EnableFriendships" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="EnableOwnedAssets" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
     </Setting>
   </Settings>
 </SettingsFile>
