@@ -8,11 +8,13 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ReBloxLauncher
 {
@@ -20,10 +22,7 @@ namespace ReBloxLauncher
     {
         string robloxversion = "";
         string datafolder = Path.GetDirectoryName(Application.ExecutablePath) + @"\data";
-        string hostargument = "";
-        string joinargument = "";
         bool UseJoinJSONLink = false;
-        bool useIPForwarder = false;
         bool ReserveAssetIdForMap = false;
         int placeid = 1;
         private object syncLock = new object();
@@ -31,7 +30,6 @@ namespace ReBloxLauncher
         bool useNewRoblox = false;
         bool useOldSignature = false;
         bool useOldAssetFormat = false;
-        bool dontLoadMapinArgument = false;
         bool useSystemNode = false;
         public LaunchScreen(string version, string customDataFolder = null, bool systemNode = false)
         {
@@ -53,41 +51,47 @@ namespace ReBloxLauncher
         }
         private void SetupJoinScript(string ipaddr, int port)
         {
-            Console.WriteLine("<INFO> Setting up join script for " + Properties.Settings.Default.lastselectedversion);
+            Console.WriteLine("<INFO> Setting up join script for " + robloxversion);
             label1.Invoke(new Action(() => { label1.Text = "Setting up join script..."; }));
             string waitingForCharacterGuid = GenerateUUID().ToLower();
             string sessionId = GenerateUUID().ToLower();
             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt");
-            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt", @"--rbxsig%PwqWEjzB5MasktbXBzHRjH8kwI5ltVM/lIAaQnwpristI8AQsHzKQGJGBrne9l2OFJLiao7SFrJ86rwehnjlHbBC63KBr4ihUTE2EHFHaWde95xF1Jb37jJ3wg1uJRDEXq9lZWCcYsz/2HOIYRMddAytnxX4ZLBig6mfLfcrOWA=%
-{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + Properties.Settings.Default.UserId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + Properties.Settings.Default.UserId + @"&placeId=1"",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""None"",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|204.236.226.210|8|" + DateTime.UtcNow.ToString("") + @"Z|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt", @"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + Properties.Settings.Default.UserId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + Properties.Settings.Default.UserId + @"&placeId=1"",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|8|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
         }
 
         private void SetupGameFiles()
         {
             label1.Invoke(new Action(() => { label1.Text = "Setting up game files..."; }));
-            Console.WriteLine("<INFO> Checking for FFlags for " + Properties.Settings.Default.lastselectedversion);
-            if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings"))
+            Console.WriteLine("<INFO> Checking for FFlags for " + robloxversion);
+            if (Directory.Exists(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings"))
             {
                 Console.WriteLine("<INFO> Copying the ClientAppSettings.json to the RobloxAssetFixer");
-                if (File.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json"))
+                if (File.Exists(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json"))
                 {
-                    File.Copy(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json", datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json", true);
+                    if (File.ReadAllText(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json").Contains("{id}"))
+                    {
+                        File.Move(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json", datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak");
+                        File.WriteAllText(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", Properties.Settings.Default.UserId.ToString()));
+                    }
+                    if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
+                    File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json").Replace("{id}", Properties.Settings.Default.UserId.ToString()));
                 }
             }
             if (UseJoinJSONLink == true)
             {
-                Console.WriteLine("<INFO> Checking for the game folder for " + Properties.Settings.Default.lastselectedversion);
-                if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\game") == false && Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\game"))
+                Console.WriteLine("<INFO> Checking for the game folder for " + robloxversion);
+                if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\game") == false && Directory.Exists(datafolder + @"\clients\" + robloxversion + @"\game"))
                 {
-                    Console.WriteLine("<INFO> Creating the game folder and copying its content to the folder for " + Properties.Settings.Default.lastselectedversion);
+                    Console.WriteLine("<INFO> Creating the game folder and copying its content to the folder for " + robloxversion);
                     Directory.CreateDirectory(datafolder + @"\tools\RobloxAssetFixer\game");
-                    foreach (string file in Directory.GetFiles(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\game"))
+                    foreach (string file in Directory.GetFiles(datafolder + @"\clients\" + robloxversion + @"\game"))
                     {
                         if (shutdown) return;
                         if (Path.GetFileName(file) == "join.ashx")
                         {
                             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file))) File.Delete(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file));
-                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file), File.ReadAllText(file).Replace("{ip}", "127.0.0.1").Replace("{port}", "53640").Replace("{username}", Properties.Settings.Default.username).Replace("{id}", Properties.Settings.Default.UserId.ToString()).Replace("{13}", (!Properties.Settings.Default.AccountOver13).ToString().ToLower()));
+                            string wac = GenerateUUID().ToLower();
+                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file), File.ReadAllText(file).Replace("{ip}", "127.0.0.1").Replace("{port}", "53640").Replace("{username}", Properties.Settings.Default.username).Replace("{id}", Properties.Settings.Default.UserId.ToString()).Replace("{13}", (!Properties.Settings.Default.AccountOver13).ToString().ToLower()).Replace("{membership}", Properties.Settings.Default.Membership.Replace(" ", "")).Replace("{chatstyle}", Properties.Settings.Default.ChatStyle).Replace("{wac}", wac));
                         }
                         else if (Path.GetFileName(file) == "gameserver.ashx")
                         {
@@ -97,7 +101,13 @@ namespace ReBloxLauncher
                         else if (Path.GetFileName(file) == "placespecificscript.ashx")
                         {
                             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file))) File.Delete(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file));
-                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file), File.ReadAllText(file).Replace("{id}", placeid.ToString()));
+                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file), File.ReadAllText(file).Replace("{id}", (ReserveAssetIdForMap ? placeid : 1).ToString()));
+                        }
+                        else if (Path.GetFileName(file) == "visit.ashx")
+                        {
+                            if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file))) File.Delete(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file));
+                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file), File.ReadAllText(file).Replace("{id}", Properties.Settings.Default.UserId.ToString()).Replace("{membership}", Properties.Settings.Default.Membership.Replace(" ", "")).Replace("{13}", Properties.Settings.Default.AccountOver13 ? "False" : "True").Replace("{username}", Properties.Settings.Default.username));
+
                         }
                         else
                         {
@@ -112,6 +122,16 @@ namespace ReBloxLauncher
         {
             Console.WriteLine("<INFO> Cleaning up game files and removing the ClientAppSettings file");
             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
+            if (File.Exists(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak"))
+            {
+                File.Delete(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json");
+                File.Move(datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak", datafolder + @"\clients\" + robloxversion + @"\Studio\ClientSettings\ClientAppSettings.json");
+            }
+            if (File.Exists(datafolder + @"\clients\" + robloxversion + @"\Player\ClientSettings\ClientAppSettings.json.bak"))
+            {
+                File.Delete(datafolder + @"\clients\" + robloxversion + @"\Player\ClientSettings\ClientAppSettings.json");
+                File.Move(datafolder + @"\clients\" + robloxversion + @"\Player\ClientSettings\ClientAppSettings.json.bak", datafolder + @"\clients\" + robloxversion + @"\Player\ClientSettings\ClientAppSettings.json");
+            }
 
             if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\clothes") == true) Directory.Delete(datafolder + @"\tools\RobloxAssetFixer\clothes", true);
 
@@ -199,7 +219,7 @@ namespace ReBloxLauncher
                                 string[] splitedtwo = splited1[1].Split(',');
                                 foreach (string version in splitedtwo)
                                 {
-                                    if (version == Properties.Settings.Default.lastselectedversion)
+                                    if (version == robloxversion)
                                     {
                                         valuefound = true;
                                         compatible = true;
@@ -208,7 +228,7 @@ namespace ReBloxLauncher
                                 }
                                 if (valuefound == false) compatible = false; break;
                             }
-                            else if (splited1[1] == Properties.Settings.Default.lastselectedversion)
+                            else if (splited1[1] == robloxversion)
                             {
                                 compatible = true; break;
                             }
@@ -222,8 +242,8 @@ namespace ReBloxLauncher
                                     if (int.TryParse(year + convertDateRangeToInt(daterange).ToString(), out _) == true)
                                     {
                                         int total = int.Parse(year + convertDateRangeToInt(daterange).ToString());
-                                        string year1 = Properties.Settings.Default.lastselectedversion.Substring(0, 4);
-                                        string daterange1 = Properties.Settings.Default.lastselectedversion.Substring(4, 1);
+                                        string year1 = robloxversion.Substring(0, 4);
+                                        string daterange1 = robloxversion.Substring(4, 1);
                                         if (int.TryParse(year1 + convertDateRangeToInt(daterange1).ToString(), out _) == true)
                                         {
                                             int total1 = int.Parse(year1 + convertDateRangeToInt(daterange1).ToString());
@@ -264,8 +284,8 @@ namespace ReBloxLauncher
                                     if (int.TryParse(year + convertDateRangeToInt(daterange).ToString(), out _) == true)
                                     {
                                         int total = int.Parse(year + convertDateRangeToInt(daterange).ToString());
-                                        string year1 = Properties.Settings.Default.lastselectedversion.Substring(0, 4);
-                                        string daterange1 = Properties.Settings.Default.lastselectedversion.Substring(4, 1);
+                                        string year1 = robloxversion.Substring(0, 4);
+                                        string daterange1 = robloxversion.Substring(4, 1);
                                         if (int.TryParse(year1 + convertDateRangeToInt(daterange1).ToString(), out _) == true)
                                         {
                                             int total1 = int.Parse(year1 + convertDateRangeToInt(daterange1).ToString());
@@ -365,7 +385,7 @@ namespace ReBloxLauncher
                                 string[] splitedtwo = splited1[1].Split(',');
                                 foreach (string version in splitedtwo)
                                 {
-                                    if (version == Properties.Settings.Default.lastselectedversion)
+                                    if (version == robloxversion)
                                     {
                                         valuefound = true;
                                         compatible = true;
@@ -374,7 +394,7 @@ namespace ReBloxLauncher
                                 }
                                 if (valuefound == false) compatible = false; break;
                             }
-                            else if (splited1[1] == Properties.Settings.Default.lastselectedversion)
+                            else if (splited1[1] == robloxversion)
                             {
                                 compatible = true; break;
                             }
@@ -388,8 +408,8 @@ namespace ReBloxLauncher
                                     if (int.TryParse(year + convertDateRangeToInt(daterange).ToString(), out _) == true)
                                     {
                                         int total = int.Parse(year + convertDateRangeToInt(daterange).ToString());
-                                        string year1 = Properties.Settings.Default.lastselectedversion.Substring(0, 4);
-                                        string daterange1 = Properties.Settings.Default.lastselectedversion.Substring(4, 1);
+                                        string year1 = robloxversion.Substring(0, 4);
+                                        string daterange1 = robloxversion.Substring(4, 1);
                                         if (int.TryParse(year1 + convertDateRangeToInt(daterange1).ToString(), out _) == true)
                                         {
                                             int total1 = int.Parse(year1 + convertDateRangeToInt(daterange1).ToString());
@@ -430,8 +450,8 @@ namespace ReBloxLauncher
                                     if (int.TryParse(year + convertDateRangeToInt(daterange).ToString(), out _) == true)
                                     {
                                         int total = int.Parse(year + convertDateRangeToInt(daterange).ToString());
-                                        string year1 = Properties.Settings.Default.lastselectedversion.Substring(0, 4);
-                                        string daterange1 = Properties.Settings.Default.lastselectedversion.Substring(4, 1);
+                                        string year1 = robloxversion.Substring(0, 4);
+                                        string daterange1 = robloxversion.Substring(4, 1);
                                         if (int.TryParse(year1 + convertDateRangeToInt(daterange1).ToString(), out _) == true)
                                         {
                                             int total1 = int.Parse(year1 + convertDateRangeToInt(daterange1).ToString());
@@ -485,11 +505,52 @@ namespace ReBloxLauncher
                 }
                 if (shutdown) return;
             }
+            if (Directory.Exists(datafolder + @"\clients\" + robloxversion + @"\assets"))
+            {
+                string[] files = Directory.GetFiles(datafolder + @"\clients\" + robloxversion + @"\assets");
+                string[] directories1 = GetFileNamesWithoutExtension(datafolder + @"\tools\RobloxAssetFixer\assets");
+                string[] directories2 = Directory.GetFiles(datafolder + @"\tools\RobloxAssetFixer\assets");
+                if (files.Length > 0)
+                {
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        if (directories1.Contains(Path.GetFileNameWithoutExtension(files[i])))
+                        {
+                            for (int i1 = 0; i1 < directories2.Length; i1++)
+                            {
+                                if (Path.GetFileNameWithoutExtension(directories2[i1]) == Path.GetFileNameWithoutExtension(files[i]) && Path.GetExtension(directories2[i1]) != Path.GetExtension(files[i]) && Path.GetExtension(directories2[i1]) != ".png" && Path.GetExtension(directories2[i1]) != ".jpg" && Path.GetExtension(directories2[i1]) != ".jpeg" && Path.GetExtension(directories2[i1]) != ".bmp")
+                                {
+                                    File.Delete(directories2[i1]);
+                                }
+                            }
+                        }
+                        File.Copy(files[i], datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(files[i]), true);
+                        if (shutdown) return;
+                    }
+                }
+            }
             progressBar1.Invoke(new Action(() => { progressBar1.Style = ProgressBarStyle.Marquee; }));
             progressBar1.Invoke(new Action(() => { progressBar1.Value = 0; }));
             progressBar1.Invoke(new Action(() => { progressBar1.Maximum = 100; }));
         }
 
+        private string[] GetFileNamesWithoutExtension(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                List<string> result = new List<string>();
+                string[] files = Directory.GetFiles(path);
+                foreach (string file in files)
+                {
+                    result.Add(Path.GetFileNameWithoutExtension(file));
+                }
+                return result.ToArray();
+            }
+            else
+            {
+                return new string[] { };
+            }
+        }
         public class AssetData
         {
             public int id { get; set; } = 0;
@@ -576,7 +637,18 @@ namespace ReBloxLauncher
                     var buffer = Encoding.UTF8.GetBytes(result);
                     var byteContent = new ByteArrayContent(buffer);
                     byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-                    HttpResponseMessage response = await client.PostAsync("/v1/avatar/set-avatar?userId=" + Properties.Settings.Default.UserId, byteContent);
+                    if (File.Exists(datafolder + @"\private.txt") && File.Exists(datafolder + @"\private.pem"))
+                    {
+                        using (RSACryptoServiceProvider RSAalg = new RSACryptoServiceProvider())
+                        {
+                            RSAalg.ImportCspBlob(Convert.FromBase64String(File.ReadAllText(datafolder + @"\private.txt")));
+
+                            RSAParameters Key = RSAalg.ExportParameters(true);
+
+                            byteContent.Headers.Add("x-token", Convert.ToBase64String(HashAndSignBytes(buffer, Key)));
+                        }
+                    }
+                    HttpResponseMessage response = await client.PostAsync("/v1/avatar/set-avatar?userId=" + Properties.Settings.Default.UserId + "&username=" + Properties.Settings.Default.username, byteContent);
 
                     response.Dispose();
 
@@ -590,10 +662,30 @@ namespace ReBloxLauncher
                 }
             }
         }
+
+        private static byte[] HashAndSignBytes(byte[] DataToSign, RSAParameters Key)
+        {
+            try
+            {
+                using (RSACryptoServiceProvider RSAalg = new RSACryptoServiceProvider())
+                {
+                    RSAalg.ImportParameters(Key);
+
+                    return RSAalg.SignData(DataToSign, SHA1.Create());
+                }
+            }
+            catch (CryptographicException e)
+            {
+                Console.WriteLine("<ERROR> " + e.Message);
+                return null;
+            }
+        }
+
         public bool IsAdministrator()
         {
             return (new WindowsPrincipal(WindowsIdentity.GetCurrent())).IsInRole(WindowsBuiltInRole.Administrator);
         }
+
         private void LaunchScreen_Load(object sender, EventArgs e)
         {
             if (File.Exists(datafolder + @"\clients\" + robloxversion + @"\ReBlox.ini"))
@@ -603,26 +695,15 @@ namespace ReBloxLauncher
                 {
                     placeid = -1;
                     UseJoinJSONLink = false;
-                    useIPForwarder = false;
                     ReserveAssetIdForMap = false;
                     useNewRoblox = false;
                     useOldAssetFormat = false;
                     useOldSignature = false;
-                    dontLoadMapinArgument = false;
 
                     for (int i = 0; i < config.Length; i++)
                     {
-                        if (config[i].Trim().StartsWith("JoinArgument=\""))
-                        {
-                            string[] splited = config[i].Trim().Split(new char[] { '=' }, 2);
-                            joinargument = splited[1].Remove(0, 1).Remove(splited[1].Length - 2, 1);
-                        }
-                        else if (config[i].Trim().StartsWith("HostArgument=\""))
-                        {
-                            string[] splited = config[i].Trim().Split(new char[] { '=' }, 2);
-                            hostargument = splited[1].Remove(0, 1).Remove(splited[1].Length - 2, 1);
-                        }
-                        else if (config[i].Trim() == "UseJoinScript=true")
+
+                        if (config[i].Trim() == "UseJoinScript=true")
                         {
                             UseJoinJSONLink = true;
                         }
@@ -636,14 +717,6 @@ namespace ReBloxLauncher
                             {
                                 MessageBox.Show("Note that RobloxAssetFixer is strongly recommended to be able to use this client property and login (which you just put your username in and your random letter in password.) You should turn on \"Use RobloxAssetFixer when opening in Studio mode\", located in Settings [If you're launching in Studio]", "You should turn this on...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             }
-                        }
-                        else if (config[i].Trim() == "UseIPForwarder=true")
-                        {
-                            useIPForwarder = true;
-                        }
-                        else if (config[i].Trim() == "UseIPForwarder=false")
-                        {
-                            useIPForwarder = false;
                         }
                         else if (config[i].Trim().StartsWith("PlaceId="))
                         {
@@ -681,10 +754,6 @@ namespace ReBloxLauncher
                         {
                             useOldAssetFormat = true;
                         }
-                        else if (config[i].Trim() == "DontLoadMapfromArgument=true")
-                        {
-                            dontLoadMapinArgument = true;
-                        }
                     }
                 }
                 else
@@ -699,14 +768,14 @@ namespace ReBloxLauncher
             {
                 try
                 {
-                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
+                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
                     {
                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                         {
                             if (IsAdministrator())
                             {
 
-                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                 if (Properties.Settings.Default.UsePatchInStudio)
                                 {
                                     if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", 53640);
@@ -788,6 +857,7 @@ namespace ReBloxLauncher
                                     else
                                     {
                                         MessageBox.Show("A valid username or UserId is required!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        Application.Exit();
                                     }
                                 }
                             }
@@ -797,6 +867,7 @@ namespace ReBloxLauncher
                                 ps.UseShellExecute = true;
                                 ps.FileName = Application.ExecutablePath;
                                 ps.Verb = "runas";
+                                ps.Arguments = "--editHosts";
                                 Process.Start(ps);
                                 Application.Exit();
                             }
@@ -910,6 +981,7 @@ namespace ReBloxLauncher
                             else
                             {
                                 MessageBox.Show("A valid username or UserId is required!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                Application.Exit();
                             }
                         }
 

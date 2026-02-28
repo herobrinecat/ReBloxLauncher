@@ -38,6 +38,8 @@
             this.button5 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.ClientsPanel = new System.Windows.Forms.Panel();
+            this.listBox1 = new System.Windows.Forms.ListBox();
+            this.ClientsPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
@@ -150,10 +152,24 @@
             // ClientsPanel
             // 
             this.ClientsPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(55)))));
+            this.ClientsPanel.Controls.Add(this.listBox1);
             this.ClientsPanel.Location = new System.Drawing.Point(12, 120);
             this.ClientsPanel.Name = "ClientsPanel";
             this.ClientsPanel.Size = new System.Drawing.Size(1256, 533);
             this.ClientsPanel.TabIndex = 8;
+            // 
+            // listBox1
+            // 
+            this.listBox1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.listBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.listBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.listBox1.ForeColor = System.Drawing.Color.White;
+            this.listBox1.FormattingEnabled = true;
+            this.listBox1.ItemHeight = 20;
+            this.listBox1.Location = new System.Drawing.Point(16, 27);
+            this.listBox1.Name = "listBox1";
+            this.listBox1.Size = new System.Drawing.Size(338, 480);
+            this.listBox1.TabIndex = 0;
             // 
             // SteamDeckUI
             // 
@@ -177,6 +193,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "ReBlox";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            this.ClientsPanel.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -193,5 +210,6 @@
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.Panel ClientsPanel;
+        private System.Windows.Forms.ListBox listBox1;
     }
 }

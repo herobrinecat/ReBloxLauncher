@@ -78,7 +78,7 @@
 	"assetType": 9,
 	"imageId": 203783329,
 	"robux": 0
-},
+}, 
 {
 	"id": 366130569,
 	"name": "Suburban",
@@ -101,6 +101,22 @@
 	"description": "",
 	"assetType": 9,
 	"imageId": 215383192,
+	"robux": 0
+},
+{
+	"id": 86487700,
+	"name": "Man Face",
+	"description": "",
+	"assetType": 18,
+	"imageId": 83017053,
+	"robux": 0
+},
+{
+	"id": 62234425,
+	"name": "Brown Hair",
+	"description": "",
+	"assetType": 41,
+	"imageId": 62234425,
 	"robux": 0
 }
 ]

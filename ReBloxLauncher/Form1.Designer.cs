@@ -48,6 +48,7 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.label5 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.checkBox13 = new System.Windows.Forms.CheckBox();
             this.button6 = new System.Windows.Forms.Button();
             this.checkBox10 = new System.Windows.Forms.CheckBox();
             this.button5 = new System.Windows.Forms.Button();
@@ -69,6 +70,8 @@
             this.label10 = new System.Windows.Forms.Label();
             this.checkBox5 = new System.Windows.Forms.CheckBox();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.button16 = new System.Windows.Forms.Button();
+            this.button15 = new System.Windows.Forms.Button();
             this.label31 = new System.Windows.Forms.Label();
             this.button14 = new System.Windows.Forms.Button();
             this.panel4 = new System.Windows.Forms.Panel();
@@ -372,6 +375,7 @@
             // panel2
             // 
             this.panel2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.panel2.Controls.Add(this.checkBox13);
             this.panel2.Controls.Add(this.button6);
             this.panel2.Controls.Add(this.checkBox10);
             this.panel2.Controls.Add(this.button5);
@@ -388,6 +392,21 @@
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(526, 372);
             this.panel2.TabIndex = 15;
+            // 
+            // checkBox13
+            // 
+            this.checkBox13.AutoSize = true;
+            this.checkBox13.Checked = true;
+            this.checkBox13.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBox13.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.checkBox13.ForeColor = System.Drawing.Color.White;
+            this.checkBox13.Location = new System.Drawing.Point(25, 274);
+            this.checkBox13.Name = "checkBox13";
+            this.checkBox13.Size = new System.Drawing.Size(473, 21);
+            this.checkBox13.TabIndex = 24;
+            this.checkBox13.Text = "Allow ReBlox to render your avatar (R6 only, will add more launch time)";
+            this.checkBox13.UseVisualStyleBackColor = true;
+            this.checkBox13.Visible = false;
             // 
             // button6
             // 
@@ -656,6 +675,8 @@
             // panel3
             // 
             this.panel3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.panel3.Controls.Add(this.button16);
+            this.panel3.Controls.Add(this.button15);
             this.panel3.Controls.Add(this.label31);
             this.panel3.Controls.Add(this.button14);
             this.panel3.Controls.Add(this.panel4);
@@ -665,6 +686,34 @@
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(526, 372);
             this.panel3.TabIndex = 20;
+            // 
+            // button16
+            // 
+            this.button16.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button16.BackColor = System.Drawing.Color.White;
+            this.button16.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.button16.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.button16.Location = new System.Drawing.Point(366, 19);
+            this.button16.Name = "button16";
+            this.button16.Size = new System.Drawing.Size(98, 28);
+            this.button16.TabIndex = 33;
+            this.button16.Text = "Disable All";
+            this.button16.UseVisualStyleBackColor = false;
+            this.button16.Click += new System.EventHandler(this.button16_Click);
+            // 
+            // button15
+            // 
+            this.button15.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button15.BackColor = System.Drawing.Color.White;
+            this.button15.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.button15.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.button15.Location = new System.Drawing.Point(259, 19);
+            this.button15.Name = "button15";
+            this.button15.Size = new System.Drawing.Size(98, 28);
+            this.button15.TabIndex = 32;
+            this.button15.Text = "Enable All";
+            this.button15.UseVisualStyleBackColor = false;
+            this.button15.Click += new System.EventHandler(this.button15_Click);
             // 
             // label31
             // 
@@ -1750,6 +1799,9 @@
         private System.Windows.Forms.CheckBox checkBox11;
         private System.Windows.Forms.Label label36;
         private System.Windows.Forms.NumericUpDown numericUpDown7;
+        private System.Windows.Forms.CheckBox checkBox13;
+        private System.Windows.Forms.Button button16;
+        private System.Windows.Forms.Button button15;
     }
 }
 

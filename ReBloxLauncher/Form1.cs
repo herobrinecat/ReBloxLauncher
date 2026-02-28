@@ -49,9 +49,6 @@ namespace ReBloxLauncher
         readonly object syncLock = new object();
         Random random = new Random();
         readonly List<string> directoryasset = new List<string>();
-        FileStream ostrm;
-        StreamWriter writer;
-        TextWriter oldOut = Console.Out;
         DiscordRpcClient client;
         readonly System.Timers.Timer timer = new System.Timers.Timer(150);
         public int resultBrickColor = 0;
@@ -92,6 +89,7 @@ namespace ReBloxLauncher
                 return random.Next(min, max);
             }
         }
+
         public bool IsAdministrator()
         {
             return new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
@@ -165,7 +163,7 @@ namespace ReBloxLauncher
             }
         }
 
-        bool IsDigitsOnly(string str) { return str.All(c => c >= '0' && c <= '9');  }
+        bool IsDigitsOnly(string str) { return str.All(c => c >= '0' && c <= '9'); }
 
         private void LoadAssets()
         {
@@ -361,25 +359,54 @@ namespace ReBloxLauncher
             if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\assets"))
             {
                 string[] files = Directory.GetFiles(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\assets");
+                string[] directories1 = GetFileNamesWithoutExtension(datafolder + @"\tools\RobloxAssetFixer\assets");
+                string[] directories2 = Directory.GetFiles(datafolder + @"\tools\RobloxAssetFixer\assets");
                 if (files.Length > 0)
                 {
-                    foreach (string file in files)
+                    for (int i = 0; i < files.Length; i++)
                     {
-                        if (ReserveAssetIdForMap && Path.GetFileNameWithoutExtension(file) != placeid.ToString() || ReserveAssetIdForMap == false || isJoiningOrStudio == true)
+                        if (ReserveAssetIdForMap && Path.GetFileNameWithoutExtension(files[i]) != placeid.ToString() || ReserveAssetIdForMap == false || isJoiningOrStudio == true)
                         {
-                            File.Copy(file, datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(file), true);
+                            if (directories1.Contains(Path.GetFileNameWithoutExtension(files[i])))
+                            {
+                                for (int i1 = 0; i1 < directories2.Length; i1++)
+                                {
+                                    if (Path.GetFileNameWithoutExtension(directories2[i1]) == Path.GetFileNameWithoutExtension(files[i]) && Path.GetExtension(directories2[i1]) != Path.GetExtension(files[i]) && Path.GetExtension(directories2[i1]) != ".png" && Path.GetExtension(directories2[i1]) != ".jpg" && Path.GetExtension(directories2[i1]) != ".jpeg" && Path.GetExtension(directories2[i1]) != ".bmp")
+                                    {
+                                        File.Delete(directories2[i1]);
+                                    }
+                                }
+                            }
+                            File.Copy(files[i], datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(files[i]), true);
                         }
                         else
                         {
-                            File.Copy(datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem), datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(file), true);
+                            File.Copy(datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem), datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(files[i]), true);
                         }
                     }
-
                 }
             }
             if (ReserveAssetIdForMap && isJoiningOrStudio == false)
             {
                 File.Copy(datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem), datafolder + @"\tools\RobloxAssetFixer\assets\" + placeid + ".rbxl", true);
+            }
+        }
+
+        private string[] GetFileNamesWithoutExtension(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                List<string> result = new List<string>();
+                string[] files = Directory.GetFiles(path);
+                foreach (string file in files)
+                {
+                    result.Add(Path.GetFileNameWithoutExtension(file));
+                }
+                return result.ToArray();
+            }
+            else
+            {
+                return new string[] { };
             }
         }
 
@@ -411,33 +438,6 @@ namespace ReBloxLauncher
             {
                 if (launchershortcut == false)
                 {
-                    if (Directory.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs"))
-                    {
-                        bool success = false;
-                        try
-                        {
-                            if (File.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log"))
-                            {
-                                File.Move(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log", Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log" + RandomNumber(10000, 99999) + ".log");
-                            }
-                            ostrm = new FileStream("./logs/log.log", FileMode.OpenOrCreate, FileAccess.Write);
-                            writer = new StreamWriter(ostrm);
-                            success = true;
-                        }
-                        catch (UnauthorizedAccessException _)
-                        {
-                            MessageBox.Show("Failed to open log.log for logging! Another launcher may be using the log file, please check your processes and make sure that the folder is not read-only and has proper permission.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                        catch (Exception _)
-                        {
-                            MessageBox.Show("Failed to open log.log for logging, make sure the folder is not read-only!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                        if (success)
-                        {
-                            Console.SetOut(writer);
-                            Console.WriteLine("<INFO> Logging has started!");
-                        }
-                    }
                     if (WineDetector.IsRunningOnWine())
                     {
                         Console.WriteLine("<WARN> Wine detected, Wine version: " + WineDetector.getWineVersion());
@@ -1085,7 +1085,7 @@ namespace ReBloxLauncher
             string waitingForCharacterGuid = GenerateUUID().ToLower();
             string sessionId = GenerateUUID().ToLower();
             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt");
-            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt", @"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + Properties.Settings.Default.UserId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + Properties.Settings.Default.UserId + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":true,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|204.236.226.210|8|" + DateTime.UtcNow.ToString("") + @"Z|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt", @"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + Properties.Settings.Default.UserId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + Properties.Settings.Default.UserId + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
         }
 
         private void SetupGameFiles(bool studio = false)
@@ -1153,7 +1153,8 @@ namespace ReBloxLauncher
                         if (Path.GetFileName(file) == "join.ashx")
                         {
                             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file))) File.Delete(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file));
-                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file), File.ReadAllText(file).Replace("{ip}", textBox1.Text).Replace("{port}", textBox2.Text).Replace("{username}", Properties.Settings.Default.username).Replace("{id}", Properties.Settings.Default.UserId.ToString()).Replace("{13}", (!Properties.Settings.Default.AccountOver13).ToString().ToLower()).Replace("{membership}", Properties.Settings.Default.Membership.Replace(" ", "")).Replace("{chatstyle}", Properties.Settings.Default.ChatStyle));
+                            string wac = GenerateUUID().ToLower();
+                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file), File.ReadAllText(file).Replace("{ip}", textBox1.Text).Replace("{port}", textBox2.Text).Replace("{username}", Properties.Settings.Default.username).Replace("{id}", Properties.Settings.Default.UserId.ToString()).Replace("{13}", (!Properties.Settings.Default.AccountOver13).ToString().ToLower()).Replace("{membership}", Properties.Settings.Default.Membership.Replace(" ", "")).Replace("{chatstyle}", Properties.Settings.Default.ChatStyle).Replace("{wac}", wac));
                         }
                         else if (Path.GetFileName(file) == "gameserver.ashx")
                         {
@@ -1168,7 +1169,7 @@ namespace ReBloxLauncher
                         else if (Path.GetFileName(file) == "visit.ashx")
                         {
                             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file))) File.Delete(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file));
-                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file), File.ReadAllText(file).Replace("{id}", Properties.Settings.Default.UserId.ToString()).Replace("{membership}", Properties.Settings.Default.Membership.Replace(" ", "")));
+                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\game\" + Path.GetFileName(file), File.ReadAllText(file).Replace("{id}", Properties.Settings.Default.UserId.ToString()).Replace("{membership}", Properties.Settings.Default.Membership.Replace(" ", "")).Replace("{13}", Properties.Settings.Default.AccountOver13 ? "False" : "True").Replace("{username}", Properties.Settings.Default.username));
 
                         }
                         else
@@ -1322,7 +1323,6 @@ namespace ReBloxLauncher
             string[] args = Environment.GetCommandLineArgs();
             for (int i = 0; i < args.Length; i++)
             {
-
                 if (args[i] == "-datafolder")
                 {
                     if (Directory.Exists(args[i + 1]))
@@ -1359,7 +1359,7 @@ namespace ReBloxLauncher
                     if (Directory.Exists(datafolder + @"\clients\" + args[i + 1]))
                     {
                         launchershortcut = true;
-                        new LaunchScreen(args[i + 1], datafolder,useSystemNode).Show();
+                        new LaunchScreen(args[i + 1], datafolder, useSystemNode).Show();
                         i++;
                     }
                     else
@@ -1378,6 +1378,64 @@ namespace ReBloxLauncher
                         Console.WriteLine("<WARN> The URL for the update server is not valid! Reverting to the default...");
                     }
                 }
+                else if (args[i] == "--installCA")
+                {
+                    if (File.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\ca.pem"))
+                    {
+                        if (IsAdministrator())
+                        {
+                            X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine);
+                            store.Open(OpenFlags.ReadOnly);
+                            X509Certificate2 x509 = new X509Certificate2(X509Certificate2.CreateFromCertFile(Path.GetDirectoryName(Application.ExecutablePath) + @"\ca.pem"));
+                            var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, x509.Thumbprint, false);
+                            if (certificates != null && certificates.Count > 0 || Properties.Settings.Default.CADontShow)
+                            {
+                                x509.Dispose();
+                                caInstalled = true;
+                            }
+                            else
+                            {
+                                Console.WriteLine("<INFO> Installing the CA Certificate");
+                                store.Close();
+                                store.Open(OpenFlags.ReadWrite);
+                                store.Add(x509);
+                                store.Close();
+                                x509.Dispose();
+                                caInstalled = true;
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("<INFO> Administrator is required to install the certificate, skipping...");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("<INFO> The CA cert doesn't exist, skipping...");
+                    }
+                }
+                else if (args[i] == "--editHosts")
+                {
+                    if (IsAdministrator())
+                    {
+                        try
+                        {
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
+                            {
+                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
+                            }
+                        }
+                        catch (Exception err)
+                        {
+                            MessageBox.Show("An error has occurred while editing the hosts file, please look in logs for more details.");
+                            Console.WriteLine("<ERROR> An error has occurred while attempting to edit the hosts file:" + err);
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("<WARN> You don't have administrator permission to edit the hosts file!");
+                    }
+                }
             }
             if (launchershortcut == false)
             {
@@ -1393,7 +1451,7 @@ namespace ReBloxLauncher
                 var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, x509.Thumbprint, false);
                 if (certificates != null && certificates.Count > 0 || Properties.Settings.Default.CADontShow)
                 {
-                    Console.WriteLine("<INFO> The CA cert that is checked is installed on the computer");
+                    Console.WriteLine("<INFO> The CA cert that is checked is already installed on the computer");
                     x509.Dispose();
                     caInstalled = true;
                 }
@@ -1418,6 +1476,7 @@ namespace ReBloxLauncher
                             ps.UseShellExecute = true;
                             ps.FileName = Application.ExecutablePath;
                             ps.Verb = "runas";
+                            ps.Arguments = "--installCA";
                             Process.Start(ps);
                             Application.Exit();
                         }
@@ -1518,7 +1577,7 @@ namespace ReBloxLauncher
                 {
                     try
                     {
-                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
+                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
                         {
                             if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                             {
@@ -1528,7 +1587,7 @@ namespace ReBloxLauncher
                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
 
-                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                     if (Properties.Settings.Default.UsePatchInStudio)
                                     {
@@ -1567,7 +1626,7 @@ namespace ReBloxLauncher
                                     }
                                     ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                     ps1.WindowStyle = ProcessWindowStyle.Hidden;
-                                    if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                    if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                     {
                                         if (IsNodeFromAppRunning() == false)
                                         {
@@ -1615,6 +1674,12 @@ namespace ReBloxLauncher
                                     else
                                     {
                                         MessageBox.Show("A valid username or UserId is required!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                        button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                        button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                        await Task.Delay(3000);
+                                        statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                        statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                     }
                                 }
                                 else
@@ -1623,6 +1688,7 @@ namespace ReBloxLauncher
                                     ps.UseShellExecute = true;
                                     ps.FileName = Application.ExecutablePath;
                                     ps.Verb = "runas";
+                                    ps.Arguments = "--editHosts";
                                     Process.Start(ps);
                                     Application.Exit();
                                 }
@@ -1684,7 +1750,7 @@ namespace ReBloxLauncher
                             ps1.WindowStyle = ProcessWindowStyle.Hidden;
                             ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
 
-                            if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                            if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                             {
 
                                 if (Properties.Settings.Default.UsePatchInStudio)
@@ -1749,6 +1815,12 @@ namespace ReBloxLauncher
                             else
                             {
                                 MessageBox.Show("A valid username or UserId is required!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                await Task.Delay(3000);
+                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                             }
 
                         }
@@ -1946,6 +2018,10 @@ namespace ReBloxLauncher
                                 {
                                     dontLoadMapFromArgument = true;
                                 }
+                                else if (config[i].Trim() == "HasSecurityVulnerability=true")
+                                {
+                                    MessageBox.Show("This client version that you have selected appears to have security vulnerabilities, which could put your PC at risk! Please be careful when using this client, especially when hosting/joining a public server!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                }
                             }
                             string[] images = Directory.GetFiles(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images");
                             if (images.Length > 0)
@@ -1954,6 +2030,11 @@ namespace ReBloxLauncher
                                 pictureBox1.ImageLocation = images[randomchoose];
                                 pictureBox1.Image = Image.FromFile(images[randomchoose]);
                                 randomchoose = 0;
+                                pictureBox1.Visible = true;
+                            }
+                            else
+                            {
+                                pictureBox1.Visible = false;
                             }
                             timer1.Stop();
                             timer1.Start();
@@ -1975,13 +2056,13 @@ namespace ReBloxLauncher
 
         private void button7_Click(object sender, EventArgs e)
         {
-            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip"))
+            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip"))
             {
                 if (IsAdministrator())
                 {
                     string content = File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts");
                     File.Delete(@"C:\Windows\System32\drivers\etc\hosts");
-                    File.WriteAllText(@"C:\Windows\System32\drivers\etc\hosts", content.Replace("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip", ""));
+                    File.WriteAllText(@"C:\Windows\System32\drivers\etc\hosts", content.Replace("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip", ""));
                     content = null;
                 }
                 else
@@ -2042,6 +2123,8 @@ namespace ReBloxLauncher
             public string bodyType { get; set; } = "R6";
             public IList<AssetData> asset { get; set; }
             public BodyColors colors { get; set; }
+            public string base64FullBody { get; set; }
+            public string base64HeadShot { get; set; }
         }
 
         private bool IsNodeFromAppRunning()
@@ -2054,9 +2137,16 @@ namespace ReBloxLauncher
                     Process[] processes = Process.GetProcessesByName("node");
                     foreach (Process process in processes)
                     {
-                        if (process.MainModule.FileName == datafolder + @"\tools\node\node.exe")
+                        if (useSystemNode)
                         {
                             isRunning = true; break;
+                        }
+                        else
+                        {
+                            if (process.MainModule.FileName == datafolder + @"\tools\node\node.exe")
+                            {
+                                isRunning = true; break;
+                            }
                         }
                     }
                 }
@@ -2085,7 +2175,7 @@ namespace ReBloxLauncher
                     }
                     jsondata = new AvatarType
                     {
-                        bodyType = (Properties.Settings.Default.avatarR15 ? "R15" : "R6"),
+                        bodyType = Properties.Settings.Default.avatarR15 ? "R15" : "R6",
                         asset = data,
                         colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor }
                     };
@@ -2094,7 +2184,7 @@ namespace ReBloxLauncher
                 {
                     jsondata = new AvatarType
                     {
-                        bodyType = (Properties.Settings.Default.avatarR15 ? "R15" : "R6"),
+                        bodyType = Properties.Settings.Default.avatarR15 ? "R15" : "R6",
                         asset = { },
                         colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor }
                     };
@@ -2110,6 +2200,17 @@ namespace ReBloxLauncher
                     var buffer = Encoding.UTF8.GetBytes(result);
                     var byteContent = new ByteArrayContent(buffer);
                     byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+                    if (File.Exists(datafolder + @"\private.txt") && File.Exists(datafolder + @"\private.pem"))
+                    {
+                        using (RSACryptoServiceProvider RSAalg = new RSACryptoServiceProvider())
+                        {
+                            RSAalg.ImportCspBlob(Convert.FromBase64String(File.ReadAllText(datafolder + @"\private.txt")));
+
+                            RSAParameters Key = RSAalg.ExportParameters(true);
+
+                            byteContent.Headers.Add("x-token", Convert.ToBase64String(HashAndSignBytes(buffer, Key)));
+                        }
+                    }
                     HttpResponseMessage response = await client.PostAsync("/v1/avatar/set-avatar?userId=" + Properties.Settings.Default.UserId + "&username=" + Properties.Settings.Default.username, byteContent);
 
                     response.Dispose();
@@ -2126,6 +2227,25 @@ namespace ReBloxLauncher
                 }
             }
         }
+
+        private static byte[] HashAndSignBytes(byte[] DataToSign, RSAParameters Key)
+        {
+            try
+            {
+                using (RSACryptoServiceProvider RSAalg = new RSACryptoServiceProvider())
+                {
+                    RSAalg.ImportParameters(Key);
+
+                    return RSAalg.SignData(DataToSign, SHA1.Create());
+                }
+            }
+            catch (CryptographicException e)
+            {
+                Console.WriteLine("<ERROR> " + e.Message);
+                return null;
+            }
+        }
+
         private void button3_Click(object sender, EventArgs e)
         {
             if (listBox1.SelectedIndex != -1)
@@ -2137,7 +2257,7 @@ namespace ReBloxLauncher
                     {
                         if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player"))
                         {
-                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
                             {
                                 if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                 {
@@ -2145,7 +2265,7 @@ namespace ReBloxLauncher
                                     {
 
 
-                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -2218,7 +2338,7 @@ namespace ReBloxLauncher
                                         ps2.FileName = datafolder + @"\tools\IPForwarder.exe";
                                         ps2.Arguments = "-ip " + textBox1.Text + " -port " + textBox2.Text;
                                         if (Properties.Settings.Default.ShowConsole == false) ps2.WindowStyle = ProcessWindowStyle.Hidden;
-                                        if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                        if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                         {
                                             if (useIPForwarder == true && textBox1.Text != "localhost" && textBox1.Text != "127.0.0.1" || useIPForwarder == true && textBox2.Text != "53640") Process.Start(ps2);
                                             if (IsNodeFromAppRunning() == false)
@@ -2269,6 +2389,12 @@ namespace ReBloxLauncher
                                         else
                                         {
                                             MessageBox.Show("A valid username or UserId is required!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            await Task.Delay(3000);
+                                            statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                            statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                         }
                                     }
                                     else
@@ -2277,6 +2403,7 @@ namespace ReBloxLauncher
                                         ps.UseShellExecute = true;
                                         ps.FileName = Application.ExecutablePath;
                                         ps.Verb = "runas";
+                                        ps.Arguments = "--editHosts";
                                         Process.Start(ps);
                                         Application.Exit();
                                     }
@@ -2362,7 +2489,7 @@ namespace ReBloxLauncher
                                 ps2.FileName = datafolder + @"\tools\IPForwarder.exe";
                                 this.Invoke(new Action(() => { ps2.Arguments = "-ip " + textBox1.Text + " -port " + textBox2.Text; }));
                                 if (Properties.Settings.Default.ShowConsole == false) ps2.WindowStyle = ProcessWindowStyle.Hidden;
-                                if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                 {
                                     if (useIPForwarder == true && textBox1.Text != "localhost" && textBox1.Text != "127.0.0.1" || useIPForwarder == true && textBox2.Text != "53640") Process.Start(ps2);
                                     if (IsNodeFromAppRunning() == false)
@@ -2423,7 +2550,7 @@ namespace ReBloxLauncher
                         }
                         else
                         {
-                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
                             {
                                 if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                 {
@@ -2431,7 +2558,7 @@ namespace ReBloxLauncher
                                     {
 
 
-                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -2504,7 +2631,7 @@ namespace ReBloxLauncher
                                         ps2.FileName = datafolder + @"\tools\IPForwarder.exe";
                                         ps2.Arguments = "-ip " + textBox1.Text + " -port " + textBox2.Text;
                                         if (Properties.Settings.Default.ShowConsole == false) ps2.WindowStyle = ProcessWindowStyle.Hidden;
-                                        if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                        if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                         {
                                             if (useIPForwarder == true && textBox1.Text != "localhost" && textBox1.Text != "127.0.0.1" || useIPForwarder == true && textBox2.Text != "53640") Process.Start(ps2);
                                             if (IsNodeFromAppRunning() == false)
@@ -2555,6 +2682,12 @@ namespace ReBloxLauncher
                                         else
                                         {
                                             MessageBox.Show("A valid username or UserId is required!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            await Task.Delay(3000);
+                                            statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                            statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                         }
                                     }
                                     else
@@ -2563,6 +2696,7 @@ namespace ReBloxLauncher
                                         ps.UseShellExecute = true;
                                         ps.FileName = Application.ExecutablePath;
                                         ps.Verb = "runas";
+                                        ps.Arguments = "--editHosts";
                                         Process.Start(ps);
                                         Application.Exit();
                                     }
@@ -2667,7 +2801,7 @@ namespace ReBloxLauncher
                                 ps2.FileName = datafolder + @"\tools\IPForwarder.exe";
                                 this.Invoke(new Action(() => { ps2.Arguments = "-ip " + textBox1.Text + " -port " + textBox2.Text; }));
                                 if (Properties.Settings.Default.ShowConsole == false) ps2.WindowStyle = ProcessWindowStyle.Hidden;
-                                if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                 {
                                     if (useIPForwarder == true && textBox1.Text != "localhost" && textBox1.Text != "127.0.0.1" || useIPForwarder == true && textBox2.Text != "53640") Process.Start(ps2);
                                     if (IsNodeFromAppRunning() == false)
@@ -2762,14 +2896,14 @@ namespace ReBloxLauncher
                                 {
                                     if (openFileDialog1.ShowDialog() == DialogResult.OK)
                                     {
-                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
                                         {
                                             if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                             {
                                                 if (IsAdministrator())
                                                 {
 
-                                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -2809,7 +2943,7 @@ namespace ReBloxLauncher
                                                     }
                                                     ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                                     ps1.WindowStyle = ProcessWindowStyle.Hidden;
-                                                    if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                                    if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                                     {
                                                         if (IsNodeFromAppRunning() == false)
                                                         {
@@ -2870,6 +3004,7 @@ namespace ReBloxLauncher
                                                     ps.UseShellExecute = true;
                                                     ps.FileName = Application.ExecutablePath;
                                                     ps.Verb = "runas";
+                                                    ps.Arguments = "--editHosts";
                                                     Process.Start(ps);
                                                     Application.Exit();
                                                 }
@@ -2921,7 +3056,7 @@ namespace ReBloxLauncher
                                             }
                                             ps1.WindowStyle = ProcessWindowStyle.Hidden;
                                             ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
-                                            if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                            if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                             {
                                                 if (IsNodeFromAppRunning() == false)
                                                 {
@@ -2980,14 +3115,14 @@ namespace ReBloxLauncher
                                 }
                                 else
                                 {
-                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
                                     {
                                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                         {
                                             if (IsAdministrator())
                                             {
 
-                                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                                 statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -3027,7 +3162,7 @@ namespace ReBloxLauncher
                                                 }
                                                 ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                                 ps1.WindowStyle = ProcessWindowStyle.Hidden;
-                                                if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                                if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                                 {
                                                     if (IsNodeFromAppRunning() == false)
                                                     {
@@ -3088,6 +3223,7 @@ namespace ReBloxLauncher
                                                 ps.UseShellExecute = true;
                                                 ps.FileName = Application.ExecutablePath;
                                                 ps.Verb = "runas";
+                                                ps.Arguments = "--editHosts";
                                                 Process.Start(ps);
                                                 Application.Exit();
                                             }
@@ -3146,7 +3282,7 @@ namespace ReBloxLauncher
                                         }
                                         ps1.WindowStyle = ProcessWindowStyle.Hidden;
                                         ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
-                                        if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                        if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                         {
                                             if (IsNodeFromAppRunning() == false)
                                             {
@@ -3209,14 +3345,14 @@ namespace ReBloxLauncher
                                 {
                                     if (openFileDialog1.ShowDialog() == DialogResult.OK)
                                     {
-                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
                                         {
                                             if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                             {
                                                 if (IsAdministrator())
                                                 {
 
-                                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -3256,7 +3392,7 @@ namespace ReBloxLauncher
                                                     }
                                                     ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                                     ps1.WindowStyle = ProcessWindowStyle.Hidden;
-                                                    if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                                    if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                                     {
                                                         if (IsNodeFromAppRunning() == false)
                                                         {
@@ -3317,6 +3453,7 @@ namespace ReBloxLauncher
                                                     ps.UseShellExecute = true;
                                                     ps.FileName = Application.ExecutablePath;
                                                     ps.Verb = "runas";
+                                                    ps.Arguments = "--editHosts";
                                                     Process.Start(ps);
                                                     Application.Exit();
                                                 }
@@ -3376,7 +3513,7 @@ namespace ReBloxLauncher
                                             }
                                             ps1.WindowStyle = ProcessWindowStyle.Hidden;
                                             ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
-                                            if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                            if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                             {
                                                 if (IsNodeFromAppRunning() == false)
                                                 {
@@ -3435,14 +3572,14 @@ namespace ReBloxLauncher
                                 }
                                 else
                                 {
-                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
                                     {
                                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                         {
                                             if (IsAdministrator())
                                             {
 
-                                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                                 statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -3482,7 +3619,7 @@ namespace ReBloxLauncher
                                                 }
                                                 ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                                 ps1.WindowStyle = ProcessWindowStyle.Hidden;
-                                                if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                                if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                                 {
                                                     if (IsNodeFromAppRunning() == false)
                                                     {
@@ -3542,6 +3679,7 @@ namespace ReBloxLauncher
                                                 ps.UseShellExecute = true;
                                                 ps.FileName = Application.ExecutablePath;
                                                 ps.Verb = "runas";
+                                                ps.Arguments = "--editHosts";
                                                 Process.Start(ps);
                                                 Application.Exit();
                                             }
@@ -3600,7 +3738,7 @@ namespace ReBloxLauncher
                                         }
                                         ps1.WindowStyle = ProcessWindowStyle.Hidden;
                                         ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
-                                        if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                        if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                         {
                                             if (IsNodeFromAppRunning() == false)
                                             {
@@ -3852,7 +3990,7 @@ namespace ReBloxLauncher
                     if (clientsfound == false) label29.Visible = false;
                 }
 
-                if (Properties.Settings.Default.AssetPackEnabled.Contains(directoryasset[listBox3.SelectedIndex]))
+                if (Properties.Settings.Default.AssetPackEnabled.StartsWith(directoryasset[listBox3.SelectedIndex] + "|") || Properties.Settings.Default.AssetPackEnabled.Contains("|" + directoryasset[listBox3.SelectedIndex] + "|") || Properties.Settings.Default.AssetPackEnabled.EndsWith("|" + directoryasset[listBox3.SelectedIndex]) || Properties.Settings.Default.AssetPackEnabled == directoryasset[listBox3.SelectedIndex])
                 {
                     button12.Enabled = false;
                     button13.Enabled = true;
@@ -3956,7 +4094,7 @@ namespace ReBloxLauncher
         {
             if (listBox3.SelectedIndex != -1)
             {
-                if (Properties.Settings.Default.AssetPackEnabled.Contains(directoryasset[listBox3.SelectedIndex]) == false)
+                if ((Properties.Settings.Default.AssetPackEnabled.StartsWith(directoryasset[listBox3.SelectedIndex] + "|") || Properties.Settings.Default.AssetPackEnabled.Contains("|" + directoryasset[listBox3.SelectedIndex] + "|") || Properties.Settings.Default.AssetPackEnabled.EndsWith("|" + directoryasset[listBox3.SelectedIndex]) || Properties.Settings.Default.AssetPackEnabled == directoryasset[listBox3.SelectedIndex]) == false)
                 {
                     if (Properties.Settings.Default.AssetPackEnabled.Length > 0)
                     {
@@ -3981,12 +4119,19 @@ namespace ReBloxLauncher
         {
             if (listBox3.SelectedIndex != -1)
             {
-                if (Properties.Settings.Default.AssetPackEnabled.Contains(directoryasset[listBox3.SelectedIndex]))
+                if (Properties.Settings.Default.AssetPackEnabled.StartsWith(directoryasset[listBox3.SelectedIndex] + "|") || Properties.Settings.Default.AssetPackEnabled.Contains("|" + directoryasset[listBox3.SelectedIndex] + "|") || Properties.Settings.Default.AssetPackEnabled.EndsWith("|" + directoryasset[listBox3.SelectedIndex]) || Properties.Settings.Default.AssetPackEnabled == directoryasset[listBox3.SelectedIndex])
                 {
                     string[] arraycheck = Properties.Settings.Default.AssetPackEnabled.Split('|');
                     if (arraycheck.Length > 1 && arraycheck[0] != directoryasset[listBox3.SelectedIndex])
                     {
-                        Properties.Settings.Default.AssetPackEnabled = Properties.Settings.Default.AssetPackEnabled.Replace("|" + directoryasset[listBox3.SelectedIndex], "");
+                        if (arraycheck[arraycheck.Count() - 1] == directoryasset[listBox3.SelectedIndex])
+                        {
+                            Properties.Settings.Default.AssetPackEnabled = Properties.Settings.Default.AssetPackEnabled.Substring(0, Properties.Settings.Default.AssetPackEnabled.Length - directoryasset[listBox3.SelectedIndex].Length - 1);
+                        }
+                        else
+                        {
+                            Properties.Settings.Default.AssetPackEnabled = Properties.Settings.Default.AssetPackEnabled.Replace("|" + directoryasset[listBox3.SelectedIndex] + "|", "|");
+                        }
                         Properties.Settings.Default.Save();
                         button12.Enabled = true;
                         button13.Enabled = false;
@@ -3998,9 +4143,9 @@ namespace ReBloxLauncher
                         button12.Enabled = true;
                         button13.Enabled = false;
                     }
-                    else if (arraycheck.Length == 1 || arraycheck[0] == directoryasset[listBox3.SelectedIndex])
+                    else if (arraycheck.Length == 1)
                     {
-                        Properties.Settings.Default.AssetPackEnabled = Properties.Settings.Default.AssetPackEnabled.Replace(directoryasset[listBox3.SelectedIndex], "");
+                        Properties.Settings.Default.AssetPackEnabled = "";
                         Properties.Settings.Default.Save();
                         button12.Enabled = true;
                         button13.Enabled = false;
@@ -4442,21 +4587,8 @@ namespace ReBloxLauncher
             if (IsNodeFromAppRunning() && WineDetector.IsRunningOnWine() == false)
             {
                 var result = MessageBox.Show("Are you sure you wanna close the launcher while the server is running? If you proceed, you may need to kill the server via Task Manager. (Pressing No will kill the server before closing the launcher)", "ReBlox", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
-                if (result == DialogResult.Yes)
-                {
-                    Console.WriteLine("<INFO> Ending logging session");
-                    try
-                    {
-                        Console.SetOut(oldOut);
-                        writer.Close();
-                        ostrm.Close();
-                    }
-                    catch
-                    {
-                        //whatever
-                    }
-                }
-                else if (result == DialogResult.No)
+
+                if (result == DialogResult.No)
                 {
                     Process[] processes = Process.GetProcessesByName("node");
                     if (processes.Length > 0)
@@ -4484,36 +4616,10 @@ namespace ReBloxLauncher
 
                     ClearAssets();
                     RemoveGameFiles();
-
-                    Console.WriteLine("<INFO> Ending logging session");
-                    try
-                    {
-                        Console.SetOut(oldOut);
-                        writer.Close();
-                        ostrm.Close();
-                    }
-                    catch
-                    {
-                        //whatever
-                    }
                 }
                 else
                 {
                     e.Cancel = true;
-                }
-            }
-            else
-            {
-                Console.WriteLine("<INFO> Ending logging session");
-                try
-                {
-                    Console.SetOut(oldOut);
-                    writer.Close();
-                    ostrm.Close();
-                }
-                catch
-                {
-                    //whatever
                 }
             }
         }
@@ -4854,21 +4960,24 @@ namespace ReBloxLauncher
             {
                 previousIndexAsset = -1;
             }
-            if (previousIndexAsset > -1) if (listBox3.GetSelected(previousIndexAsset)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox3.BackColor.R + 26, listBox3.BackColor.G + 26, listBox3.BackColor.B + 26)), new Rectangle(0, previousIndexAsset * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox3.BackColor), new Rectangle(0, previousIndexAsset * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight));
-            if (listBox3.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox3.BackColor.R + 26, listBox3.BackColor.G + 26, listBox3.BackColor.B + 26)), new Rectangle(0, e.Index * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox3.BackColor), new Rectangle(0, e.Index * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight));
+            if (previousIndexAsset > -1) if (listBox3.GetSelected(previousIndexAsset)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox3.BackColor.R + 26, listBox3.BackColor.G + 26, listBox3.BackColor.B + 26)), new Rectangle(0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox3.BackColor), new Rectangle(0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight));
+            if (listBox3.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox3.BackColor.R + 26, listBox3.BackColor.G + 26, listBox3.BackColor.B + 26)), new Rectangle(0, (e.Index - listBox3.TopIndex) * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox3.BackColor), new Rectangle(0, (e.Index - listBox3.TopIndex) * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight));
             AssetPackItem item = listBox3.Items[e.Index] as AssetPackItem;
-            if (item != null)
+            if (e.Index >= listBox3.TopIndex)
             {
-                e.Graphics.DrawString(item.AssetPackName, listBox3.Font, new SolidBrush(item.ItemColor), 0, e.Index * listBox3.ItemHeight);
-                if (previousIndexAsset > -1 && previousIndexAsset != e.Index) if (listBox3.Items[previousIndexAsset] as AssetPackItem != null) e.Graphics.DrawString((listBox3.Items[previousIndexAsset] as AssetPackItem).AssetPackName, listBox3.Font, new SolidBrush((listBox3.Items[previousIndexAsset] as AssetPackItem).ItemColor), 0, previousIndexAsset * listBox3.ItemHeight); else e.Graphics.DrawString(listBox3.Items[previousIndexAsset].ToString(), listBox3.Font, new SolidBrush(Color.White), 0, previousIndexAsset * listBox3.ItemHeight);
+                if (item != null)
+                {
+                    e.Graphics.DrawString(item.AssetPackName, listBox3.Font, new SolidBrush(item.ItemColor), 0, (e.Index - listBox3.TopIndex) * listBox3.ItemHeight);
+                    if (previousIndexAsset > -1 && previousIndexAsset != e.Index) if (listBox3.Items[previousIndexAsset] as AssetPackItem != null) e.Graphics.DrawString((listBox3.Items[previousIndexAsset] as AssetPackItem).AssetPackName, listBox3.Font, new SolidBrush((listBox3.Items[previousIndexAsset] as AssetPackItem).ItemColor), 0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight); else e.Graphics.DrawString(listBox3.Items[previousIndexAsset].ToString(), listBox3.Font, new SolidBrush(Color.White), 0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight);
+                }
+                else
+                {
+                    string newItem = listBox3.Items[e.Index].ToString();
+                    e.Graphics.DrawString(newItem, listBox3.Font, new SolidBrush(Color.White), 0, (e.Index - listBox3.TopIndex) * listBox3.ItemHeight);
+                    if (previousIndexAsset > -1 && previousIndexAsset != e.Index) if (listBox3.Items[previousIndexAsset] as AssetPackItem != null) e.Graphics.DrawString((listBox3.Items[previousIndexAsset] as AssetPackItem).AssetPackName, listBox3.Font, new SolidBrush((listBox3.Items[previousIndexAsset] as AssetPackItem).ItemColor), 0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight); else e.Graphics.DrawString(listBox3.Items[previousIndexAsset].ToString(), listBox3.Font, new SolidBrush(Color.White), 0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight);
+                }
+                previousIndexAsset = listBox3.SelectedIndex;
             }
-            else
-            {
-                string newItem = listBox3.Items[e.Index].ToString();
-                e.Graphics.DrawString(newItem, listBox3.Font, new SolidBrush(Color.White), 0, e.Index * listBox3.ItemHeight);
-                if (previousIndexAsset > -1 && previousIndexAsset != e.Index) if (listBox3.Items[previousIndexAsset] as AssetPackItem != null) e.Graphics.DrawString((listBox3.Items[previousIndexAsset] as AssetPackItem).AssetPackName, listBox3.Font, new SolidBrush((listBox3.Items[previousIndexAsset] as AssetPackItem).ItemColor), 0, previousIndexAsset * listBox3.ItemHeight); else e.Graphics.DrawString(listBox3.Items[previousIndexAsset].ToString(), listBox3.Font, new SolidBrush(Color.White), 0, previousIndexAsset * listBox3.ItemHeight);
-            }
-            previousIndexAsset = listBox3.SelectedIndex;
         }
 
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
@@ -4954,7 +5063,7 @@ namespace ReBloxLauncher
                     {
                         if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player"))
                         {
-                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
                             {
                                 if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                 {
@@ -4962,7 +5071,7 @@ namespace ReBloxLauncher
                                     {
 
 
-                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -5035,7 +5144,7 @@ namespace ReBloxLauncher
                                         ps2.FileName = datafolder + @"\tools\IPForwarder.exe";
                                         ps2.Arguments = "-ip " + listView1.SelectedItems[0].SubItems[5].Text + " -port " + listView1.SelectedItems[0].SubItems[4].Text;
                                         if (Properties.Settings.Default.ShowConsole == false) ps2.WindowStyle = ProcessWindowStyle.Hidden;
-                                        if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                        if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                         {
                                             if (useIPForwarder == true && listView1.SelectedItems[0].SubItems[5].Text != "localhost" && listView1.SelectedItems[0].SubItems[5].Text != "127.0.0.1" || useIPForwarder == true && listView1.SelectedItems[0].SubItems[4].Text != "53640") Process.Start(ps2);
                                             if (IsNodeFromAppRunning() == false)
@@ -5086,6 +5195,12 @@ namespace ReBloxLauncher
                                         else
                                         {
                                             MessageBox.Show("A valid username or UserId is required!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            await Task.Delay(3000);
+                                            statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                            statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                         }
                                     }
                                     else
@@ -5094,6 +5209,7 @@ namespace ReBloxLauncher
                                         ps.UseShellExecute = true;
                                         ps.FileName = Application.ExecutablePath;
                                         ps.Verb = "runas";
+                                        ps.Arguments = "--editHosts";
                                         Process.Start(ps);
                                         Application.Exit();
                                     }
@@ -5179,7 +5295,7 @@ namespace ReBloxLauncher
                                 ps2.FileName = datafolder + @"\tools\IPForwarder.exe";
                                 this.Invoke(new Action(() => { ps2.Arguments = "-ip " + listView1.SelectedItems[0].SubItems[5].Text + " -port " + listView1.SelectedItems[0].SubItems[4].Text; }));
                                 if (Properties.Settings.Default.ShowConsole == false) ps2.WindowStyle = ProcessWindowStyle.Hidden;
-                                if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                 {
                                     if (useIPForwarder == true && listView1.SelectedItems[0].SubItems[5].Text != "localhost" && listView1.SelectedItems[0].SubItems[5].Text != "127.0.0.1" || useIPForwarder == true && listView1.SelectedItems[0].SubItems[4].Text != "53640") Process.Start(ps2);
                                     if (IsNodeFromAppRunning() == false)
@@ -5240,7 +5356,7 @@ namespace ReBloxLauncher
                         }
                         else
                         {
-                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
                             {
                                 if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "hosts File Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                 {
@@ -5248,7 +5364,7 @@ namespace ReBloxLauncher
                                     {
 
 
-                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip");
+                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip");
                                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -5321,7 +5437,7 @@ namespace ReBloxLauncher
                                         ps2.FileName = datafolder + @"\tools\IPForwarder.exe";
                                         ps2.Arguments = "-ip " + listView1.SelectedItems[0].SubItems[5].Text + " -port " + listView1.SelectedItems[0].SubItems[4].Text;
                                         if (Properties.Settings.Default.ShowConsole == false) ps2.WindowStyle = ProcessWindowStyle.Hidden;
-                                        if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                        if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                         {
                                             if (useIPForwarder == true && listView1.SelectedItems[0].SubItems[5].Text != "localhost" && listView1.SelectedItems[0].SubItems[5].Text != "127.0.0.1" || useIPForwarder == true && listView1.SelectedItems[0].SubItems[4].Text != "53640") Process.Start(ps2);
                                             if (IsNodeFromAppRunning() == false)
@@ -5372,6 +5488,12 @@ namespace ReBloxLauncher
                                         else
                                         {
                                             MessageBox.Show("A valid username or UserId is required!", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            await Task.Delay(3000);
+                                            statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                            statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                         }
                                     }
                                     else
@@ -5380,6 +5502,7 @@ namespace ReBloxLauncher
                                         ps.UseShellExecute = true;
                                         ps.FileName = Application.ExecutablePath;
                                         ps.Verb = "runas";
+                                        ps.Arguments = "--editHosts";
                                         Process.Start(ps);
                                         Application.Exit();
                                     }
@@ -5484,7 +5607,7 @@ namespace ReBloxLauncher
                                 ps2.FileName = datafolder + @"\tools\IPForwarder.exe";
                                 this.Invoke(new Action(() => { ps2.Arguments = "-ip " + listView1.SelectedItems[0].SubItems[5].Text + " -port " + listView1.SelectedItems[0].SubItems[4].Text; }));
                                 if (Properties.Settings.Default.ShowConsole == false) ps2.WindowStyle = ProcessWindowStyle.Hidden;
-                                if (textBox5.Text.Length > 2 && textBox4.Text.Length > 0)
+                                if (Properties.Settings.Default.username.Length > 2 && Properties.Settings.Default.UserId > 0)
                                 {
                                     if (useIPForwarder == true && listView1.SelectedItems[0].SubItems[5].Text != "localhost" && listView1.SelectedItems[0].SubItems[5].Text != "127.0.0.1" || useIPForwarder == true && listView1.SelectedItems[0].SubItems[4].Text != "53640") Process.Start(ps2);
                                     if (IsNodeFromAppRunning() == false)
@@ -5594,21 +5717,25 @@ namespace ReBloxLauncher
                 {
                     previousIndexMap = -1;
                 }
-                if (previousIndexMap > -1) if (listBox2.GetSelected(previousIndexMap)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox2.BackColor.R + 26, listBox2.BackColor.G + 26, listBox2.BackColor.B + 26)), new Rectangle(0, previousIndexMap * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox2.BackColor), new Rectangle(0, previousIndexMap * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight));
-                if (listBox2.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox2.BackColor.R + 26, listBox2.BackColor.G + 26, listBox2.BackColor.B + 26)), new Rectangle(0, e.Index * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox2.BackColor), new Rectangle(0, e.Index * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight));
+                if (previousIndexMap > -1) if (listBox2.GetSelected(previousIndexMap)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox2.BackColor.R + 26, listBox2.BackColor.G + 26, listBox2.BackColor.B + 26)), new Rectangle(0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox2.BackColor), new Rectangle(0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight));
+                if (listBox2.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox2.BackColor.R + 26, listBox2.BackColor.G + 26, listBox2.BackColor.B + 26)), new Rectangle(0, (e.Index - listBox2.TopIndex) * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox2.BackColor), new Rectangle(0, (e.Index - listBox2.TopIndex) * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight));
                 AssetPackItem item = listBox2.Items[e.Index] as AssetPackItem;
-                if (item != null)
+                if (e.Index >= listBox2.TopIndex)
                 {
-                    e.Graphics.DrawString(item.AssetPackName, listBox2.Font, new SolidBrush(item.ItemColor), 0, e.Index * listBox2.ItemHeight);
-                    if (previousIndexMap > -1 && previousIndexMap != e.Index) if (listBox2.Items[previousIndexMap] as AssetPackItem != null) e.Graphics.DrawString((listBox2.Items[previousIndexMap] as AssetPackItem).AssetPackName, listBox2.Font, new SolidBrush((listBox2.Items[previousIndexMap] as AssetPackItem).ItemColor), 0, previousIndexMap * listBox2.ItemHeight); else e.Graphics.DrawString(listBox2.Items[previousIndexMap].ToString(), listBox2.Font, new SolidBrush(Color.White), 0, previousIndexMap * listBox2.ItemHeight);
+                    if (item != null)
+                    {
+                        e.Graphics.DrawString(item.AssetPackName, listBox2.Font, new SolidBrush(item.ItemColor), 0, (e.Index - listBox2.TopIndex) * listBox2.ItemHeight);
+                        if (previousIndexMap > -1 && previousIndexMap != e.Index) if (listBox2.Items[previousIndexMap] as AssetPackItem != null) e.Graphics.DrawString((listBox2.Items[previousIndexMap] as AssetPackItem).AssetPackName, listBox2.Font, new SolidBrush((listBox2.Items[previousIndexMap] as AssetPackItem).ItemColor), 0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight); else e.Graphics.DrawString(listBox2.Items[previousIndexMap].ToString(), listBox2.Font, new SolidBrush(Color.White), 0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight);
+                    }
+                    else
+                    {
+                        string newItem = listBox2.Items[e.Index].ToString();
+                        e.Graphics.DrawString(newItem, listBox2.Font, new SolidBrush(Color.White), 0, (e.Index - listBox2.TopIndex) * listBox2.ItemHeight);
+                        if (previousIndexMap > -1 && previousIndexMap != e.Index) if (listBox2.Items[previousIndexMap] as AssetPackItem != null) e.Graphics.DrawString((listBox2.Items[previousIndexMap] as AssetPackItem).AssetPackName, listBox2.Font, new SolidBrush((listBox2.Items[previousIndexMap] as AssetPackItem).ItemColor), 0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight); else e.Graphics.DrawString(listBox2.Items[previousIndexMap].ToString(), listBox2.Font, new SolidBrush(Color.White), 0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight);
+                    }
+                    previousIndexMap = listBox2.SelectedIndex;
                 }
-                else
-                {
-                    string newItem = listBox2.Items[e.Index].ToString();
-                    e.Graphics.DrawString(newItem, listBox2.Font, new SolidBrush(Color.White), 0, e.Index * listBox2.ItemHeight);
-                    if (previousIndexMap > -1 && previousIndexMap != e.Index) if (listBox2.Items[previousIndexMap] as AssetPackItem != null) e.Graphics.DrawString((listBox2.Items[previousIndexMap] as AssetPackItem).AssetPackName, listBox2.Font, new SolidBrush((listBox2.Items[previousIndexMap] as AssetPackItem).ItemColor), 0, previousIndexMap * listBox2.ItemHeight); else e.Graphics.DrawString(listBox2.Items[previousIndexMap].ToString(), listBox2.Font, new SolidBrush(Color.White), 0, previousIndexMap * listBox2.ItemHeight);
-                }
-                previousIndexMap = listBox2.SelectedIndex;
+
             }
         }
 
@@ -5620,21 +5747,24 @@ namespace ReBloxLauncher
                 {
                     previousIndexClient = -1;
                 }
-                if (previousIndexClient > -1) if (listBox1.GetSelected(previousIndexClient)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox1.BackColor.R + 26, listBox1.BackColor.G + 26, listBox1.BackColor.B + 26)), new Rectangle(0, previousIndexClient * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox1.BackColor), new Rectangle(0, previousIndexClient * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight));
-                if (listBox1.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox1.BackColor.R + 26, listBox1.BackColor.G + 26, listBox1.BackColor.B + 26)), new Rectangle(0, e.Index * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox1.BackColor), new Rectangle(0, e.Index * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight));
+                if (previousIndexClient > -1) if (listBox1.GetSelected(previousIndexClient)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox1.BackColor.R + 26, listBox1.BackColor.G + 26, listBox1.BackColor.B + 26)), new Rectangle(0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox1.BackColor), new Rectangle(0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight));
+                if (listBox1.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox1.BackColor.R + 26, listBox1.BackColor.G + 26, listBox1.BackColor.B + 26)), new Rectangle(0, (e.Index - listBox1.TopIndex) * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox1.BackColor), new Rectangle(0, (e.Index - listBox1.TopIndex) * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight));
                 AssetPackItem item = listBox1.Items[e.Index] as AssetPackItem;
-                if (item != null)
+                if (e.Index >= listBox1.TopIndex)
                 {
-                    e.Graphics.DrawString(item.AssetPackName, listBox1.Font, new SolidBrush(item.ItemColor), 0, e.Index * listBox1.ItemHeight);
-                    if (previousIndexClient > -1 && previousIndexClient != e.Index) if (listBox1.Items[previousIndexClient] as AssetPackItem != null) e.Graphics.DrawString((listBox1.Items[previousIndexClient] as AssetPackItem).AssetPackName, listBox1.Font, new SolidBrush((listBox1.Items[previousIndexClient] as AssetPackItem).ItemColor), 0, previousIndexClient * listBox1.ItemHeight); else e.Graphics.DrawString(listBox1.Items[previousIndexClient].ToString(), listBox1.Font, new SolidBrush(Color.White), 0, previousIndexClient * listBox1.ItemHeight);
+                    if (item != null)
+                    {
+                        e.Graphics.DrawString(item.AssetPackName, listBox1.Font, new SolidBrush(item.ItemColor), 0, (e.Index - listBox1.TopIndex) * listBox1.ItemHeight);
+                        if (previousIndexClient > -1 && previousIndexClient != e.Index) if (listBox1.Items[previousIndexClient] as AssetPackItem != null) e.Graphics.DrawString((listBox1.Items[previousIndexClient] as AssetPackItem).AssetPackName, listBox1.Font, new SolidBrush((listBox1.Items[previousIndexClient] as AssetPackItem).ItemColor), 0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight); else e.Graphics.DrawString(listBox1.Items[previousIndexClient].ToString(), listBox1.Font, new SolidBrush(Color.White), 0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight);
+                    }
+                    else
+                    {
+                        string newItem = listBox1.Items[e.Index].ToString();
+                        e.Graphics.DrawString(newItem, listBox1.Font, new SolidBrush(Color.White), 0, (e.Index - listBox1.TopIndex) * listBox1.ItemHeight);
+                        if (previousIndexClient > -1 && previousIndexClient != e.Index) if (listBox1.Items[previousIndexClient] as AssetPackItem != null) e.Graphics.DrawString((listBox1.Items[previousIndexClient] as AssetPackItem).AssetPackName, listBox1.Font, new SolidBrush((listBox1.Items[previousIndexClient] as AssetPackItem).ItemColor), 0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight); else e.Graphics.DrawString(listBox1.Items[previousIndexClient].ToString(), listBox1.Font, new SolidBrush(Color.White), 0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight);
+                    }
+                    previousIndexClient = listBox1.SelectedIndex;
                 }
-                else
-                {
-                    string newItem = listBox1.Items[e.Index].ToString();
-                    e.Graphics.DrawString(newItem, listBox1.Font, new SolidBrush(Color.White), 0, e.Index * listBox1.ItemHeight);
-                    if (previousIndexClient > -1 && previousIndexClient != e.Index) if (listBox1.Items[previousIndexClient] as AssetPackItem != null) e.Graphics.DrawString((listBox1.Items[previousIndexClient] as AssetPackItem).AssetPackName, listBox1.Font, new SolidBrush((listBox1.Items[previousIndexClient] as AssetPackItem).ItemColor), 0, previousIndexClient * listBox1.ItemHeight); else e.Graphics.DrawString(listBox1.Items[previousIndexClient].ToString(), listBox1.Font, new SolidBrush(Color.White), 0, previousIndexClient * listBox1.ItemHeight);
-                }
-                previousIndexClient = listBox1.SelectedIndex;
             }
         }
 
@@ -5648,21 +5778,24 @@ namespace ReBloxLauncher
                     {
                         previousIndexAvatar = -1;
                     }
-                    if (previousIndexAvatar > -1) if (listBox4.GetSelected(previousIndexAvatar)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox4.BackColor.R + 26, listBox4.BackColor.G + 26, listBox4.BackColor.B + 26)), new Rectangle(0, previousIndexAvatar * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox4.BackColor), new Rectangle(0, previousIndexAvatar * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight));
-                    if (listBox4.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox4.BackColor.R + 26, listBox4.BackColor.G + 26, listBox4.BackColor.B + 26)), new Rectangle(0, e.Index * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox4.BackColor), new Rectangle(0, e.Index * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight));
+                    if (previousIndexAvatar > -1) if (listBox4.GetSelected(previousIndexAvatar)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox4.BackColor.R + 26, listBox4.BackColor.G + 26, listBox4.BackColor.B + 26)), new Rectangle(0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox4.BackColor), new Rectangle(0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight));
+                    if (listBox4.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox4.BackColor.R + 26, listBox4.BackColor.G + 26, listBox4.BackColor.B + 26)), new Rectangle(0, (e.Index - listBox4.TopIndex) * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox4.BackColor), new Rectangle(0, (e.Index - listBox4.TopIndex) * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight));
                     AssetPackItem item = listBox4.Items[e.Index] as AssetPackItem;
-                    if (item != null)
+                    if (e.Index >= listBox4.TopIndex)
                     {
-                        e.Graphics.DrawString(item.AssetPackName, listBox4.Font, new SolidBrush(item.ItemColor), 0, e.Index * listBox4.ItemHeight);
-                        if (previousIndexAvatar > -1 && previousIndexAvatar != e.Index) if (listBox4.Items[previousIndexAvatar] as AssetPackItem != null) e.Graphics.DrawString((listBox4.Items[previousIndexAvatar] as AssetPackItem).AssetPackName, listBox4.Font, new SolidBrush((listBox4.Items[previousIndexAvatar] as AssetPackItem).ItemColor), 0, previousIndexAvatar * listBox4.ItemHeight); else e.Graphics.DrawString(listBox4.Items[previousIndexAvatar].ToString(), listBox4.Font, new SolidBrush(Color.White), 0, previousIndexAvatar * listBox4.ItemHeight);
+                        if (item != null)
+                        {
+                            e.Graphics.DrawString(item.AssetPackName, listBox4.Font, new SolidBrush(item.ItemColor), 0, (e.Index - listBox4.TopIndex) * listBox4.ItemHeight);
+                            if (previousIndexAvatar > -1 && previousIndexAvatar != e.Index) if (listBox4.Items[previousIndexAvatar] as AssetPackItem != null) e.Graphics.DrawString((listBox4.Items[previousIndexAvatar] as AssetPackItem).AssetPackName, listBox4.Font, new SolidBrush((listBox4.Items[previousIndexAvatar] as AssetPackItem).ItemColor), 0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight); else e.Graphics.DrawString(listBox4.Items[previousIndexAvatar].ToString(), listBox4.Font, new SolidBrush(Color.White), 0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight);
+                        }
+                        else
+                        {
+                            string newItem = listBox4.Items[e.Index].ToString();
+                            e.Graphics.DrawString(newItem, listBox4.Font, new SolidBrush(Color.White), 0, (e.Index - listBox4.TopIndex) * listBox4.ItemHeight);
+                            if (previousIndexAvatar > -1 && previousIndexAvatar != e.Index) if (listBox4.Items[previousIndexAvatar] as AssetPackItem != null) e.Graphics.DrawString((listBox4.Items[previousIndexAvatar] as AssetPackItem).AssetPackName, listBox4.Font, new SolidBrush((listBox4.Items[previousIndexAvatar] as AssetPackItem).ItemColor), 0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight); else e.Graphics.DrawString(listBox4.Items[previousIndexAvatar].ToString(), listBox4.Font, new SolidBrush(Color.White), 0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight);
+                        }
+                        previousIndexAvatar = listBox4.SelectedIndex;
                     }
-                    else
-                    {
-                        string newItem = listBox4.Items[e.Index].ToString();
-                        e.Graphics.DrawString(newItem, listBox4.Font, new SolidBrush(Color.White), 0, e.Index * listBox4.ItemHeight);
-                        if (previousIndexAvatar > -1 && previousIndexAvatar != e.Index) if (listBox4.Items[previousIndexAvatar] as AssetPackItem != null) e.Graphics.DrawString((listBox4.Items[previousIndexAvatar] as AssetPackItem).AssetPackName, listBox4.Font, new SolidBrush((listBox4.Items[previousIndexAvatar] as AssetPackItem).ItemColor), 0, previousIndexAvatar * listBox4.ItemHeight); else e.Graphics.DrawString(listBox4.Items[previousIndexAvatar].ToString(), listBox4.Font, new SolidBrush(Color.White), 0, previousIndexAvatar * listBox4.ItemHeight);
-                    }
-                    previousIndexAvatar = listBox4.SelectedIndex;
                 }
                 else
                 {
@@ -5681,6 +5814,20 @@ namespace ReBloxLauncher
         {
             Properties.Settings.Default.EnableOwnedAssets = checkBox12.Checked;
             Properties.Settings.Default.Save();
+        }
+
+        private void button15_Click(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.AssetPackEnabled = string.Join("|", Directory.GetDirectories(datafolder + @"\assetpacks"));
+            Properties.Settings.Default.Save();
+            RefreshAssetPacks(true);
+        }
+
+        private void button16_Click(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.AssetPackEnabled = "";
+            Properties.Settings.Default.Save();
+            RefreshAssetPacks(true);
         }
     }
 }

@@ -2,7 +2,7 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="ReBloxLauncher.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="version" Type="System.String" Scope="User">
+    <Setting Name="version" Type="System.String" Scope="Application">
       <Value Profile="(Default)">0.0.1316</Value>
     </Setting>
     <Setting Name="lastselectedversion" Type="System.String" Scope="User">
