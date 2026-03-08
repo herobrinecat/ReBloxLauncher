@@ -4800,19 +4800,21 @@ app.get("/Game/AreFriends", async (req, res) => {
                     }
                     else {
                         //I know this is not optimized, but whatever, too lazy to rewrite the entire thing.
-                        if (typeof (friendsarray) == "string" || typeof (friendsarray) == "number") {
-                            if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray + ">\r\n" || line == "<Friendship Receiver=" + friendsarray + " Sender=" + req.query.userId + ">\r\n") {
-                                if (friendsExistsList.includes(friendsarray) == false) {
-                                    console.log(line)
-                                    friendsExistsList.push(friendsarray)
+                        if (line.startsWith("<Friendship")) {
+                            if (typeof (friendsarray) == "string" || typeof (friendsarray) == "number") {
+                                if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray + ">" || line == "<Friendship Receiver=" + friendsarray + " Sender=" + req.query.userId + ">") {
+                                    if (friendsExistsList.includes(friendsarray) == false) {
+                                        console.log(line)
+                                        friendsExistsList.push(friendsarray)
+                                    }
                                 }
                             }
-                        }
-                        else {
-                            for (var i = 0; i < friendsarray.length; i++) {
-                                if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">\r\n" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">\r\n") {
-                                    if (friendsExistsList.includes(friendsarray[i]) == false) {
-                                        friendsExistsList.push(friendsarray[i])
+                            else {
+                                for (var i = 0; i < friendsarray.length; i++) {
+                                    if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">") {
+                                        if (friendsExistsList.includes(friendsarray[i]) == false) {
+                                            friendsExistsList.push(friendsarray[i])
+                                        }
                                     }
                                 }
                             }
@@ -4883,19 +4885,21 @@ app.get("/Friend/AreFriends", async (req, res) => {
                     }
                     else {
                         //I know this is not optimized, but whatever, too lazy to rewrite the entire thing.
-                        if (typeof (friendsarray) == "string" || typeof (friendsarray) == "number") {
-                            if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray + ">\r\n" || line == "<Friendship Receiver=" + friendsarray + " Sender=" + req.query.userId + ">\r\n") {
-                                if (friendsExistsList.includes(friendsarray) == false) {
-                                    console.log(line)
-                                    friendsExistsList.push(friendsarray)
+                        if (line.startsWith("<Friendship")) {
+                            if (typeof (friendsarray) == "string" || typeof (friendsarray) == "number") {
+                                if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray + ">" || line == "<Friendship Receiver=" + friendsarray + " Sender=" + req.query.userId + ">") {
+                                    if (friendsExistsList.includes(friendsarray) == false) {
+                                        console.log(line)
+                                        friendsExistsList.push(friendsarray)
+                                    }
                                 }
                             }
-                        }
-                        else {
-                            for (var i = 0; i < friendsarray.length; i++) {
-                                if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">\r\n" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">\r\n") {
-                                    if (friendsExistsList.includes(friendsarray[i]) == false) {
-                                        friendsExistsList.push(friendsarray[i])
+                            else {
+                                for (var i = 0; i < friendsarray.length; i++) {
+                                    if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">") {
+                                        if (friendsExistsList.includes(friendsarray[i]) == false) {
+                                            friendsExistsList.push(friendsarray[i])
+                                        }
                                     }
                                 }
                             }
@@ -4970,7 +4974,7 @@ app.post("/Game/CreateFriend", async (req, res) => {
                     if (line == "RBDF==") {
                         verified = true
                     }
-                    else if (line == "<Friendship Receiver=" + req.query.firstUserId + " Sender=" + req.query.secondUserId + ">\r\n") {
+                    else if (line == "<Friendship Receiver=" + req.query.firstUserId + " Sender=" + req.query.secondUserId + ">" || line == "<Friendship Receiver=" + req.query.secondUserId + " Sender=" + req.query.firstUserId + ">") {
                         replacementtext = line
                     }
                 }
@@ -5201,7 +5205,7 @@ app.post("/Friend/CreateFriend", async (req, res) => {
                     if (line == "RBDF==") {
                         verified = true
                     }
-                    else if (line == "<Friendship Receiver=" + req.query.firstUserId + " Sender=" + req.query.secondUserId + ">\r\n") {
+                    else if (line == "<Friendship Receiver=" + req.query.firstUserId + " Sender=" + req.query.secondUserId + ">" || line == "<Friendship Receiver=" + req.query.secondUserId + " Sender=" + req.query.firstUserId + ">") {
                         replacementtext = line
                     }
                 }
