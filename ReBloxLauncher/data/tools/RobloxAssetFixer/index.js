@@ -5474,7 +5474,7 @@ app.post("/v1/persistence/:type/remove", async (req, res) => {
                         var myRegExp = new RegExp('Value\=\"(.*)\"')
                         var match = myRegExp.exec(replacementtext)
                         if (match != null) {
-                            filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(new RegExp(replacementtext, "g"), ""))
+                            filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(replacementtext, ""))
                             res.status(200).send(match[1] != undefined ? match[1] : "")
                             return
                         }
@@ -5550,7 +5550,7 @@ app.post("/v1/persistence/:type", async (req, res) => {
                 rl.close()
                 if (verified == true) {
                     if (replacementtext != "") {
-                        filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(new RegExp(replacementtext, "g"), "<DataStore Key=\"" + req.query.target + "\" Scope=" + req.query.scope + " Type=" + req.params.type + " DataStoreName=\"" + req.query.key + "\" Value=\"" + req.body + "\">"))
+                        filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(replacementtext, "<DataStore Key=\"" + req.query.target + "\" Scope=" + req.query.scope + " Type=" + req.params.type + " DataStoreName=\"" + req.query.key + "\" Value=\"" + req.body + "\">"))
                     }
                     else {
                         filesystem.appendFileSync(RBDFpath, "<DataStore Key=\"" + req.query.target + "\" Scope=" + req.query.scope + " Type=" + req.params.type + " DataStoreName=\"" + req.query.key + "\" Value=\"" + req.body + "\">\r\n")
@@ -5634,7 +5634,7 @@ app.post("/persistence/set", async (req, res) => {
                 rl.close()
                 if (verified == true) {
                     if (replacementtext != "") {
-                        filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(new RegExp(replacementtext, "g"), "<DataStore Key=\"" + req.query.target + "\" Scope=" + req.query.scope + " Type=" + req.query.type + " DataStoreName=\"" + req.query.key + "\" Value=\"" + req.body.value + "\">"))
+                        filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(replacementtext, "<DataStore Key=\"" + req.query.target + "\" Scope=" + req.query.scope + " Type=" + req.query.type + " DataStoreName=\"" + req.query.key + "\" Value=\"" + req.body.value + "\">"))
                     }
                     else {
                         filesystem.appendFileSync(RBDFpath, "<DataStore Key=\"" + req.query.target + "\" Scope=" + req.query.scope + " Type=" + req.query.type + " DataStoreName=\"" + req.query.key + "\" Value=\"" + req.body.value + "\">\r\n")
