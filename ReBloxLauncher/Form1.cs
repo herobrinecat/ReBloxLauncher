@@ -4988,7 +4988,7 @@ namespace ReBloxLauncher
 
         private void button6_Click_1(object sender, EventArgs e)
         {
-            Process.Start(new WebClient().DownloadString(updateurl + "/ updatelink.txt"));
+            Process.Start(new WebClient().DownloadString(updateurl + "/updatelink.txt"));
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
