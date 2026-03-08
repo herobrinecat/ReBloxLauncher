@@ -28,7 +28,7 @@ jobs:
       run: msbuild ReBloxLauncher.sln -t:rebuild -property:Configuration=Debug -property:Optimize=true
       
     - name: Upload artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       with:
           name: result
           path: |
