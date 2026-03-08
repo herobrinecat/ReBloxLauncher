@@ -4824,7 +4824,7 @@ app.get("/Game/AreFriends", async (req, res) => {
                 stream.destroy()
                 rl.close()
                 if (verified == true) {
-                    res.status(200).send((friendsExistsList.length > 0) ? friendsExistsList.toString() : "S")
+                    res.status(200).send((friendsExistsList.length > 0) ? "," + friendsExistsList.toString() + "," : "S")
                 }
                 else {
                     res.status(500).end()
@@ -4909,7 +4909,7 @@ app.get("/Friend/AreFriends", async (req, res) => {
                 stream.destroy()
                 rl.close()
                 if (verified == true) {
-                    res.status(200).send((friendsExistsList.length > 0) ? friendsExistsList.toString() : "S")
+                    res.status(200).send((friendsExistsList.length > 0) ? "," + friendsExistsList.toString() + "," : "S")
                 }
                 else {
                     res.status(500).end()
