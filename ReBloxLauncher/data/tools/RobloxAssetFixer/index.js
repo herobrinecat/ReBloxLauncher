@@ -189,7 +189,6 @@ console.log("<INFO> User ID: " + userId)
 console.log("<INFO> Account Age: " + ((accountOver13) ? "13+" : "<13"))
 console.log("<INFO> Avatar Type: " + ((avatarR15) ? "R15" : "R6"))
 console.log("<INFO> Using Auth: " + useAuth.toString())
-if (AllowGetCurrentUser) console.log("\x1b[33m%s\x1b[0m", "<WARN> Allowing GetCurrentUser may result in 2018+ Studio to softlock on \"Logging In...\"")
 if (joining && ip != "") console.log("<INFO> Server IP: " + ip)
 
 checkInternet().then((result) => {
@@ -2256,6 +2255,18 @@ const options = {
 app.get("/my/settings/json", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"ChangeUsernameEnabled\":true,\"IsAdmin\":false,\"UserId\":" + userId + ",\"Name\":\"" + username + "\",\"DisplayName\": \"" + username + "\", \"UserAbove13\":" + accountOver13 + ", \"IsEmailOnFile\":true,\"IsEmailVerified\":true,\"UserEmail\":\"r*****@fakerebloxemail.com\",\"UserEmailMasked\":true,\"UserEmailVerified\":true,\"LocaleApiDomain\":\"http://locale.reblox.zip\",\"ApiProxyDomain\":\"http://api.reblox.zip\",\"AuthDomain\":\"http://auth.reblox.zip\", \"IsOBC\": false, \"IsTBC\": false, \"IsAnyBC\": false, \"IsPremium\":false,\"AccountAgeInDays\":365,\"ClientIpAddress\":\"127.0.0.1\",\"IsDisplayNamesEnabled\": true,\"PremiumFeatureId\": null,\"HasValidPasswordSet\": true, \"AgeBracket\": 0, \"IsUiBootstrapModalV2Enabled\": true, \"InApp\": false, \"HasFreeNameChange\": false, \"IsAgeDownEnabled\": true, \"Facebook\": null, \"Twitter\": null, \"YouTube\": null, \"Twitch\": null}")
+})
+
+app.post("/game/placelauncher.ashx", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> 2018 or later (Player) detected, using placelauncher.ashx")
+    res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
+})
+
+app.get("/game/placelauncher.ashx", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> 2016 or later (Player) detected, using placelauncher.ashx")
+    res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
 })
 
 app.get("/game/join.ashx", (req, res) => {
@@ -4353,17 +4364,17 @@ app.get("/login/RequestAuth.ashx", (req, res) => {
 })
 
 app.get("/Login/Negotiate.ashx", (req, res) => {
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }))
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.status(200).end()
 })
 
 app.get("/auth/negotiate", (req, res) => {
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }))
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.status(200).end()
 })
 
 app.post("/auth/negotiate", (req, res) => {
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }))
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.status(200).end()
 })
 
