@@ -1829,6 +1829,9 @@ namespace ReBloxLauncher
                     {
                         MessageBox.Show("Something went wrong while trying to launch Studio, please look in the error message for details: " + e1.Message, "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         Console.WriteLine("<ERROR> Something went wrong when attempting to launch Studio! Please look in the error below and report it to the developer if it's launcher-sided!\n" + e1.Message + "\nStack Trace:\n" + e1.StackTrace);
+                        button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                        button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                        button3.Invoke(new Action(() => { button3.Enabled = true; }));
                         await Task.Delay(3000);
                         statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                         statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -2865,6 +2868,9 @@ namespace ReBloxLauncher
                     {
                         MessageBox.Show("Something went wrong while trying to launch Studio/Player, please look in the error message for details: " + e1.Message, "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         Console.WriteLine("<ERROR> Something went wrong when attempting to launch Studio/Player! Please look in the error below and report it to the developer if it's launcher-sided!\n" + e1.Message + "\nStack Trace:\n" + e1.StackTrace);
+                        button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                        button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                        button3.Invoke(new Action(() => { button3.Enabled = true; }));
                         await Task.Delay(3000);
                         statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                         statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -3811,6 +3817,9 @@ namespace ReBloxLauncher
                     {
                         MessageBox.Show("Something went wrong while trying to launch Studio/Player, please look in the error message for details: " + e1.Message, "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         Console.WriteLine("<ERROR> Something went wrong when attempting to launch Studio/Player! Please look in the error below and report it to the developer if it's launcher-sided!\n" + e1.Message + "\nStack Trace: \n" + e1.StackTrace);
+                        button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                        button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                        button3.Invoke(new Action(() => { button3.Enabled = true; }));
                         await Task.Delay(3000);
                         statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                         statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -5671,6 +5680,9 @@ namespace ReBloxLauncher
                     {
                         MessageBox.Show("Something went wrong while trying to launch Studio/Player, please look in the error message for details: " + e1.Message, "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         Console.WriteLine("<ERROR> Something went wrong when attempting to launch Studio/Player! Please look in the error below and report it to the developer if it's launcher-sided!\n" + e1.Message + "\nStack Trace:\n" + e1.StackTrace);
+                        button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                        button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                        button3.Invoke(new Action(() => { button3.Enabled = true; }));
                         await Task.Delay(3000);
                         statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                         statusText.Invoke(new Action(() => { statusText.Text = ""; }));
