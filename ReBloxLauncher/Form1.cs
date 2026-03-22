@@ -4715,7 +4715,7 @@ namespace ReBloxLauncher
                     ps.UseShellExecute = true;
                     ps.FileName = Application.ExecutablePath;
                     ps.Verb = "runas";
-                    ps.Arguments = "--installCA"
+                    ps.Arguments = "--installCA";
                     Process.Start(ps);
                     Application.Exit();
                 }
