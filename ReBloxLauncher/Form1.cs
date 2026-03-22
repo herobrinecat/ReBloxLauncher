@@ -25,7 +25,7 @@ namespace ReBloxLauncher
 {
     public partial class Form1 : Form
     {
-        //Only download from our official discord server or f3xfileserver.servehttp.com:81! If you downloaded it from somewhere else, there's a chance you might've got hacked!
+        //Only download from our official discord server or rebloxfileserver.servehttp.com:81! If you downloaded it from somewhere else, there's a chance you might've got hacked!
         public Form1()
         {
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
@@ -546,7 +546,7 @@ namespace ReBloxLauncher
                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
                                     statusText.Invoke(new Action(() => { statusText.Text = "Downloading server patch..."; }));
                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
-                                    client.DownloadFile("http://f3xfileserver.servehttp.com:81/Patches/win7/data.zip", datafolder + @"\tools\data.zip");
+                                    client.DownloadFile(Properties.Settings.Default.UpdateURL + "/Patches/win7/data.zip", datafolder + @"\tools\data.zip");
                                     statusText.Invoke(new Action(() => { statusText.Text = "Removing old files..."; }));
                                     if (Directory.Exists(datafolder + @"\tools\node")) Directory.Delete(datafolder + @"\tools\node", true);
                                     if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\node_modules")) Directory.Delete(datafolder + @"\tools\RobloxAssetFixer\node_modules", true);
