@@ -358,7 +358,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("http://f3xfileserver.servehttp.com:81")]
+        [global::System.Configuration.DefaultSettingValueAttribute("http://rebloxfileserver.servehttp.com:81")]
         public string UpdateURL {
             get {
                 return ((string)(this["UpdateURL"]));

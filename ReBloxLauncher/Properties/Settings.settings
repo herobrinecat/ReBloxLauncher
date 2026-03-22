@@ -87,7 +87,7 @@
       <Value Profile="(Default)">None</Value>
     </Setting>
     <Setting Name="UpdateURL" Type="System.String" Scope="User">
-      <Value Profile="(Default)">http://f3xfileserver.servehttp.com:81</Value>
+      <Value Profile="(Default)">http://rebloxfileserver.servehttp.com:81</Value>
     </Setting>
     <Setting Name="Robux" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">5000</Value>
