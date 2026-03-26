@@ -1,10 +1,10 @@
-# <img src="https://raw.githubusercontent.com/herobrinecat/ReBloxLauncher/refs/heads/master/ReBloxIcon.png" alt="A logo of ReBlox" width="50" height="50"> ReBlox
+# <div align="center"><img src="https://raw.githubusercontent.com/herobrinecat/ReBloxLauncher/refs/heads/master/ReBloxIcon.png" alt="A logo of ReBlox" width="75" height="75"><h3>ReBlox</h3></div>
 
-A launcher for old ROBLOX that is built from scratch and is currently under development
+A launcher revival for old ROBLOX that is built from scratch and currently under development.
 
 ## Introduction
 
-ReBlox is a offline revival of ROBLOX, with its purpose is to support clients such as 2016E, 2014L, 2019M, etc. This project contains C# and JS code (and requires node for the server)
+ReBlox is a offline launcher revival of ROBLOX, with its purpose is to support clients such as 2016E, 2014L, 2019M, etc. This project contains C# (ReBloxLauncher) and JS code (RobloxAssetFixer).
 
 ## Building
 
