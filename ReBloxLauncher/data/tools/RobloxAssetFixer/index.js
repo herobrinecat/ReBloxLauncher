@@ -210,56 +210,50 @@ function randomUUID() {
 }
 
 async function checkInternet() {
+    //It's kinda hacky and weird, but hey! At least it works.
     try {
         var result = false
+        await new Promise((resolve, reject) => {
+            
         var options = {
             host: "gstatic.com",
             path: "/generate_204",
             port: 443,
-            method: "GET"
+            method: "GET",
+            timeout: 2000
         }
 
         var req1 = https.request(options, (res) => {
-            res.on("aborted", () => {
-                if (res.statusCode == 204) {
-                    var options2 = {
-                        host: "assetdelivery.roblox.com",
-                        port: "443",
-                        method: "GET"
-                    }
 
-                    var req2 = https.request(options2, (res1) => {
-                        res1.on("end", () => {
-                            if (res1.statusCode == 404) {
-                                isRobloxAvailable = true
-                                return result
-                            }
-                        })
-                        res1.on("error", () => {
-                            isRobloxAvailable = false
-                            return result
-                        })
-                    })
-                    req2.on("error", () => {
-                        isRobloxAvailable = false
-                        return result
-                    })
-                    req2.end()
-                }
-                else {
-                    result = false
-                }
+            var options2 = {
+                host: "assetdelivery.roblox.com",
+                path: "/",
+                port: 443,
+                method: "GET",
+                timeout: 2000
+            }
+
+            var req2 = https.request(options2, (res1) => {
+                isRobloxAvailable = true
+                result = true
+                resolve()
+
             })
-            res.on("error", () => {
-                result = false
+            req2.on("error", () => {
+                isRobloxAvailable = false
+                result = true
+                resolve()
             })
+            req2.end()
         })
         req1.on("error", () => {
             result = false
+            resolve()
         })
 
         req1.end()
-
+        })
+        return result
     } catch {
         return false;
     }
