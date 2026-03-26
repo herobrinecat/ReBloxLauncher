@@ -213,7 +213,7 @@ checkInternet().then((result) => {
     }
 })
 
-if (verbose) { app.use((req, res, next) => { console.log("\x1b[32m%s\x1b[0m", "<INFO> " + req.ip + " requested: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")"); next(); }) }
+//if (verbose) { app.use((req, res, next) => { console.log("\x1b[32m%s\x1b[0m", "<INFO> " + req.ip + " requested: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")"); next(); }) }
 
 function randomUUID() {
     return crypto.randomBytes(4).toString("hex") + "-" + crypto.randomBytes(2).toString("hex") + "-" + crypto.randomBytes(2).toString("hex") + "-" + crypto.randomBytes(2).toString("hex") + "-" + crypto.randomBytes(6).toString("hex")
