@@ -4660,7 +4660,7 @@ app.get("/v2/settings/application/PCDesktopClient", (req, res) => {
         res.status(200).send("{\"applicationSettings\":" + filesystem.readFileSync("./ClientAppSettings.json", "utf-8").replace(new RegExp("{id}", "g"), userId) + "}")
     }
     else {
-        res.status(200).send("{}")
+        res.status(200).send("{\"applicationSettings\": []}")
     }
 })
 
@@ -4670,7 +4670,7 @@ app.get("/v1/settings/application", (req, res) => {
         res.status(200).send("{\"applicationSettings\":" + filesystem.readFileSync("./ClientAppSettings.json", "utf-8").replace(new RegExp("{id}", "g"), userId) + "}")
     }
     else {
-        res.status(200).send("{}")
+        res.status(200).send("{\"applicationSettings\": []}")
     }
 })
 
@@ -4680,12 +4680,12 @@ app.get("/v2/settings/application/PCStudioApp", (req, res) => {
         res.status(200).send("{\"applicationSettings\":" + filesystem.readFileSync("./ClientAppSettings.json", "utf-8").replace(new RegExp("{id}", "g"), userId) + "}")
     }
     else {
-        res.status(200).send("{}")
+        res.status(200).send("{\"applicationSettings\": []}")
     }
 })
 
 app.post("/v1/authentication-ticket/redeem", (req, res) => {
-    res.status(200).send("")
+    res.status(200).end()
 })
 
 app.get("/Setting/QuietGet/StudioAppSettings/", (req, res) => {
@@ -4694,7 +4694,7 @@ app.get("/Setting/QuietGet/StudioAppSettings/", (req, res) => {
         res.status(200).send(filesystem.readFileSync("./ClientAppSettings.json", "utf-8").replace(new RegExp("{id}", "g"), userId))
     }
     else {
-        res.status(200).send("{}")
+        res.status(200).send("{\"applicationSettings\": []}")
     }
 })
 
