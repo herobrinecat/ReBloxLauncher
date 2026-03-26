@@ -4871,7 +4871,7 @@ app.get("/v2/settings/application/PCDesktopClient", (req, res) => {
         res.status(200).send("{\"applicationSettings\":" + filesystem.readFileSync("./ClientAppSettings.json", "utf-8").replace(new RegExp("{id}", "g"), userId) + "}")
     }
     else {
-        res.status(200).send("{\"applicationSettings\": []}")
+        res.status(200).send("{\"applicationSettings\": {}}")
     }
 })
 
@@ -4881,7 +4881,7 @@ app.get("/v1/settings/application", (req, res) => {
         res.status(200).send("{\"applicationSettings\":" + filesystem.readFileSync("./ClientAppSettings.json", "utf-8").replace(new RegExp("{id}", "g"), userId) + "}")
     }
     else {
-        res.status(200).send("{\"applicationSettings\": []}")
+        res.status(200).send("{\"applicationSettings\": {}}")
     }
 })
 
@@ -4891,7 +4891,7 @@ app.get("/v2/settings/application/PCStudioApp", (req, res) => {
         res.status(200).send("{\"applicationSettings\":" + filesystem.readFileSync("./ClientAppSettings.json", "utf-8").replace(new RegExp("{id}", "g"), userId) + "}")
     }
     else {
-        res.status(200).send("{\"applicationSettings\": []}")
+        res.status(200).send("{\"applicationSettings\": {}}")
     }
 })
 
