@@ -4063,8 +4063,8 @@ async function getAssetName(id) {
         var jsondata = JSON.parse(filesystem.readFileSync("./marketplace.json"))
         jsondata.forEach((asset) => {
             if (asset["id"] != undefined) {
-                if (asset["id"] == ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId)) {
-                    if (isNumeric(((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId))) {
+                if (asset["id"] == id) {
+                    if (isNumeric(id)) {
                         result = ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name")
                         return
                     }
@@ -4508,6 +4508,10 @@ app.get("/marketplace/game-pass-product-info", (req, res) => {
             res.status(404).send("{\"errors\":[{\"code\":404,\"Message\":\"NotFound\"}]")
         }
     }
+})
+
+app.get("/users/friends/list-json", (req, res) => {
+    res.status(200).send("{\"UserId\":" + req.query.userId + ", \"TotalFriends\": 0, \"CurrentPage\":" + req.query.currentPage + ", \"PageSize\": 0, \"TotalPages\": 0, \"FriendsType\": \"" + req.query.friendsType + "\", \"Friends\": []}")
 })
 
 app.get("/asset-thumbnail/image", (req, res) => {
