@@ -41,7 +41,7 @@ namespace ReBloxLauncher
                     writer = new StreamWriter(ostrm);
                     success = true;
                 }
-                catch (Exception _)
+                catch
                 {
                     //ignore, just to get rid of annoying moments
                 }

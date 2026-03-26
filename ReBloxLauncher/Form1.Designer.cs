@@ -48,6 +48,7 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.label5 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.button17 = new System.Windows.Forms.Button();
             this.checkBox13 = new System.Windows.Forms.CheckBox();
             this.button6 = new System.Windows.Forms.Button();
             this.checkBox10 = new System.Windows.Forms.CheckBox();
@@ -375,6 +376,7 @@
             // panel2
             // 
             this.panel2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.panel2.Controls.Add(this.button17);
             this.panel2.Controls.Add(this.checkBox13);
             this.panel2.Controls.Add(this.button6);
             this.panel2.Controls.Add(this.checkBox10);
@@ -392,6 +394,18 @@
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(526, 372);
             this.panel2.TabIndex = 15;
+            // 
+            // button17
+            // 
+            this.button17.BackColor = System.Drawing.Color.White;
+            this.button17.ForeColor = System.Drawing.Color.Black;
+            this.button17.Location = new System.Drawing.Point(456, 98);
+            this.button17.Name = "button17";
+            this.button17.Size = new System.Drawing.Size(62, 26);
+            this.button17.TabIndex = 25;
+            this.button17.Text = "Show";
+            this.button17.UseVisualStyleBackColor = false;
+            this.button17.Click += new System.EventHandler(this.button17_Click);
             // 
             // checkBox13
             // 
@@ -526,8 +540,9 @@
             // 
             this.textBox3.Location = new System.Drawing.Point(157, 101);
             this.textBox3.Name = "textBox3";
+            this.textBox3.PasswordChar = '•';
             this.textBox3.ReadOnly = true;
-            this.textBox3.Size = new System.Drawing.Size(355, 20);
+            this.textBox3.Size = new System.Drawing.Size(288, 20);
             this.textBox3.TabIndex = 3;
             this.textBox3.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox3_KeyDown);
             // 
@@ -631,7 +646,7 @@
             this.label9.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label9.AutoSize = true;
             this.label9.ForeColor = System.Drawing.Color.White;
-            this.label9.Location = new System.Drawing.Point(12, 49);
+            this.label9.Location = new System.Drawing.Point(11, 49);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(41, 13);
             this.label9.TabIndex = 24;
@@ -1574,7 +1589,7 @@
             this.label32.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label32.AutoSize = true;
             this.label32.ForeColor = System.Drawing.Color.White;
-            this.label32.Location = new System.Drawing.Point(12, 76);
+            this.label32.Location = new System.Drawing.Point(11, 76);
             this.label32.Name = "label32";
             this.label32.Size = new System.Drawing.Size(67, 13);
             this.label32.TabIndex = 34;
@@ -1588,7 +1603,7 @@
             "Builders Club",
             "Turbo Builders Club",
             "Outrageous Builders Club"});
-            this.comboBox3.Location = new System.Drawing.Point(84, 73);
+            this.comboBox3.Location = new System.Drawing.Point(83, 73);
             this.comboBox3.Name = "comboBox3";
             this.comboBox3.Size = new System.Drawing.Size(121, 21);
             this.comboBox3.TabIndex = 35;
@@ -1802,6 +1817,7 @@
         private System.Windows.Forms.CheckBox checkBox13;
         private System.Windows.Forms.Button button16;
         private System.Windows.Forms.Button button15;
+        private System.Windows.Forms.Button button17;
     }
 }
 

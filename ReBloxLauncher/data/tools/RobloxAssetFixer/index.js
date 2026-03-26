@@ -61,6 +61,8 @@ var duplicateBool = undefined // A check if the assets are duplicated
 var lastProductId = 0 //A number for /marketplace/validatepurchase
 var isInternetAvailable = false //A check variable for internet
 var isRobloxAvailable = false //In case Roblox is banned by your country/ISP!
+var RBDFTextFormat = false //Use an older format for RBDF (Not secured for sensitive informations, the magic number determines the format...)
+var allowTCPLauncher = true //Allows communication between the server and the launcher via TCP, if you're not using the launcher or don't have the launcher, use --disableTCP
 
 if (filesystem.existsSync(privateKey)) {
     publicKeyObj = crypto.createPublicKey({
@@ -179,8 +181,16 @@ process.argv.forEach(function (val) {
     else if (val == "--allowGetCurrentUser") {
         AllowGetCurrentUser = true
     }
+    else if (val == "--useRBDFTextFormat") {
+        RBDFTextFormat = true
+        console.log("\x1b[33m%s\x1b[0m", "<WARN> Even though the text format will remain and continue to be supported in the server for compatibility reason, it is generally unsecure for sensitive information. (However, the text format will still be updated along with the binary file format, but if you're looking at the old RBDF files, it will be auto-detected as a text format, so most of the time you won't need --useRBDFTextFormat. This will also mark the binary format as invalid.)")
+    }
+    else if (val == "--disableTCP") {
+        console.log("\x1b[33m%s\x1b[0m", "<WARN> Any changes that occurs that requires a change to the launcher will not be saved. Due to this, it will only be saved in this session only.")
+        allowTCPLauncher = false
+    }
     else if (val == "-help") {
-        console.log("\r\n<INFO> Usage for RobloxAssetFixer:\r\n\r\n-ROBLOSECURITY=\"roblosecurity\" - Set your ROBLOSECURITY (required for useAuth)\r\n-useAuth - Set the asset retrieval to use Roblox's servers that requires auth\r\n-username= - Set your player's username\r\n-userid= - Set your player's userid\r\n-accountUnder13 - Mark your account <13\r\n-r15 - Set your avatar to be R15\r\n-bodycolor=[0,0,0,0,0,0] - Set your body color of your avatar (deprecated)\r\n-clothes=[] - Set the asset ids of your avatar for customzation (deprecated)\r\n-ip= - Set an IP to the server if you're joining (required for -joining)\r\n-joining - Mark the server as joining and make several functions connect to the host's server instead of simulating it (-ip required)\r\n-disableDataStore - disable saving and loading of datastore with RBDF\n-disableBadges - disable saving badges with RBDF\r\n-disableFollowing - disable saving followers with RBDF\r\n-rbdf=\"path\" - A path to a ReBlox Datastore File\r\n-disableParseDecals - Disables parsing of decals if using treatImagesAsAssetForUseAuth\r\n-assetFromServer - Makes the asset link attempt to contact the local server you're joining, use Roblox's server as fallback (requires -ip and -joining)\r\n-disableNewSignature - use %DATA% instead of --rbxsig%DATA% (required for 2013M and older)\r\n-disableNewSignatureAsset - makes the format for script signing %ID% instead of --rbxassetid%ID%\r\n-disableOwnedAssets - Disables saving owned assets with RBDF\r\n-robux=amount - Set the amount of ROBUX you have.")
+        console.log("\r\n<INFO> Usage for RobloxAssetFixer:\r\n\r\n-ROBLOSECURITY=\"roblosecurity\" - Set your ROBLOSECURITY (required for useAuth)\r\n-useAuth - Set the asset retrieval to use Roblox's servers that requires auth\r\n-username= - Set your player's username\r\n-userid= - Set your player's userid\r\n-accountUnder13 - Mark your account <13\r\n-r15 - Set your avatar to be R15\r\n-bodycolor=[0,0,0,0,0,0] - Set your body color of your avatar (deprecated)\r\n-clothes=[] - Set the asset ids of your avatar for customzation (deprecated)\r\n-ip= - Set an IP to the server if you're joining (required for -joining)\r\n-joining - Mark the server as joining and make several functions connect to the host's server instead of simulating it (-ip required)\r\n-disableDataStore - disable saving and loading of datastore with RBDF\n-disableBadges - disable saving badges with RBDF\r\n-disableFollowing - disable saving followers with RBDF\r\n-rbdf=\"path\" - A path to a ReBlox Datastore File\r\n-disableParseDecals - Disables parsing of decals if using treatImagesAsAssetForUseAuth\r\n-assetFromServer - Makes the asset link attempt to contact the local server you're joining, use Roblox's server as fallback (requires -ip and -joining)\r\n-disableNewSignature - use %DATA% instead of --rbxsig%DATA% (required for 2013M and older)\r\n-disableNewSignatureAsset - makes the format for script signing %ID% instead of --rbxassetid%ID%\r\n-disableOwnedAssets - Disables saving owned assets with RBDF\r\n-robux=amount - Set the amount of ROBUX you have.\r\n--disableTCP - Disables communication between the server and the launcher.")
         process.exit(0)
     }
 })
@@ -203,7 +213,7 @@ checkInternet().then((result) => {
     }
 })
 
-//if (verbose) { app.use((req, res, next) => { console.log("\x1b[32m%s\x1b[0m", "<INFO> " + req.ip + " requested: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")"); next(); }) }
+if (verbose) { app.use((req, res, next) => { console.log("\x1b[32m%s\x1b[0m", "<INFO> " + req.ip + " requested: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")"); next(); }) }
 
 function randomUUID() {
     return crypto.randomBytes(4).toString("hex") + "-" + crypto.randomBytes(2).toString("hex") + "-" + crypto.randomBytes(2).toString("hex") + "-" + crypto.randomBytes(2).toString("hex") + "-" + crypto.randomBytes(6).toString("hex")
@@ -215,6 +225,7 @@ async function checkInternet() {
         var result = false
         await new Promise((resolve, reject) => {
             
+
         var options = {
             host: "gstatic.com",
             path: "/generate_204",
@@ -253,6 +264,7 @@ async function checkInternet() {
 
         req1.end()
         })
+
         return result
     } catch {
         return false;
@@ -274,11 +286,9 @@ function getAsset(id, callback) {
                     port: 443,
                     path: '/toolbox-service/v1/items/details?assetIds=' + id,
                     method: "GET"
-
                 }
                 var inforesult = ""
                 var reqh1 = https.request(options, (res1) => {
-
                     res1.setEncoding("utf8")
                     res1.on("data", (chunk) => {
                         inforesult += chunk
@@ -388,12 +398,19 @@ function getAsset(id, callback) {
                 }
                 var inforesult = ""
                 https.get(options, (res1) => {
-
                     res1.setEncoding("utf8")
                     res1.on("data", (chunk) => {
                         inforesult += chunk
                     })
                     res1.on("end", () => {
+                        if (res1.headers["set-cookie"] != undefined) {
+                            var regex1 = new RegExp("\.ROBLOSECURITY=(_\|WARNING:-DO-NOT-SHARE-THIS\.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items\.\|_)(.*)(;)")
+                            var match = regex1.exec(res1.headers["set-cookie"])
+                            if (match.length > 0) {
+                                ROBLOSECURITY = match[1].concat(match[2]).split(';')[0]
+                                changeROBLOSECURITYOnLauncher(match[1].concat(match[2]).split(';')[0])
+                            }
+                        }
                         if (res1.statusCode == 200) {
                             var jsoninfo = JSON.parse(inforesult)
                             if (treatImagesAsAssetForUseAuth == false && jsoninfo["assetType"] == "Decal" || treatImagesAsAssetForUseAuth == false && jsoninfo["assetType"] == "Image") {
@@ -492,6 +509,14 @@ function getAsset(id, callback) {
                                         inforesult += chunk
                                     })
                                     res3.on("end", () => {
+                                        if (res3.headers["set-cookie"] != undefined) {
+                                            var regex1 = new RegExp("\.ROBLOSECURITY=(_\|WARNING:-DO-NOT-SHARE-THIS\.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items\.\|_)(.*)(;)")
+                                            var match = regex1.exec(res3.headers["set-cookie"])
+                                            if (match.length > 0) {
+                                                ROBLOSECURITY = match[1].concat(match[2]).split(';')[0]
+                                                changeROBLOSECURITYOnLauncher(match[1].concat(match[2]).split(';')[0])
+                                            }
+                                        }
                                         var jsonobject = JSON.parse(inforesult)
                                         if (jsonobject["locations"] != undefined) {
                                             var options3 = {
@@ -597,7 +622,7 @@ function getAsset(id, callback) {
 
                                                         var myRegExp = new RegExp("<url>http:\\/\\/www\\.roblox\\.com\\/asset\\/\\?id=(.*?)<\\/url>")
                                                         var match = myRegExp.exec(buffer.toString("utf8"))
-                                                        if (match != null) {
+                                                        if (match.length > 0) {
                                                             var value = match[1]
                                                             getAsset(value, (result) => {
                                                                 return callback(result)
@@ -641,6 +666,9 @@ app.get("/", (req, res) => {
     res.send("OK")
 })
 
+app.get("/games", (req, res) => {
+    res.send("OK")
+})
 app.get("/favicon.ico", (req, res) => {
     if (filesystem.existsSync("./favicon.ico")) res.status(200).send(filesystem.readFileSync("./favicon.ico")); else res.status(404).end();
 })
@@ -677,6 +705,24 @@ function calculateDuplicateFiles(name, dirName) {
     }
     else {
         return 0
+    }
+}
+
+
+async function checkRBDFFormat() {
+    if (filesystem.existsSync(RBDFpath)) {
+        var data = filesystem.readFileSync(RBDFpath)
+        if (data[0] == 0x52 && data[1] == 0x42 && data[2] == 0x44 && data[3] == 0x46) {
+            if (parseInt(data[4].toString(16).padStart(2, 0) + data[5].toString(16).padStart(2, 0) + data[6].toString(16).padStart(2, 0) + data[7].toString(16).padStart(2, 0), 16) == 293712399) {
+                return "binary"
+            }
+            else {
+                return "text"
+            }
+        }
+        else {
+            return "invalid"
+        }
     }
 }
 
@@ -1949,6 +1995,7 @@ app.get("/avatar-thumbnail/image", (req, res) => {
     res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
 })
 
+
 app.get("/Thumbs/GameIcon.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
@@ -1981,52 +2028,57 @@ app.get("/Thumbs/GameIcon.ashx", (req, res) => {
                 })
                 res2.on("end", () => {
                     var jsoninfo1 = JSON.parse(infoiresult)
-                    var options2 = {
-                        host: 'tr.rbxcdn.com',
-                        port: 443,
-                        path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
-                        method: "GET",
-                        headers: {
-                            "User-Agent": "totallychrome",
-                            "Accept-Encoding": "gzip,deflate"
-                        }
+                    if (jsoninfo1["data"] != undefined && jsoninfo1["data"].length > 0) {
+                        var options2 = {
+                            host: 'tr.rbxcdn.com',
+                            port: 443,
+                            path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                            method: "GET",
+                            headers: {
+                                "User-Agent": "totallychrome",
+                                "Accept-Encoding": "gzip,deflate"
+                            }
 
+                        }
+                        https.get(options2, (res3) => {
+
+                            var data = [], output
+                            if (res3.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res3.pipe(gzip)
+                                output = gzip
+                            }
+                            else if (res3.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res3.pipe(deflate)
+                                output = deflate
+                            }
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image)")
+                                }
+                                output = res3
+                            }
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetId + ".png\"")
+                                res.status(200).send(buffer)
+                                assetfound = true
+                            })
+                        })
                     }
-                    https.get(options2, (res3) => {
-
-                        var data = [], output
-                        if (res3.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image) [gzip compression]")
-                            }
-                            var gzip = zlib.createGunzip()
-                            res3.pipe(gzip)
-                            output = gzip
-                        }
-                        else if (res3.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image) [deflate compression]")
-                            }
-                            var deflate = zlib.createDeflate()
-                            res3.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image)")
-                            }
-                            output = res3
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetId + ".png\"")
-                            res.status(200).send(buffer)
-                            assetfound = true
-                        })
-                    })
+                    else {
+                        res.status(200).send(filesystem.readFileSync(assetfolder + "/gameicon.png"))
+                    }
                 })
             })
         }
@@ -2236,19 +2288,42 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
 
 app.get("/game/GetCurrentUser.ashx", (req, res) => {
     if (AllowGetCurrentUser) {
-        res.status(200).send(userId) //this will cause the 2019+ clients to hang on "Logging In..."
+        res.status(200).send(userId) //this will cause the 2019+ clients to hang on "Logging in..."
     }
     else {
-        res.status(200).end()
+        res.status(200).send("null")
     }
 })
+
 const options = {
     key: filesystem.readFileSync("cert-key.pem"),
     cert: filesystem.readFileSync("cert.pem")
 }
+
 app.get("/my/settings/json", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"ChangeUsernameEnabled\":true,\"IsAdmin\":false,\"UserId\":" + userId + ",\"Name\":\"" + username + "\",\"DisplayName\": \"" + username + "\", \"UserAbove13\":" + accountOver13 + ", \"IsEmailOnFile\":true,\"IsEmailVerified\":true,\"UserEmail\":\"r*****@fakerebloxemail.com\",\"UserEmailMasked\":true,\"UserEmailVerified\":true,\"LocaleApiDomain\":\"http://locale.reblox.zip\",\"ApiProxyDomain\":\"http://api.reblox.zip\",\"AuthDomain\":\"http://auth.reblox.zip\", \"IsOBC\": false, \"IsTBC\": false, \"IsAnyBC\": false, \"IsPremium\":false,\"AccountAgeInDays\":365,\"ClientIpAddress\":\"127.0.0.1\",\"IsDisplayNamesEnabled\": true,\"PremiumFeatureId\": null,\"HasValidPasswordSet\": true, \"AgeBracket\": 0, \"IsUiBootstrapModalV2Enabled\": true, \"InApp\": false, \"HasFreeNameChange\": false, \"IsAgeDownEnabled\": true, \"Facebook\": null, \"Twitter\": null, \"YouTube\": null, \"Twitch\": null}")
+})
+
+app.post("/game/join.ashx", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2017 or earlier (or Player) detected, using join.ashx")
+    if (filesystem.existsSync("./game/join.ashx")) {
+        if (filesystem.existsSync(privateKey)) {
+            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), filesystem.readFileSync("./game/join.ashx")]), filesystem.readFileSync(privateKey, "utf8")).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/join.ashx", "utf8"))
+        }
+        else {
+            res.status(200).send(filesystem.readFileSync("./game/join.ashx"))
+        }
+    }
+    else {
+        if (filesystem.existsSync(privateKey)) {
+            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), filesystem.readFileSync("joinscript.txt")]), filesystem.readFileSync(privateKey, "utf8")).toString("base64") + "%\r\n" + filesystem.readFileSync("joinscript.txt", "utf8"))
+        }
+        else {
+            res.status(200).send(filesystem.readFileSync("joinscript.txt"))
+        }
+    }
 })
 
 app.post("/game/placelauncher.ashx", (req, res) => {
@@ -2304,11 +2379,11 @@ app.post("/Data/Upload.ashx", (req, res) => {
     res.status(200).send(req.query.assetid + " 1") //STUB
 })
 
-app.post("/Analytics/Measurement.ashx", (req, res) => {
+app.post("/Analytics/Measurement.ashx", (_, res) => {
     res.status(200).end() //STUB
 })
 
-app.get("/Analytics/ContentProvider.ashx", (req, res) => {
+app.get("/Analytics/ContentProvider.ashx", (_, res) => {
     res.status(200).end() //STUB
 })
 
@@ -2394,7 +2469,7 @@ app.get("/Asset/CharacterFetch.ashx", (req, res) => {
 
 })
 
-app.post("/Game/PlaceVisit.ashx", (req, res) => {
+app.post("/Game/PlaceVisit.ashx", (_, res) => {
     res.status(200).end()
 })
 
@@ -2450,15 +2525,15 @@ app.get("//game/studio.ashx", (req, res) => {
 })
 
 // idk what does GetScriptState do, can anyone explain to me what these do???
-app.get("/asset/GetScriptState.ashx", (req, res) => {
+app.get("/asset/GetScriptState.ashx", (_, res) => {
     res.status(200).send("0 0 0 0")
 })
 
-app.get("//asset/GetScriptState.ashx", (req, res) => {
+app.get("//asset/GetScriptState.ashx", (_, res) => {
     res.status(200).send("0 0 0 0")
 })
 
-app.get("/gametransactions/getpendingtransactions/", (req, res) => {
+app.get("/gametransactions/getpendingtransactions/", (_, res) => {
     res.status(200).send("[]") //STUB
 })
 
@@ -2509,39 +2584,39 @@ app.get("/Game/Tools/InsertAsset.ashx", (req, res) => {
     res.status(200).send(result)
 })
 
-app.post("/Error/Dmp.ashx", (req, res) => {
+app.post("/Error/Dmp.ashx", (_, res) => {
     res.status(200).end() //STUB
 })
 
-app.post("/Error/Lua.ashx", (req, res) => {
+app.post("/Error/Lua.ashx", (_, res) => {
     res.status(200).end() //STUB
 })
 
-app.post("/Error/Grid.ashx", (req, res) => {
+app.post("/Error/Grid.ashx", (_, res) => {
     res.status(200).end() //STUB
 })
 
-app.get("/UploadMedia/UploadVideo.aspx", (req, res) => {
+app.get("/UploadMedia/UploadVideo.aspx", (_, res) => {
     res.status(200).send("Caught you recording ;)")
 })
 
-app.get("//UploadMedia/UploadVideo.aspx", (req, res) => {
+app.get("//UploadMedia/UploadVideo.aspx", (_, res) => {
     res.status(200).send("Caught you recording ;)")
 })
 
-app.get("/game/ChatFilter.ashx", (req, res) => {
+app.get("/game/ChatFilter.ashx", (_, res) => {
     res.send("True")
 })
 
-app.post("/Game/ChatFilter.ashx", (req, res) => {
+app.post("/Game/ChatFilter.ashx", (_, res) => {
     res.send("True")
 })
 
-app.get("/points/get-awardable/points", (req, res) => {
+app.get("/points/get-awardable/points", (_, res) => {
     res.status(200).send("{\"points\":\"0\"}") //STUB
 })
 
-app.get("/Game/Badge/IsBadgeDisabled.ashx", (req, res) => {
+app.get("/Game/Badge/IsBadgeDisabled.ashx", (_, res) => {
     res.status(200).send(0) //STUB
 })
 
@@ -2649,6 +2724,14 @@ async function getAssetType(assetid, callback) {
                                         })
 
                                         res.on("end", () => {
+                                            if (res.headers["set-cookie"] != undefined) {
+                                                var regex1 = new RegExp("\.ROBLOSECURITY=(_\|WARNING:-DO-NOT-SHARE-THIS\.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items\.\|_)(.*)(;)")
+                                                var match = regex1.exec(res.headers["set-cookie"])
+                                                if (match.length > 0) {
+                                                    ROBLOSECURITY = match[1].concat(match[2]).split(';')[0]
+                                                    changeROBLOSECURITYOnLauncher(match[1].concat(match[2]).split(';')[0])
+                                                }
+                                            }
                                             var jsonresult1 = JSON.parse(result)
 
                                             if (jsonresult1["assetTypeId"] != undefined) {
@@ -2714,6 +2797,14 @@ async function getAssetType(assetid, callback) {
                                 })
 
                                 res.on("end", () => {
+                                    if (res.headers["set-cookie"] != undefined) {
+                                        var regex1 = new RegExp("\.ROBLOSECURITY=(_\|WARNING:-DO-NOT-SHARE-THIS\.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items\.\|_)(.*)(;)")
+                                        var match = regex1.exec(res.headers["set-cookie"])
+                                        if (match.length > 0) {
+                                            ROBLOSECURITY = match[1].concat(match[2]).split(';')[0]
+                                            changeROBLOSECURITYOnLauncher(match[1].concat(match[2]).split(';')[0])
+                                        }
+                                    }
                                     var jsonresult1 = JSON.parse(result)
 
                                     if (jsonresult1["assetTypeId"] != undefined) {
@@ -2915,17 +3006,17 @@ app.get("/v1/avatar", async (req, res) => {
     }
 })
 
-app.post("/device/initialize", (req, res) => {
+app.post("/device/initialize", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("set-cookie", "RBXEventTrackerV2=21398")
     res.status(200).send("{ \"browserTrackerId\": 1, \"appDeviceIdentifier\": null }")
 })
 
-app.post("/v1/get-enrollments", (req, res) => {
+app.post("/v1/get-enrollments", (_, res) => {
     res.status(200).send("{\"data\":[]}") //STUB
 })
 
-app.post("/v1/enrollments", (req, res) => {
+app.post("/v1/enrollments", (_, res) => {
     res.status(200).send("{\"data\":[]}") //STUB
 })
 
@@ -2943,7 +3034,7 @@ app.post("/v2/universes/:id/shutdown", (req, res) => {
     res.status(200).send("{}")
 })
 
-app.get("/v1/locales/supported-locales", (req, res) => {
+app.get("/v1/locales/supported-locales", (_, res) => {
     res.status(200).send("{\"supportedLocales\": [{\"id\": 1, \"locale\": \"en_us\", \"name\": \"English (United States)\", \"nativeName\": \"English (United States)\", \"language\": {\"id\": 41, \"name\": \"English\", \"nativeName\": \"English\", \"languageCode\": \"en\", \"isRightToLeft\": false}}]}")
 })
 
@@ -3058,7 +3149,7 @@ app.post("/v1/avatar/set-avatar", (req, res) => {
 
 app.post("/universes/create", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{ \"UniverseId\": 2, \"RootPlaceId\": 1 }")
+    res.status(200).send("{ \"UniverseId\": 2, \"RootPlaceId\": 1818 }")
 })
 
 app.get("/v1/places/:id/teamcreate/active_session/members", (req, res) => {
@@ -3229,6 +3320,15 @@ app.post("/v1/users", (req, res) => {
     }
     res.status(200).send("{\"data\":[" + edit + "]}")
 })
+
+async function convertTextFormatToBinary(data) {
+    if (typeof (data) == "string") {
+        if (filesystem.existsSync(RBDFpath)) {
+            //Nothing for now 
+        }
+    }
+}
+
 app.get("/users/get-by-username", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
@@ -3469,6 +3569,35 @@ app.get("/v1/users/:id/friends/online", (req, res) => {
     res.status(200).send("{\"data\": []}")
 })
 
+app.get("/v2/chat-settings", (req, res) => {
+    res.status(200).send("{\"chatEnabled\": true, \"isActiveChatUser\": true, \"isConnectTabEnabled\": true}")
+})
+
+app.get("/v1/packages/assets/:id/highest-permission", (req, res) => {
+    res.status(200).send("{\"assetId\": " + req.params.id + ", \"hasPermission\": true, \"action\": \"Own\", \"upToVersion\": 1}")
+})
+
+app.post("/ide/publish/uploadnewasset", (req, res) => {
+    res.status(200).end()
+})
+
+app.post("/data/upload/json", (req, res) => {
+    res.status(200).send("{\"Success\": true, \"BackingAssetId\": 1111}") //STUB
+})
+
+app.post("/universes/create-alias-v2", (req, res) => {
+    res.status(200).send("{}")
+})
+app.get("/v1/products", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    if (filesystem.existsSync("./premiumsubscriptions.json")) {
+        res.status(200).send(filesystem.readFileSync("./premiumsubscriptions.json"))
+    }
+    else {
+        res.status(200).send("{\"products\":[]}")
+    }
+})
+
 app.get("/v1/users/:id/friends", (req, res) => {
     res.status(200).send("{\"data\": []}")
 })
@@ -3518,7 +3647,8 @@ app.get("/toolbox-service/v1/:type", (req, res) => {
 app.post("/v2/login", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("roblox-machine-id", randomUUID())
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }))
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; samesite=lax")
+    res.setHeader("strict-transport-security", "max-age=31536000")
     res.status(200).send("{\"user\": { \"id\": " + userId + ", \"name\": \"" + username + "\", \"displayName\": \"" + username + "\"},\"accountBlob\":\"\",\"isBanned\": false, \"recoveryEmail\": null, \"shouldAutoLoginFromRecovery\": null}")
 })
 
@@ -3545,7 +3675,7 @@ app.get("/Game/LuaWebService/HandleSocialRequest.ashx", (req, res) => {
         res.status(200).send("<Value Type=\"integer\">0</Value>")
     }
     else {
-        console.log("\x1b[33m%s\x1b[0m", "<STUB> Unknown SocialRequest method: " + req.query.method)
+        if (verbose) console.log("\x1b[33m%s\x1b[0m", "<STUB> Unknown SocialRequest method: " + req.query.method)
         res.status(200).end()
     }
 })
@@ -3926,7 +4056,7 @@ app.post("/assets/award-badge", async (req, res) => {
     }
 })
 
-app.get("/v1/gametemplates", (req, res) => {
+app.get("/v1/gametemplates", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\":[" + (filesystem.existsSync("./gametemplates.json") ? filesystem.readFileSync("./gametemplates.json", "utf8") : "") + "]}")
 })
@@ -3935,11 +4065,11 @@ app.get("/IDE/Upload.aspx", (_, res) => {
     res.status(200).send("Uploading maps is not supported, since it's supposed to be local anyways")
 })
 
-app.get("/v1/user/groups/canmanage", (req, res) => {
+app.get("/v1/user/groups/canmanage", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\":[]}")
 })
-app.get("//users/:userid/canmanage/:uid", (req, res) => {
+app.get("//users/:userid/canmanage/:uid", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{ \"Success\": true, \"CanManage\": true }")
 })
@@ -3953,7 +4083,7 @@ function getMD5FileHash(path) {
         stream.on("end", () => resolve(hash.digest('hex')))
     })
 }
-app.get("/GetAllowedMD5Hashes/", async (req, res) => {
+app.get("/GetAllowedMD5Hashes/", async (_, res) => {
     res.setHeader("cache-control", "no-cache")
     if (filesystem.existsSync("./RobloxPlayerBeta.exe")) {
         const hash = await getMD5FileHash("./RobloxPlayerBeta.exe")
@@ -3964,7 +4094,7 @@ app.get("/GetAllowedMD5Hashes/", async (req, res) => {
     }
 })
 
-app.get("/GetAllowedSecurityVersions/", (req, res) => {
+app.get("/GetAllowedSecurityVersions/", (_, res) => {
     res.setHeader("cache-control", "no-cache")
     if (filesystem.existsSync("./version.txt")) {
         res.status(200).send("{\"data\":[\"" + filesystem.readFileSync("./version.txt") + "pcplayer\"]}")
@@ -3975,13 +4105,35 @@ app.get("/GetAllowedSecurityVersions/", (req, res) => {
 })
 
 app.patch("/v1/places/:id", (req, res) => {
-    if (typeof (req.params.id) == "number") {
-        res.status(200).send("{\"id\": " + req.params.id + ", \"universeId\": 2, \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
-    } else {
-        res.status(400).end()
-    }
+    res.status(200).send("{\"id\": " + req.params.id + ", \"universeId\": 2, \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
 })
 
+app.patch("/v2/universes/:id/configuration", (req, res) => {
+    res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+})
+
+app.post("/v1/autolocalization/games/:id/autolocalizationtable", (_, res) => {
+    res.status(200).send("{\"isAutolocalizationEnabled\": false, \"shouldUseLocalizationTable\": false, \"autoLocalizationTableId\": \"" + randomUUID() + "\", \"assetId\": 0}") //STUB
+})
+
+app.get("/v1/autolocalization/games/:id", (_, res) => {
+    res.status(200).send("{}")
+})
+app.get("/v1/source-language/games/:id", (_, res) => {
+    res.status(200).send("{\"name\": \"English\", \"nativeName\": \"English\", \"languageCode\": \"en\"}")
+})
+
+app.get("/v1/automatic-translation/games/:id/feature-status", (req, res) => {
+    res.status(200).send("{\"gameId\": " + req.params.id + ", \"isAutomaticTranslationAllowed\": false, \"isAutomaticTranslationSwitchesUIEnabled\": false}")
+})
+
+app.get("/v1/supported-languages/games/:id/automatic-translation-status", (_, res) => {
+    res.status(200).send("{\"data\":[{\"languageCodeType\": \"Language\", \"languageCode\": \"en\", \"isAutomaticTranslationEnabled\": false}]}")
+})
+
+app.get("/v1/automatic-translation/languages/:lang/target-languages", (req, res) => {
+    res.status(200).send("{\"sourceLanguage\": \"" + req.params.lang + "\", \"targetLanguages\": []}")
+})
 app.get("/v1/users/:userid/items/gamepass/:passid", async (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (joining) {
@@ -4120,9 +4272,18 @@ app.get("/v1/favorites/bundles/:id/count", (req, res) => {
 app.get("/v1/favorites/users/:userid/bundles/:id/favorite", (req, res) => {
     res.status(200).send("null")
 })
+
 app.get("/v1/users/authenticated", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.status(200).send("{\"id\": " + userId + ", \"name\": \"" + username + "\", \"displayName\": \"" + username + "\"}")
+})
+
+app.get("/v1/users/authenticated/app-launch-info", (req, res) => {
+    res.status(200).send("{\"ageBracket\": 0, \"countryCode\": \"US\", \"isPremium\": false, \"id\": " + userId + ", \"name\": \"" + username + "\", \"displayName\": \"" + username + "\"}")
+})
+
+app.get("/v1/users/authenticated/roles", (req, res) => {
+    res.status(200).send("{ \"roles\": [] }")
 })
 
 app.get("/v1/products/:id", (req, res) => {
@@ -4130,6 +4291,7 @@ app.get("/v1/products/:id", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":133293265, \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
 })
+
 app.get("/marketplace/productdetails", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
@@ -4169,6 +4331,48 @@ app.get("/marketplace/productdetails", (req, res) => {
     }
 })
 
+app.get("/v2/assets/:id/details", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    if (filesystem.existsSync("./marketplace.json")) {
+        var jsondata = JSON.parse(filesystem.readFileSync("./marketplace.json"))
+        var sent = false
+        jsondata.forEach((asset) => {
+            if (asset["id"] != undefined) {
+                if (asset["id"] == req.params.id) {
+                    if (isNumeric(req.params.id)) {
+                        res.status(200).send("{\"TargetId\":" + req.params.id + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.params.id + ", \"ProductId\":" + req.params.id + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + userId + ", \"Name\":\"" + username + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + userId + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+                        sent = true
+                        return
+                    }
+                    else {
+                        res.status(404).send("{\"errors\":[{\"code\":404,\"Message\":\"NotFound\"}]")
+                        return
+                    }
+                }
+            }
+        })
+        if (sent) return
+        if (isNumeric(req.params.id)) {
+            res.status(200).send("{\"TargetId\":" + req.params.id + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.params.id + ", \"ProductId\":" + req.params.id + ",\"Name\":\"Stub Place/Product Name\",\"Description\":\"\\\"nah nah, also about the icon, this yo god?\\\"\", \"AssetTypeId\":34, \"Creator\": {\"Id\":" + userId + ", \"Name\":\"" + username + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + userId + "}, \"IconImageAssetId\":133293265,\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":100,\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+        }
+        else {
+            res.status(404).send("{\"errors\":[{\"code\":404,\"Message\":\"NotFound\"}]")
+        }
+    }
+    else {
+        if (isNumeric(req.params.id)) {
+            res.status(200).send("{\"TargetId\":" + req.params.id + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.params.id + ", \"ProductId\":" + req.params.id + ",\"Name\":\"Stub Place/Product Name\",\"Description\":\"\\\"nah nah, also about the icon, this yo god?\\\"\", \"AssetTypeId\":34, \"Creator\": {\"Id\":" + userId + ", \"Name\":\"" + username + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + userId + "}, \"IconImageAssetId\":133293265,\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":100,\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+        }
+        else {
+            res.status(404).send("{\"errors\":[{\"code\":404,\"Message\":\"NotFound\"}]")
+        }
+    }
+})
+
+app.get("/latency-measurements/get-servers-to-ping", (req, res) => {
+    res.status(200).end()
+})
 app.get("/ownership/hasasset", async (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (joining) {
@@ -4342,90 +4546,93 @@ app.get("/v1.1/game-start-info/", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"gameAvatarType\":\"PlayerChoice\",\"allowCustomAnimations\":\"True\",\"universeAvatarCollisionType\":\"OuterBox\",\"universeAvatarBodyType\":\"Standard\",\"jointPositioningType\":\"ArtistIntent\",\"message\":\"\",\"universeAvatarAssetOverrides\":[],\"moderationStatus\":null}")
 })
-app.get("/studio/e.png", (req, res) => {
-    res.status(200).send("")
+app.get("/studio/e.png", (_, res) => {
+    res.status(200).end()
 })
 
-app.get("/ide/welcome", (req, res) => {
+app.get("/ide/welcome", (_, res) => {
     res.status(200).send("<!DOCTYPE html><body><pre>This studio experience is brought to you by [REDACTED]</pre></body>")
 })
-app.get("/Setting/QuietGet/ClientSharedSettings/", (req, res) => {
+app.get("/Setting/QuietGet/ClientSharedSettings/", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{ \"StatsGatheringScriptUrl\": \"\", \"DFFlagLogAutoCamelCaseFixes\": \"True\" }")
 })
-app.get("/login/RequestAuth.ashx", (req, res) => {
+app.get("/login/RequestAuth.ashx", (_, res) => {
     res.status(200).send("https://www.reblox.zip/Login/Negotiate.ashx?suggest=0")
 })
 
-app.get("/Login/Negotiate.ashx", (req, res) => {
+app.get("/Login/Negotiate.ashx", (_, res) => {
     res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
     res.status(200).end()
 })
 
-app.post("/Login/Negotiate.ashx", (req, res) => {
+app.post("/Login/Negotiate.ashx", (_, res) => {
     res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
     res.status(200).end()
 })
 
-app.get("/auth/negotiate", (req, res) => {
+app.get("/auth/negotiate", (_, res) => {
     res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
     res.status(200).end()
 })
 
-app.post("/auth/negotiate", (req, res) => {
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
+app.post("/auth/negotiate", (_, res) => {
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
     res.status(200).end()
 })
 
-app.post("/auth/invalidate", (req, res) => {
+app.post("/auth/invalidate", (_, res) => {
     res.status(200).end()
 })
 
-app.post("/auth/renew", (req, res) => {
+app.post("/auth/renew", (_, res) => {
     res.status(200).end()
 })
 
-app.post("/Game/MachineConfiguration.ashx", (req, res) => {
+app.post("/Game/MachineConfiguration.ashx", (_, res) => {
     res.status(200).end()
 })
 
-app.post("/game/validate-machine", (req, res) => {
+app.post("/game/validate-machine", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{ \"success\": true }")
 })
 
-app.get("/universes/validate-place-join", (req, res) => {
+app.get("/universes/validate-place-join", (_, res) => {
     res.status(200).send(true)
 })
-app.get("/groups/can-manage-games", (req, res) => {
+app.get("/groups/can-manage-games", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("[]")
 })
 
-app.post("//Analytics/Measurement.ashx", (req, res) => {
+app.post("//Analytics/Measurement.ashx", (_, res) => {
     res.status(200).end()
 })
 
+app.get("/v1/player-policies-client", (_, res) => {
+    res.status(200).send("{\"isSubjectToChinaPolicies\": false, \"arePaidRandomItemsRestricted\": false, \"isPaidItemTradingAllowed\": true, \"areAdsAllowed\": false}")
+})
 app.get("/v1/packages/:id/assets", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(404).send("{\"errors\":[{\"code\": 1, \"message\": \"Package assets are disabled.\"}]}") //STUB
 })
-app.get("/avatar-thumbnail/json", (req, res) => {
+app.get("/avatar-thumbnail/json", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"Url\":\"http://reblox.zip/Thumbs/Avatar.ashx\",\"Final\":true,\"SubstitutionType\":0}")
 })
 
-app.get("/asset-thumbnail/json", (req, res) => {
+app.get("/asset-thumbnail/json", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
     res.status(200).send("{\"Url\":\"http://www.reblox.zip/Thumbs/GameIcon.ashx\",\"Final\":true,\"SubstitutionType\":0}")
 })
 
-app.get("/universal-app-configuration/v1/behaviors/app-policy/content", (req, res) => {
+app.get("/universal-app-configuration/v1/behaviors/app-policy/content", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"ChatHeaderSearch\": true, \"ChatPlayTogether\": true, \"GamePlayerCounts\": true, \"Notifications\": true, \"SearchBar\": true, \"GameReportingDisabled\": false, \"FriendFinder\": true, \"UseBottomBar\": true, \"ShowYoutubeAgeAlert\": false, \"ShowDisplayName\": true, \"CatalogReportingDisabled\": false, \"ShowVideoThumbnails\": true, \"EnableInGameHomeIcon\": false, \"EnableVoiceReportAbuseMenu\": true, \"EnablePremiumUserFeatures\": true, \"PlatformGroup\": \"Unknown\", \"RealNamesInDisplayNamesEnabled\": false, \"SystemBarPlacement\": \"Bottom\"}")
 })
@@ -4514,6 +4721,10 @@ app.get("/users/friends/list-json", (req, res) => {
     res.status(200).send("{\"UserId\":" + req.query.userId + ", \"TotalFriends\": 0, \"CurrentPage\":" + req.query.currentPage + ", \"PageSize\": 0, \"TotalPages\": 0, \"FriendsType\": \"" + req.query.friendsType + "\", \"Friends\": []}")
 })
 
+app.get("/v2/get-user-conversations", (_, res) => {
+    res.status(200).send("[]")
+})
+
 app.get("/asset-thumbnail/image", (req, res) => {
     try {
         res.setHeader("cache-control", "no-cache")
@@ -4532,7 +4743,7 @@ app.get("/asset-thumbnail/image", (req, res) => {
                 }
             })
             if (assetfound == false) {
-                if (isInternetAvailable) {
+                if (isInternetAvailable == true) {
                     var options1 = {
                         host: 'thumbnails.roblox.com',
                         port: 443,
@@ -4608,10 +4819,10 @@ app.get("/asset-thumbnail/image", (req, res) => {
         res.status(404).end()
     }
 })
-app.get("/UploadMedia/PostImage.aspx", (req, res) => {
+app.get("/UploadMedia/PostImage.aspx", (_, res) => {
     res.status(200).send("Caught you screenshotting ;)")
 })
-app.get("/gameicon.png", (req, res) => {
+app.get("/gameicon.png", (_, res) => {
     res.setHeader("Content-disposition", "attachment; filename=\"gameicon.png\"")
     res.status(200).send(filesystem.readFileSync(assetfolder + "/gameicon.png"))
 })
@@ -4626,20 +4837,20 @@ app.get("/v1/universes/multiget", (req, res) => {
 
 app.get("/v1/universes/:id", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"id\":" + req.params.id + ",\"name\":\"ReBlox Place\",\"description\": \"A ReBlox place launched from the launcher\",\"isArchived\":false,\"rootPlaceId\":1,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":" + userId + ",\"creatorName\":\"" + username + "\",\"created\":\"2013-10-31T17:46:37.747Z\",\"updated\":\"2019-04-03T00:04:34.373Z\"}")
+    res.status(200).send("{\"id\":" + req.params.id + ",\"name\":\"ReBlox Place\",\"description\": \"A ReBlox place launched from the launcher\",\"isArchived\":false,\"rootPlaceId\":1818,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":" + userId + ",\"creatorName\":\"" + username + "\",\"created\":\"2013-10-31T17:46:37.747Z\",\"updated\":\"2019-04-03T00:04:34.373Z\"}")
 })
 
-app.get("/My/Places.aspx", (req, res) => {
+app.get("/My/Places.aspx", (_, res) => {
     //STUB
     res.status(200).send("<!DOCTYPE html><body><pre>This studio experience is brought to you by [REDACTED]</pre></body>")
 })
 
-app.get("/My/Places.aspx&version=:version", (req, res) => {
+app.get("/My/Places.aspx&version=:version", (_, res) => {
     //STUB
     res.status(200).send("<!DOCTYPE html><body><pre>This studio experience is brought to you by [REDACTED]</pre></body>")
 })
 
-app.get("/IDE/ClientToolbox.aspx", (req, res) => {
+app.get("/IDE/ClientToolbox.aspx", (_, res) => {
     //STUB (if you wanna add actual toolbox, you can)
     res.status(200).send("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"></head><body><select><option value=\"images\">Decals</option><option value=\"default\" selected=\"selected\">Models</option><option value=\"setup\">ROBLOX Sets</option></select><input type=\"text\" id=\"searchtext\"><br><h2>*insert toolbox here*</h2></body></html>")
 })
@@ -4694,13 +4905,13 @@ app.get("/Setting/QuietGet/StudioAppSettings/", (req, res) => {
         res.status(200).send(filesystem.readFileSync("./ClientAppSettings.json", "utf-8").replace(new RegExp("{id}", "g"), userId))
     }
     else {
-        res.status(200).send("{\"applicationSettings\": []}")
+        res.status(200).send("{}")
     }
 })
 
-app.get("/universes/:id/game-start-info", (req, res) => {
+app.get("/universes/:id/game-start-info", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{}")
+    res.status(200).send("{\"r15Morphing\": false}")
 })
 app.get("/game/logout.aspx", (req, res) => {
     res.status(200).end()
@@ -4715,11 +4926,11 @@ app.get("/Game/ClientPresence.ashx", (req, res) => {
     res.status(200).end()
 })
 
-app.post("/Game/ClientPresence.ashx", (req, res) => {
+app.post("/Game/ClientPresence.ashx", (_, res) => {
     //STUB
     res.status(200).end()
 })
-app.post("/game/report-stats", (req, res) => {
+app.post("/game/report-stats", (_, res) => {
     //STUB
     res.status(200).end()
 })
@@ -4801,7 +5012,7 @@ app.get("/Game/AreFriends", async (req, res) => {
     }
     else {
         var verified = false
-        var friendsarray = (req.query.otherUserIds.includes(",")) ? req.query.otherUserIds.split(",") : req.query.otherUserIds
+        var friendsarray = req.query.otherUserIds.includes(",") ? req.query.otherUserIds.split(",") : req.query.otherUserIds
         var friendsExistsList = []
         if (enableDataStore == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
             if (filesystem.existsSync(RBDFpath)) {
@@ -4817,19 +5028,18 @@ app.get("/Game/AreFriends", async (req, res) => {
                         verified = true
                     }
                     else {
-                        //I know this is not optimized, but whatever, too lazy to rewrite the entire thing.
                         if (line.startsWith("<Friendship")) {
+                            //I know this is not optimized, but whatever, too lazy to rewrite the entire thing.
                             if (typeof (friendsarray) == "string" || typeof (friendsarray) == "number") {
                                 if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray + ">" || line == "<Friendship Receiver=" + friendsarray + " Sender=" + req.query.userId + ">") {
                                     if (friendsExistsList.includes(friendsarray) == false) {
-                                        console.log(line)
                                         friendsExistsList.push(friendsarray)
                                     }
                                 }
                             }
                             else {
                                 for (var i = 0; i < friendsarray.length; i++) {
-                                    if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">") {
+                                    if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">\r\n" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">\r\n") {
                                         if (friendsExistsList.includes(friendsarray[i]) == false) {
                                             friendsExistsList.push(friendsarray[i])
                                         }
@@ -4907,7 +5117,6 @@ app.get("/Friend/AreFriends", async (req, res) => {
                             if (typeof (friendsarray) == "string" || typeof (friendsarray) == "number") {
                                 if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray + ">" || line == "<Friendship Receiver=" + friendsarray + " Sender=" + req.query.userId + ">") {
                                     if (friendsExistsList.includes(friendsarray) == false) {
-                                        console.log(line)
                                         friendsExistsList.push(friendsarray)
                                     }
                                 }
@@ -4994,6 +5203,7 @@ app.post("/Game/CreateFriend", async (req, res) => {
                     }
                     else if (line == "<Friendship Receiver=" + req.query.firstUserId + " Sender=" + req.query.secondUserId + ">" || line == "<Friendship Receiver=" + req.query.secondUserId + " Sender=" + req.query.firstUserId + ">") {
                         replacementtext = line
+                        break
                     }
                 }
                 stream.destroy()
@@ -5074,6 +5284,7 @@ app.post("/Game/BreakFriend", async (req, res) => {
                     }
                     else if (line == "<Friendship Receiver=" + req.query.firstUserId + " Sender=" + req.query.secondUserId + ">" || line == "<Friendship Receiver=" + req.query.secondUserId + " Sender=" + req.query.firstUserId + ">") {
                         replacementtext = line
+                        break
                     }
                 }
                 stream.destroy()
@@ -5149,6 +5360,7 @@ app.post("/Friend/BreakFriend", async (req, res) => {
                     }
                     else if (line == "<Friendship Receiver=" + req.query.firstUserId + " Sender=" + req.query.secondUserId + ">" || line == "<Friendship Receiver=" + req.query.secondUserId + " Sender=" + req.query.firstUserId + ">") {
                         replacementtext = line
+                        break
                     }
                 }
                 stream.destroy()
@@ -5225,6 +5437,7 @@ app.post("/Friend/CreateFriend", async (req, res) => {
                     }
                     else if (line == "<Friendship Receiver=" + req.query.firstUserId + " Sender=" + req.query.secondUserId + ">" || line == "<Friendship Receiver=" + req.query.secondUserId + " Sender=" + req.query.firstUserId + ">") {
                         replacementtext = line
+                        break
                     }
                 }
                 stream.destroy()
@@ -5259,6 +5472,35 @@ app.post("/persistence/getsortedvalues", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\":{\"Entries\":[],\"ExclusiveStartKey\":null}}") //STUB
 })
+
+function changeROBLOSECURITYOnLauncher(roblosecurityedit) {
+    if (allowTCPLauncher) {
+        const { Socket } = require("net")
+
+        const client = new Socket()
+
+        var options = {
+            host: "127.0.0.1",
+            port: 50355
+        }
+        client.connect(options, () => {
+            if (verbose) { console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!") }
+
+            client.on("data", message => {
+                if (message.toString("utf8") == "200") {
+                    if (verbose) { console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully updated ROBLOSECURITY on the launcher! Disconnecting...") }
+                    client.end()
+                }
+                else {
+                    if (verbose) { console.log("\x1b[33m%s\x1b[0m", "<WARN> Something went wrong while trying to update the ROBLOSECURITY, the new ROBLOSECURITY will only be used this session! Disconnecting...") }
+                    client.end()
+                }
+            })
+        })
+
+        client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("URS", "utf8"), Buffer.from(roblosecurityedit, "utf8")]))
+    }
+}
 
 app.post("/v1/persistence/:type/multi-get", (req, res) => {
     res.setHeader("cache-control", "no-cache")
@@ -5296,7 +5538,6 @@ app.post("/v1/persistence/:type/multi-get", (req, res) => {
         var verified = false
         var replacementtext = ""
         var result = ""
-        console.log(req.body)
         if (enableDataStore == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
             if (filesystem.existsSync(RBDFpath)) {
                 req.body.keys.forEach(async (dataBody) => {
@@ -5313,6 +5554,7 @@ app.post("/v1/persistence/:type/multi-get", (req, res) => {
                         }
                         else if (line.includes("DataStoreName=\"" + dataBody.key + "\"") && line.includes("Key=\"" + dataBody.target + "\"") && line.includes("Scope=" + dataBody.scope)) {
                             replacementtext = line
+                            break
                         }
                     }
                     stream.destroy()
@@ -5321,19 +5563,18 @@ app.post("/v1/persistence/:type/multi-get", (req, res) => {
                         if (replacementtext != "") {
                             var myRegExp = new RegExp('Value\=\"(.*)\"')
                             var match = myRegExp.exec(replacementtext)
-                            if (match != null) {
+                            if (match.length > 0) {
                                 if (dataBody == req.body.keys[req.body.keys.length - 1]) {
                                     result = "{\"entries\": [" + result + " {\"key\": \"" + dataBody.key + "\", \"scope\": \"" + dataBody.scope + "\", \"target\": \"" + dataBody.target + "\", \"usn\": \"0.0.0.01\", \"value\": \"" + (match[1] != undefined ? match[1] : "").replace(new RegExp("\\\"", "g"), "\\\"") + "\"}]}"
                                     res.status(200).send(result)
                                 } else {
                                     result += "{\"key\": \"" + dataBody.key + "\", \"scope\": \"" + dataBody.scope + "\", \"target\": \"" + dataBody.target + "\", \"usn\": \"0.0.0.01\", \"value\": \"" + (match[1] != undefined ? match[1] : "") + "\"},"
-                                    
+
                                 }
                             }
                         }
                         else {
-                            if (dataBody == req.body.keys[req.body.keys.length - 1]) 
-                            {
+                            if (dataBody == req.body.keys[req.body.keys.length - 1]) {
                                 result = "{\"entries\": []}"
                                 res.status(200).send(result)
                             }
@@ -5344,8 +5585,14 @@ app.post("/v1/persistence/:type/multi-get", (req, res) => {
                         return
                     }
                 })
-                
+
             }
+            else {
+                res.status(200).send("{\"entries\": []}")
+            }
+        }
+        else {
+            res.status(200).send("{\"entries\": []}")
         }
     }
 
@@ -5402,6 +5649,7 @@ app.get("/v1/persistence/:type", async (req, res) => {
                     }
                     else if (line.includes("DataStoreName=\"" + req.query.key + "\"") && line.includes("Key=\"" + req.query.target + "\"") && line.includes("Scope=" + req.query.scope)) {
                         replacementtext = line
+                        break
                     }
                 }
                 stream.destroy()
@@ -5410,7 +5658,7 @@ app.get("/v1/persistence/:type", async (req, res) => {
                     if (replacementtext != "") {
                         var myRegExp = new RegExp('Value\=\"(.*)\"')
                         var match = myRegExp.exec(replacementtext)
-                        if (match != null) {
+                        if (match.length > 0) {
                             res.status(200).send(match[1] != undefined ? match[1] : "")
                         }
                         else {
@@ -5437,7 +5685,7 @@ app.get("/v1/persistence/:type", async (req, res) => {
 })
 
 app.post("/v1/persistence/:type/remove", async (req, res) => {
-    console.log("\x1b[32m%s\x1b[0m", "<INFO> Adding a value to the datastore...")
+    console.log("\x1b[32m%s\x1b[0m", "<INFO> Removing a value from the datastore...")
     if (joining) {
         try {
             var options = {
@@ -5487,6 +5735,7 @@ app.post("/v1/persistence/:type/remove", async (req, res) => {
                     }
                     else if (line.includes("DataStoreName=\"" + req.query.key + "\"") && line.includes("Key=\"" + req.query.target + "\"") && line.includes("Scope=" + req.query.scope)) {
                         replacementtext = line
+                        break
                     }
                 }
                 stream.destroy()
@@ -5495,7 +5744,7 @@ app.post("/v1/persistence/:type/remove", async (req, res) => {
                     if (replacementtext != "") {
                         var myRegExp = new RegExp('Value\=\"(.*)\"')
                         var match = myRegExp.exec(replacementtext)
-                        if (match != null) {
+                        if (match.length > 0) {
                             filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(replacementtext, ""))
                             res.status(200).send(match[1] != undefined ? match[1] : "")
                             return
@@ -5566,6 +5815,7 @@ app.post("/v1/persistence/:type", async (req, res) => {
                     }
                     else if (line.includes("DataStoreName=\"" + req.query.key + "\"") && line.includes("Key=\"" + req.query.target + "\"") && line.includes("Scope=" + req.query.scope)) {
                         replacementtext = line
+                        break
                     }
                 }
                 stream.destroy()
@@ -5650,6 +5900,7 @@ app.post("/persistence/set", async (req, res) => {
                     }
                     else if (line.includes("DataStoreName=\"" + req.query.key + "\"") && line.includes("Key=\"" + req.query.target + "\"") && line.includes("Scope=" + req.query.scope)) {
                         replacementtext = line
+                        break
                     }
                 }
                 stream.destroy()
@@ -5681,15 +5932,19 @@ app.post("/persistence/set", async (req, res) => {
 
 app.post("/persistence/setblob.ashx", (req, res) => {
     console.log("\x1b[32m%s\x1b[0m", "<STUB> Adding value to datastore (Data Persistence)")
+    res.setHeader("cache-control", "no-cache")
     console.log(req.body)
     console.log(req.query)
     res.status(200).end() //STUB
 })
 
+
 app.get("/persistence/getbloburl.ashx", (req, res) => {
     console.log("\x1b[32m%s\x1b[0m", "<STUB> Getting value from datastore (Data Persistence)")
+    res.setHeader("cache-control", "no-cache")
     console.log(req.query)
     res.status(200).send("<Table></Table>") //STUB
+
 })
 
 app.post("/persistence/getV2", async (req, res) => {
@@ -5742,6 +5997,7 @@ app.post("/persistence/getV2", async (req, res) => {
                     }
                     else if (line.includes("DataStoreName=\"" + req.body.qkeys[2] + "\"") && line.includes("Key=\"" + req.body.qkeys[1] + "\"") && line.includes("Scope=" + req.query.scope)) {
                         replacementtext = line
+                        break
                     }
                 }
                 stream.destroy()
@@ -5750,7 +6006,7 @@ app.post("/persistence/getV2", async (req, res) => {
                     if (replacementtext != "") {
                         var myRegExp = new RegExp('Value\=\"(.*)\"')
                         var match = myRegExp.exec(replacementtext)
-                        if (match != null) {
+                        if (match.length > 0) {
                             var value = match[1] != undefined ? match[1] : ""
                             res.status(200).send("{\"data\":[{\"Key\": {\"Scope\":\"" + req.query.scope + "\", \"Target\": \"" + req.body.qkeys[1] + "\", \"Key\": \"" + req.body.qkeys[2] + "\"},\"Value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\"}]}")
                         }
@@ -5820,6 +6076,7 @@ app.get("/user/following-exists", async (req, res) => {
                     }
                     else if (line.trim() == "<Following userId=" + req.query.followerUserId + " followerUserId=" + req.query.userId + ">") {
                         isFollowing = true
+                        break
                     }
                 }
                 stream.destroy()
@@ -5895,6 +6152,7 @@ app.post("/user/follow", async (req, res) => {
                     }
                     else if (line.trim() == "<Following userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " followerUserId=" + req.body.followedUserId + ">") {
                         isFollowing = true
+                        break
                     }
                 }
                 stream.destroy()
@@ -5980,6 +6238,7 @@ app.post("/user/unfollow", async (req, res) => {
                     }
                     else if (line.trim() == "<Following userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " followerUserId=" + req.body.followedUserId + ">") {
                         isFollowing = true
+                        break
                     }
                 }
                 stream.destroy()
@@ -6017,11 +6276,11 @@ app.get("/assets/:id/versions", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("[{\"Id\": " + req.params.id + ", \"AssetId\":0, \"VersionNumber\":1, \"RawContentId\":0, \"ParentAssetVersionId\": 0, \"CreatorType\":1, \"CreatorTargetId\": " + userId + ", \"CreatingUniverseId\": null, \"Created\": \"2015-07-13T11:51:12.9073098-05:00\",\"Updated\": \"2015-07-13T11:51:12.9073098-05:00\"}]")
 })
-app.get("/user/get-friendship-count", (req, res) => {
+app.get("/user/get-friendship-count", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"success\": true, \"message\": \"Success\", \"count\": 0}")
 })
-app.post("/user/request-friendship", (req, res) => {
+app.post("/user/request-friendship", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"success\":true, \"message\":\"Success\"}")
 })
@@ -6083,10 +6342,10 @@ app.use((req, res) => {
     }
 });
 
-https.createServer(options, app).listen(443, function (req, res) {
+https.createServer(options, app).listen(443, (req, res) => {
     console.log("\x1b[32m%s\x1b[0m", "<INFO> Started a HTTPS server at port 443")
 })
 
-app.listen(80, function (req, res) {
+app.listen(80, (req, res) => {
     console.log("\x1b[32m%s\x1b[0m", "<INFO> Started a HTTP server at port 80")
 })
