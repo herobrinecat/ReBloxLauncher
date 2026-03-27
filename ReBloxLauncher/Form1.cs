@@ -1396,7 +1396,7 @@ namespace ReBloxLauncher
                             store.Open(OpenFlags.ReadOnly);
                             X509Certificate2 x509 = new X509Certificate2(X509Certificate2.CreateFromCertFile(Path.GetDirectoryName(Application.ExecutablePath) + @"\ca.pem"));
                             var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, x509.Thumbprint, false);
-                            if (certificates != null && certificates.Count > 0 || Properties.Settings.Default.CADontShow)
+                            if (certificates != null && certificates.Count > 0)
                             {
                                 x509.Dispose();
                                 caInstalled = true;
