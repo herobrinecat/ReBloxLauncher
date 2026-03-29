@@ -4637,6 +4637,10 @@ app.get("/universal-app-configuration/v1/behaviors/app-policy/content", (_, res)
     res.status(200).send("{\"ChatHeaderSearch\": true, \"ChatPlayTogether\": true, \"GamePlayerCounts\": true, \"Notifications\": true, \"SearchBar\": true, \"GameReportingDisabled\": false, \"FriendFinder\": true, \"UseBottomBar\": true, \"ShowYoutubeAgeAlert\": false, \"ShowDisplayName\": true, \"CatalogReportingDisabled\": false, \"ShowVideoThumbnails\": true, \"EnableInGameHomeIcon\": false, \"EnableVoiceReportAbuseMenu\": true, \"EnablePremiumUserFeatures\": true, \"PlatformGroup\": \"Unknown\", \"RealNamesInDisplayNamesEnabled\": false, \"SystemBarPlacement\": \"Bottom\"}")
 })
 
+app.get("/universal-app-configuration/v1/behaviors/studio/content", (_, res) => {
+    res.status(200).send("{}") //This should make 2021L+ Studio work.
+})
+
 app.get("/v1/assets/:id/bundles", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (useAuth == true) {
