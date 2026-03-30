@@ -456,11 +456,18 @@ namespace ReBloxLauncher
                     {
                         for (int i = 0; i < directories.Length; i++)
                         {
-                            if (directories[i].EndsWith("L") && directories[i + 1] != null && directories[i + 1].EndsWith("M"))
+                            if (directories[i].EndsWith("L") && (i + 1) < directories.Length)
                             {
-                                listBox1.Items.Add(Path.GetFileName(directories[i + 1]));
-                                listBox1.Items.Add(Path.GetFileName(directories[i]));
-                                i++;
+                                if (directories[i + 1].EndsWith("M"))
+                                {
+                                    listBox1.Items.Add(Path.GetFileName(directories[i + 1]));
+                                    listBox1.Items.Add(Path.GetFileName(directories[i]));
+                                    i++;
+                                }
+                                else
+                                {
+                                    listBox1.Items.Add(Path.GetFileName(directories[i]));
+                                }
                             }
                             else
                             {
@@ -5037,11 +5044,18 @@ namespace ReBloxLauncher
                 {
                     for (int i = 0; i < directories.Length; i++)
                     {
-                        if (directories[i].EndsWith("L") && directories[i + 1] != null && directories[i + 1].EndsWith("M"))
+                        if (directories[i].EndsWith("L") && (i + 1) < directories.Length)
                         {
-                            listBox1.Items.Add(Path.GetFileName(directories[i + 1]));
-                            listBox1.Items.Add(Path.GetFileName(directories[i]));
-                            i++;
+                            if (directories[i + 1].EndsWith("M"))
+                            {
+                                listBox1.Items.Add(Path.GetFileName(directories[i + 1]));
+                                listBox1.Items.Add(Path.GetFileName(directories[i]));
+                                i++;
+                            }
+                            else
+                            {
+                                listBox1.Items.Add(Path.GetFileName(directories[i]));
+                            }
                         }
                         else
                         {
