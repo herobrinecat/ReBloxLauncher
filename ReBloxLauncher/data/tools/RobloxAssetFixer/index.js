@@ -4952,7 +4952,7 @@ app.get("/asset-gameicon/multiget", (req, res) => {
 
 app.get("/v1/games/icons", (req, res) => {
     res.setHeader("cache-control", "no-cache")
-    if (useAuth == true) {
+    if (isRobloxAvailable) {
         var options = {
             host: "thumbnails.roblox.com",
             port: 443,
@@ -4975,14 +4975,45 @@ app.get("/v1/games/icons", (req, res) => {
         var idsplitted = req.query.universeIds.split(',')
         var edit = ""
 
-        idsplitted.forEach((id) => {
+        if (filesystem.existsSync("./gametemplates.json")) {
+            var json = "{\"data\":[" + filesystem.readFileSync("./gametemplates.json") + "]}"
+
+            var jsonparsed = JSON.parse(json)
+
+            idsplitted.forEach((id) => {
+                var inserted = false
+                if (jsonparsed["data"].length > 0) {
+                    jsonparsed["data"].forEach((template) => {
+                        if (template["universe"]["id"] == id) {
+                            inserted = true
+                            if (idsplitted[idsplitted.length - 1] == id) {
+                                edit += "{\"targetId\":" + id + ",\"State\":\"Completed\",\"imageUrl\":\"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + template["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"version\":\"TN3\"}"
+                            }
+                            else {
+                                edit += "{\"targetId\":" + id + ",\"State\":\"Completed\",\"imageUrl\":\"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + template["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"version\":\"TN3\"}, "
+                            }
+                        }
+                    })
+                }
+                if (inserted == false) {
+                    if (idsplitted[idsplitted.length - 1] == id) {
+                        edit += "{\"targetId\":" + id + ",\"State\":\"Completed\",\"imageUrl\":\"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + id + "&wd=700&ht=700&fmt=png\", \"version\":\"TN3\"}"
+                    }
+                    else {
+                        edit += "{\"targetId\":" + id + ",\"State\":\"Completed\",\"imageUrl\":\"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + id + "&wd=700&ht=700&fmt=png\", \"version\":\"TN3\"}, "
+                    }
+                }
+            })
+
+        }
+        else {
             if (idsplitted[idsplitted.length - 1] == id) {
                 edit += "{\"targetId\":" + id + ",\"State\":\"Completed\",\"imageUrl\":\"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + id + "&wd=700&ht=700&fmt=png\", \"version\":\"TN3\"}"
             }
             else {
                 edit += "{\"targetId\":" + id + ",\"State\":\"Completed\",\"imageUrl\":\"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + id + "&wd=700&ht=700&fmt=png\", \"version\":\"TN3\"}, "
             }
-        })
+        }
 
         res.status(200).send("{\"data\":[" + edit + "]}")
     }
