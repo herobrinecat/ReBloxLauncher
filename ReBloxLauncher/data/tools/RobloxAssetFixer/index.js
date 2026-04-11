@@ -3875,7 +3875,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
                 return
             }
             if (sent == false) {
-                if (useAuth) {
+                if (isRobloxAvailable) {
                     var options1 = {
                         host: 'badges.roblox.com',
                         port: 443,
@@ -4011,7 +4011,7 @@ app.post("/assets/award-badge", async (req, res) => {
                 return
             }
             if (sent == false) {
-                if (useAuth) {
+                if (isRobloxAvailable) {
                     var options1 = {
                         host: 'badges.roblox.com',
                         port: 443,
