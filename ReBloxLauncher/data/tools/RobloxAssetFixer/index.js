@@ -18,7 +18,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 const app = express();
 app.use(express.json({ limit: "200mb" }))
 app.use(express.urlencoded({ extended: true, limit: "200mb" }))
-app.use(express.raw({ limit: "200mb" }))
+app.use(express.raw({ limit: "200mb", type: '*/*' }))
 
 //User variables
 var username = "Player" // can be set with -username
@@ -1926,6 +1926,40 @@ function translateAssetTypeToAssetTypeId(assetType) {
         case "BackAccessory": return 46;
         case "WaistAccessory": return 47;
         default: return 10;
+    }
+}
+
+function translateAssetTypeIdToAssetType(assetTypeId) {
+    switch (assetTypeId) {
+        case 1: return "Image";
+        case 2: return "TShirt";
+        case 3: return "Mesh";
+        case 5: return "Lua";
+        case 8: return "Hat";
+        case 9: return "Place";
+        case 13: return "Decal";
+        case 24: return "Animation";
+        case 11: return "Shirt";
+        case 12: return "Pants";
+        case 10: return "Model";
+        case 62: return "Video";
+        case 3: return "Audio";
+        case 18: return "Face";
+        case 17: return "Head";
+        case 40: return "MeshPart";
+        case 21: return "Badge";
+        case 34: return "GamePass";
+        case 32: return "Package";
+        case 61: return "EmoteAnimation";
+        case 38: return "Plugin";
+        case 41: return "HairAccessory";
+        case 42: return "FaceAccessory";
+        case 43: return "NeckAccessory";
+        case 44: return "ShoulderAccesory";
+        case 45: return "FrontAccessory";
+        case 46: return "BackAccessory";
+        case 47: return "WaistAccessory";
+        default: return "Model";
     }
 }
 
@@ -4289,7 +4323,21 @@ app.get("/v1/users/authenticated/roles", (req, res) => {
 app.get("/v1/products/:id", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
-    res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":133293265, \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
+    if (filesystem.existsSync("./marketplace.json")) {
+        var jsondata = JSON.parse(filesystem.readFileSync("./marketplace.json", "utf8"))
+        var sent = false
+
+        jsondata.forEach((product) => {
+            if (req.params.id == product["id"]) {
+                sent = true
+                res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":" + req.params.id + ", \"assetName\":\"" + product["name"] + "\", \"assetType\": \"" + translateAssetTypeIdToAssetType(product["assetType"]) + "\", \"assetTypeDisplayName\": \"" + translateAssetTypeIdToAssetType(product["assetType"]) + "\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
+            }
+        })
+        if (sent == false) res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":" + req.params.id + ", \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
+    }
+    else {
+        res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":" + req.params.id + ", \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
+    }
 })
 
 app.get("/marketplace/productdetails", (req, res) => {
