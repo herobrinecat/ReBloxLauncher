@@ -3432,60 +3432,8 @@ app.get("/users/:userid/canmanage/:id", (req, res) => {
 app.get("//game/players/:id", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
-    if (isNumeric(req.params.id)) {
-        if (req.params.id == userId) {
-            res.status(200).send("{ \"Id\": " + userId + ", \"Username\":\"" + username + "\",\"AvatarUri\":null, \"AvatarFinal\":false, \"IsOnline\":true }")
-        }
-        else {
-            if (joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/users/" + req.params.id,
-                        method: "GET"
-                    }
-
-                    http.get(options, (res1) => {
-                        res1.setEncoding("utf-8")
-                        var data = ""
-                        res1.on("data", (chunk) => {
-                            data += chunk
-                        })
-                        res1.on("end", () => {
-                            res.status(res1.statusCode).send(data)
-                        })
-                    })
-
-                } catch {
-                    res.status(500).end()
-                }
-            }
-            else {
-                if (filesystem.existsSync("./users.json")) {
-                    try {
-                        var userjson = JSON.parse(filesystem.readFileSync("./users.json", "utf8"))
-
-                        if (userjson[req.params.id.toString()] != undefined) {
-                            res.status(200).send("{ \"Id\": " + req.params.id + ", \"Username\":\"" + userjson[req.params.id] + "\",\"AvatarUri\":null, \"AvatarFinal\":false, \"IsOnline\":true }")
-                        }
-                        else {
-                            res.status(200).send("{}")
-                        }
-                        userjson = null
-                    } catch {
-                        res.status(200).send("{}")
-                    }
-                }
-                else {
-                    res.status(200).send("{}")
-                }
-            }
-        }
-    }
-    else {
-        res.status(400).end()
-    }
+    
+    res.status(200).send("{\"ChatFilter\": \"whitelist\"}")
 })
 
 app.get("/users/:id", (req, res) => {
