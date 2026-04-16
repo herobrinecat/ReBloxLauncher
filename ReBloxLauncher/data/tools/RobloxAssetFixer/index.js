@@ -5070,7 +5070,7 @@ app.get("/Game/AreFriends", async (req, res) => {
                             }
                             else {
                                 for (var i = 0; i < friendsarray.length; i++) {
-                                    if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">\r\n" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">\r\n") {
+                                    if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">") {
                                         if (friendsExistsList.includes(friendsarray[i]) == false) {
                                             friendsExistsList.push(friendsarray[i])
                                         }
