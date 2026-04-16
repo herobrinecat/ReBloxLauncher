@@ -2010,7 +2010,7 @@ app.post("/v1/assets/batch", (req, res) => {
 app.get("/Thumbs/Avatar.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.setHeader("Content-disposition", "attachment; filename=\"avatar.png\"")
-    if (req.query.userId != undefined) {
+    if (req.query.userId != undefined && isNumeric(req.query.userId)) {
         if (filesystem.existsSync("./renders/" + req.query.userId + ".png")) {
             res.status(200).send(filesystem.readFileSync("./renders/" + req.query.userId + ".png"))
         }
