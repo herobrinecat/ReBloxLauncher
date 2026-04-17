@@ -16,9 +16,9 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 //Create express server
 const app = express();
-app.use(express.json({ limit: "200mb" }))
-app.use(express.urlencoded({ extended: true, limit: "200mb" }))
-app.use(express.raw({ limit: "200mb", type: '*/*' }))
+app.use(express.json({ limit: "500mb" }))
+app.use(express.urlencoded({ extended: true, limit: "500mb" }))
+app.use(express.raw({ limit: "500mb", type: '*/*' }))
 
 //User variables
 var username = "Player" // can be set with -username
