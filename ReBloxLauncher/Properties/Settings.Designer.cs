@@ -12,7 +12,7 @@ namespace ReBloxLauncher.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.14.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -25,7 +25,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1318")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1320")]
         public string version {
             get {
                 return ((string)(this["version"]));
@@ -401,6 +401,42 @@ namespace ReBloxLauncher.Properties {
             }
             set {
                 this["EnableOwnedAssets"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool UploadFilesAllowed {
+            get {
+                return ((bool)(this["UploadFilesAllowed"]));
+            }
+            set {
+                this["UploadFilesAllowed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool RCCServiceFullSupport {
+            get {
+                return ((bool)(this["RCCServiceFullSupport"]));
+            }
+            set {
+                this["RCCServiceFullSupport"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FadeImageSupport {
+            get {
+                return ((bool)(this["FadeImageSupport"]));
+            }
+            set {
+                this["FadeImageSupport"] = value;
             }
         }
     }

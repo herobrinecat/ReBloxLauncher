@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="version" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">0.0.1318</Value>
+      <Value Profile="(Default)">0.0.1320</Value>
     </Setting>
     <Setting Name="lastselectedversion" Type="System.String" Scope="User">
       <Value Profile="(Default)">2017L</Value>
@@ -97,6 +97,15 @@
     </Setting>
     <Setting Name="EnableOwnedAssets" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="UploadFilesAllowed" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="RCCServiceFullSupport" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="FadeImageSupport" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
   </Settings>
 </SettingsFile>
