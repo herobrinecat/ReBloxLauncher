@@ -62,9 +62,12 @@ namespace ReBloxLauncher
             Console.WriteLine("<INFO> Ending logging session");
             try
             {
-                Console.SetOut(oldOut);
-                writer.Close();
-                ostrm.Close();
+                if (Console.Out != oldOut)
+                {
+                    Console.SetOut(oldOut);
+                    writer.Close();
+                    ostrm.Close();
+                }
             }
             catch
             {

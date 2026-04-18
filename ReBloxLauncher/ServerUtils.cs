@@ -20,7 +20,6 @@ namespace ReBloxLauncher
         static bool serverOn = false;
         static bool serverComOn = false;
 
-        static int playerCount = 0;
         public static UdpClient GetClient(int clientType)
         {
             if (clientType == 0)
@@ -49,6 +48,10 @@ namespace ReBloxLauncher
             bool success = int.TryParse(stringToConvert, styles, provider, out int number);
 
             return success;
+        }
+        private static string getTimestamp(DateTime value)
+        {
+            return value.ToString("yyyyMMddHHmmss");
         }
 
         public static void StartServerCom()
@@ -107,6 +110,25 @@ namespace ReBloxLauncher
                                         Console.WriteLine("<INFO> User settings has been sent to the server!");
                                         client.Close();
                                     }
+                                    else if (buffer[4] == 0x47 && buffer[5] == 0x52 && buffer[6] == 0x53)
+                                    {
+                                        string timestamp = getTimestamp(DateTime.UtcNow);
+                                        var newarray = new byte[buffer.Length - 7];
+                                        Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
+                                        if (Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }) == timestamp)
+                                        {
+                                            byte[] roblosecurity = Encoding.UTF8.GetBytes(Properties.Settings.Default.ROBLOSECURITY);
+                                            Console.WriteLine("<INFO> Sending .ROBLOSECURITY to server...");
+                                            stream.Write(roblosecurity, 0, roblosecurity.Length);
+                                            Console.WriteLine("<INFO> .ROBLOSECURITY sent to the server!");
+                                            client.Close();
+                                        }
+                                        else
+                                        {
+                                            stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                            Console.WriteLine("<ERROR> A server attempted to grab your ROBLOSECURITY! Server IP: " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " Expected time: " + timestamp + " Received time: " + Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }));
+                                        }
+                                    }
                                     else
                                     {
                                         Console.WriteLine("<INFO> Invalid data sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address);
@@ -127,9 +149,13 @@ namespace ReBloxLauncher
                     {
                         //ignore
                     }
-                    catch
+                    catch (ObjectDisposedException)
                     {
-                        Console.WriteLine("<WARN> Something went wrong while running the TCP server! RobloxAssetFixer integration may not be available.");
+                        //the server died, ignore please.
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("<WARN> Something went wrong while running the TCP server! RobloxAssetFixer integration may not be available.\r\n\r\nMessage: " + e.Message + "\r\n\r\nStack Trace:\r\n" + e.StackTrace);
                     }
                 }
             });

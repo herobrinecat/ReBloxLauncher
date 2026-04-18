@@ -134,8 +134,7 @@ namespace ReBloxLauncher
             }
 
             if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\clothes") == true) Directory.Delete(datafolder + @"\tools\RobloxAssetFixer\clothes", true);
-
-            if (UseJoinJSONLink == true)
+                if (UseJoinJSONLink == true)
             {
                 if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer\game") == true) Directory.Delete(datafolder + @"\tools\RobloxAssetFixer\game", true);
                 if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt");
@@ -186,6 +185,7 @@ namespace ReBloxLauncher
                     Console.WriteLine("<INFO> Clearing ROBLOX's temporary files");
                     if (Directory.Exists(Path.GetTempPath() + "Roblox")) Directory.Delete(Path.GetTempPath() + "Roblox", true);
                 }
+                ServerUtils.stopServerCom();
                 RemoveGameFiles();
                 ClearAssets();
                 Application.Exit();
@@ -688,6 +688,7 @@ namespace ReBloxLauncher
 
         private void LaunchScreen_Load(object sender, EventArgs e)
         {
+            ServerUtils.StartServerCom();
             if (File.Exists(datafolder + @"\clients\" + robloxversion + @"\ReBlox.ini"))
             {
                 string[] config = File.ReadAllLines(datafolder + @"\clients\" + robloxversion + @"\ReBlox.ini");
@@ -768,14 +769,13 @@ namespace ReBloxLauncher
             {
                 try
                 {
-                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
+                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
                     {
                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                         {
                             if (IsAdministrator())
                             {
-
-                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip");
+                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip");
                                 if (Properties.Settings.Default.UsePatchInStudio)
                                 {
                                     if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", 53640);
@@ -796,7 +796,7 @@ namespace ReBloxLauncher
                                     ps1.CreateNoWindow = true;
                                     if (Properties.Settings.Default.useAuth)
                                     {
-                                        ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)).Trim(new char[] { '\0' }) + " -useAuth" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "");
+                                        ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "");
                                     }
                                     else
                                     {
@@ -894,7 +894,7 @@ namespace ReBloxLauncher
 
                             if (Properties.Settings.Default.useAuth)
                             {
-                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser -ROBLOSECURITY=" + Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY)).Trim(new char[] { '\0' }) + " -useAuth" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "");
+                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + Properties.Settings.Default.UserId + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "");
                             }
                             else
                             {
@@ -975,6 +975,7 @@ namespace ReBloxLauncher
 
         private void button1_Click(object sender, EventArgs e)
         {
+            ServerUtils.stopServerCom();
             ClearAssets();
             RemoveGameFiles();
             Application.Exit();

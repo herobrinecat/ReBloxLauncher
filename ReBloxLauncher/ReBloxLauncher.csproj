@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -9,7 +9,7 @@
     <RootNamespace>ReBloxLauncher</RootNamespace>
     <AssemblyName>ReBloxLauncher</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>8</LangVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
@@ -45,7 +45,7 @@
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DiscordRPC, Version=1.6.1.70, Culture=neutral, PublicKeyToken=null">
+    <Reference Include="DiscordRPC">
       <HintPath>..\packages\DiscordRichPresence.1.6.1.70\lib\net45\DiscordRPC.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -53,7 +53,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-	<Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -85,11 +85,11 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-	<Compile Include="ServerUtils.cs" />
-	<Compile Include="SplashScreen.cs">
-		<SubType>Form</SubType>
+    <Compile Include="ServerUtils.cs" />
+    <Compile Include="SplashScreen.cs">
+      <SubType>Form</SubType>
     </Compile>
-	<Compile Include="SplashScreen.Designer.cs">
+    <Compile Include="SplashScreen.Designer.cs">
       <DependentUpon>SplashScreen.cs</DependentUpon>
     </Compile>
     <Compile Include="SteamDeckUI.cs">
@@ -118,14 +118,14 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-	<EmbeddedResource Include="SplashScreen.resx">
+    <EmbeddedResource Include="SplashScreen.resx">
       <DependentUpon>SplashScreen.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="SteamDeckUI.resx">
       <DependentUpon>SteamDeckUI.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
-	<None Include="Properties\app.manifest" />
+    <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -135,12 +135,15 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <None Include="rebloxstrongname.pfx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="rebloxicon.ico" />
+    <None Include="Resources\resources_logo.png" />
+    <None Include="Resources\splashscreen.png" />
     <EmbeddedResource Include="Resources\DiscordRPC.dll" />
     <EmbeddedResource Include="Resources\Newtonsoft.Json.dll" />
   </ItemGroup>

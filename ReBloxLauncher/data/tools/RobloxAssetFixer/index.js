@@ -11,6 +11,7 @@ const filesystem = require("fs");
 const zlib = require("zlib")
 const crypto = require("crypto")
 const readline = require("readline")
+const path = require("path")
 const jwt = require("jsonwebtoken");
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -26,7 +27,7 @@ var userId = 1 // can be set with -userid
 var accountOver13 = true // can be set with -accountUnder13
 var avatarR15 = false // can be set with -r15
 var avatarBodyColor = [] //can be set with -bodycolor=[]
-var joining = false //Use to make several function contact the ip's server instead of simulating it...
+var joining = false //Use to make several function contact the host's server instead of simulating it...
 var ip = "" // required for joining variable
 var enableDataStore = true //Enable DataStore support in RBDF
 var enableBadges = true //Enable Badges support in RBDF
@@ -35,17 +36,15 @@ var enableFriendships = true //Enable Friendships (Friends) support in RBDF (201
 var enableOwnedAssets = true //Enable owned assets support in RBDF
 var AllowGetCurrentUser = false //Sends the GetCurrentUser with the User ID instead of nothing (May lead issues to 2018+)
 var RBDFpath = "./default.rbdf" //A path to the ReBlox Datastore File
-var treatImagesAsAssetForUseAuth = true //Treat the images as if they are not images when using useAuth
 var clothidsstring = "" //for clothing and assets for characters.
 var robux = 5000 //Total amount of ROBUX
 
 //Server variables
 var assetfolder = "./assets" //A directory path where the server will look if there's any assets to use locally
-var verbose = true //Gives out more info like what the server is doing
+var verbose = false //Gives out more info like what the server is doing
 var useAuth = false //ROBLOSECURITY is needed to be filled out to use this, can get other assets apart from Decals (can be set with -useAuth)
 var ROBLOSECURITY = "" //This is required to tell the difference between Decal and Image due to assetdelivery update (if useAuth is enabled) (can be set with -ROBLOSECURITY [please put this before -useAuth])
 var saveFile = false //Saves the file that's not part of the file assets to the saved folder
-var disableParsingDecals = false //Disables parsing of decals if using treatImagesAsAssetForUseAuth.
 var localClothes = true //Enables -clothes as argument to support multiple user ids (enabled by default)
 var assetsFromServer = false //Makes the asset load from the server instead of emulating if joining (Asset packs for the server you're joining is no longer required!)
 var useNewSignatureFormat = true //Uses the rbxsig format when signing scripts
@@ -63,6 +62,10 @@ var isInternetAvailable = false //A check variable for internet
 var isRobloxAvailable = false //In case Roblox is banned by your country/ISP!
 var RBDFTextFormat = false //Use an older format for RBDF (Not secured for sensitive informations, the magic number determines the format...)
 var allowTCPLauncher = true //Allows communication between the server and the launcher via TCP, if you're not using the launcher or don't have the launcher, use --disableTCP
+var allowUploadFiles = false //Allows uploading of files to your computer (This could pose security risks to your computer, so it's disabled by default)
+var forceCanManageTrue = false //Forces the canmanage value to be true (Pre-0.0.1320 behavior)
+var checkROBLOSECURITY = false //A mark for checking ROBLOSECURITY from launcher
+var enableHTTPS = true //Enable support for HTTPS (Recommended!)
 
 if (filesystem.existsSync(privateKey)) {
     publicKeyObj = crypto.createPublicKey({
@@ -87,16 +90,19 @@ process.on('exit', (code) => {
 
 process.argv.forEach(function (val) {
     if (val == "-useAuth") {
-        if (ROBLOSECURITY.startsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|")) {
-            //wow, roblox still uses the old way of saying Robux.
-            useAuth = true
-        }
-        else {
-            console.log("\x1b[33m%s\x1b[0m", "<WARN> A valid ROBLOSECURITY is required, disabling useAuth...")
-            useAuth = false
+        if (useAuth == false) {
+            if (ROBLOSECURITY.startsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|")) {
+                //wow, roblox still uses the old way of saying Robux.
+                useAuth = true
+            }
+            else {
+                console.log("\x1b[33m%s\x1b[0m", "<WARN> A valid ROBLOSECURITY is required, disabling useAuth...")
+                useAuth = false
+            }
         }
     }
     else if (val.startsWith("-ROBLOSECURITY=")) {
+        console.log("\x1b[33m%s\x1b[0m", "<WARN> Setting your ROBLOSECURITY via command line is generally insecure! We strongly recommend using --syncROBLOSECURITYfromLauncher (ReBlox 0.0.1320+)")
         ROBLOSECURITY = val.slice(15)
     }
     else if (val.startsWith("-username=")) {
@@ -161,9 +167,6 @@ process.argv.forEach(function (val) {
     else if (val.startsWith("-rbdf=")) {
         RBDFpath = val.slice(6).slice(0, -1)
     }
-    else if (val == "-disableParseDecals") {
-        disableParsingDecals = true
-    }
     else if (val == "-assetFromServer") {
         assetsFromServer = true
     }
@@ -189,17 +192,26 @@ process.argv.forEach(function (val) {
         console.log("\x1b[33m%s\x1b[0m", "<WARN> Any changes that occurs that requires a change to the launcher will not be saved. Due to this, it will only be saved in this session only.")
         allowTCPLauncher = false
     }
+    else if (val == "--allowUploadingFiles") {
+        console.log("\x1b[33m%s\x1b[0m", "<WARN> Allowing clients to upload files to your computer can contains security risks (viruses, inappropriate files, etc). It is recommended that you turn this off if you're running a public server.")
+        allowUploadFiles = true
+    }
+    else if (val == "--forceCanManageTrue") {
+        forceCanManageTrue = true
+    }
+    else if (val == "--syncROBLOSECURITYfromLauncher") {
+        if (allowTCPLauncher) {
+            checkROBLOSECURITY = true
+        }
+        else {
+            console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't contact the launcher as TCP communication is disabled by command line. Please remove --disableTCP from your command line and restart the server!")
+        }
+    }
     else if (val == "-help") {
-        console.log("\r\n<INFO> Usage for RobloxAssetFixer:\r\n\r\n-ROBLOSECURITY=\"roblosecurity\" - Set your ROBLOSECURITY (required for useAuth)\r\n-useAuth - Set the asset retrieval to use Roblox's servers that requires auth\r\n-username= - Set your player's username\r\n-userid= - Set your player's userid\r\n-accountUnder13 - Mark your account <13\r\n-r15 - Set your avatar to be R15\r\n-bodycolor=[0,0,0,0,0,0] - Set your body color of your avatar (deprecated)\r\n-clothes=[] - Set the asset ids of your avatar for customzation (deprecated)\r\n-ip= - Set an IP to the server if you're joining (required for -joining)\r\n-joining - Mark the server as joining and make several functions connect to the host's server instead of simulating it (-ip required)\r\n-disableDataStore - disable saving and loading of datastore with RBDF\n-disableBadges - disable saving badges with RBDF\r\n-disableFollowing - disable saving followers with RBDF\r\n-rbdf=\"path\" - A path to a ReBlox Datastore File\r\n-disableParseDecals - Disables parsing of decals if using treatImagesAsAssetForUseAuth\r\n-assetFromServer - Makes the asset link attempt to contact the local server you're joining, use Roblox's server as fallback (requires -ip and -joining)\r\n-disableNewSignature - use %DATA% instead of --rbxsig%DATA% (required for 2013M and older)\r\n-disableNewSignatureAsset - makes the format for script signing %ID% instead of --rbxassetid%ID%\r\n-disableOwnedAssets - Disables saving owned assets with RBDF\r\n-robux=amount - Set the amount of ROBUX you have.\r\n--disableTCP - Disables communication between the server and the launcher.")
+        console.log("\r\n<INFO> Usage for RobloxAssetFixer:\r\n\r\n-ROBLOSECURITY=\"roblosecurity\" - Set your ROBLOSECURITY (required for useAuth)\r\n-useAuth - Set the asset retrieval to use Roblox's servers that requires auth\r\n-username= - Set your player's username\r\n-userid= - Set your player's userid\r\n-accountUnder13 - Mark your account <13\r\n-r15 - Set your avatar to be R15\r\n-bodycolor=[0,0,0,0,0,0] - Set your body color of your avatar (deprecated)\r\n-clothes=[] - Set the asset ids of your avatar for customzation (deprecated)\r\n-ip= - Set an IP to the server if you're joining (required for -joining)\r\n-joining - Mark the server as joining and make several functions connect to the host's server instead of simulating it (-ip required)\r\n-disableDataStore - disable saving and loading of datastore with RBDF\n-disableBadges - disable saving badges with RBDF\r\n-disableFollowing - disable saving followers with RBDF\r\n-rbdf=\"path\" - A path to a ReBlox Datastore File\r\n-assetFromServer - Makes the asset link attempt to contact the local server you're joining, use Roblox's server as fallback (requires -ip and -joining)\r\n-disableNewSignature - use %DATA% instead of --rbxsig%DATA% (required for 2013M and older)\r\n-disableNewSignatureAsset - makes the format for script signing %ID% instead of --rbxassetid%ID%\r\n-disableOwnedAssets - Disables saving owned assets with RBDF\r\n-robux=amount - Set the amount of ROBUX you have.\r\n--disableTCP - Disables communication between the server and the launcher.")
         process.exit(0)
     }
 })
-console.log("<INFO> Username: " + username)
-console.log("<INFO> User ID: " + userId)
-console.log("<INFO> Account Age: " + ((accountOver13) ? "13+" : "<13"))
-console.log("<INFO> Avatar Type: " + ((avatarR15) ? "R15" : "R6"))
-console.log("<INFO> Using Auth: " + useAuth.toString())
-if (joining && ip != "") console.log("<INFO> Server IP: " + ip)
 
 checkInternet().then((result) => {
     isInternetAvailable = result
@@ -208,12 +220,69 @@ checkInternet().then((result) => {
         useAuth = false
     }
     else if (result && useAuth && isRobloxAvailable == false) {
-        console.log("\x1b[33m%s\x1b[0m", "<WARN> It appears that you have internet connection, however we're unable to contact Roblox's servers (most likely because of your ISP or your country's ban), disabling useAuth...")
+        console.log("\x1b[33m%s\x1b[0m", "<WARN> It appears that you have an internet connection, however we're unable to contact Roblox's servers (most likely because of your ISP or your country's ban), disabling useAuth...")
         useAuth = false
     }
+    if (checkROBLOSECURITY == true) getROBLOSECURITYfromLauncher(1)
 })
 
-//if (verbose) { app.use((req, res, next) => { console.log("\x1b[32m%s\x1b[0m", "<INFO> " + req.ip + " requested: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")"); next(); }) }
+console.log("<INFO> Username: " + username)
+console.log("<INFO> User ID: " + userId)
+console.log("<INFO> Account Age: " + ((accountOver13) ? "13+" : "<13"))
+console.log("<INFO> Avatar Type: " + ((avatarR15) ? "R15" : "R6"))
+if (checkROBLOSECURITY == false) console.log("<INFO> Using Auth: " + useAuth.toString())
+if (joining && ip != "") console.log("<INFO> Server IP: " + ip)
+
+function getROBLOSECURITYfromLauncher(times) {
+    if (checkROBLOSECURITY == true && isInternetAvailable == true && isRobloxAvailable == true) {
+        if (times < 6) {
+            const { Socket } = require("net")
+
+            const client = new Socket()
+
+            var options = {
+                host: "127.0.0.1",
+                port: 50355
+            }
+            client.connect(options, () => {
+                if (verbose) { console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!") }
+                var roblosecurityfromlauncher = ""
+                client.setEncoding("utf8")
+                client.on("data", (chunk) => {
+                    roblosecurityfromlauncher += chunk
+                })
+
+                client.on("end", () => {
+                    if (Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8").startsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|")) {
+                        ROBLOSECURITY = Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8")
+                        if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully synced ROBLOSECURITY with the launcher! Turning on useAuth...")
+                        useAuth = true
+                    }
+                    else if (roblosecurityfromlauncher == "invalid") {
+                        getROBLOSECURITYfromLauncher(times + 1)
+                    }
+                    else {
+                        if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Received an invalid ROBLOSECURITY from the launcher!")
+                    }
+                })
+            })
+
+            client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("GRS", "utf8"), Buffer.from(getTimestamp(), "utf8")]))
+            client.end()
+        }
+        else {
+            console.log("\x1b[31m%s\x1b[0m", "<ERROR> We're unable to sync the ROBLOSECURITY! Check your date/time settings.")
+        }
+    }
+}
+function getTimestamp() {
+    var date = new Date(Date.now())
+
+    return date.getUTCFullYear().toString().padEnd(4, "0") + (date.getUTCMonth() + 1).toString().padStart(2, "0") + date.getUTCDate().toString().padStart(2, 0) + date.getUTCHours().toString().padStart(2, "0") + date.getUTCMinutes().toString().padStart(2, "0") + date.getUTCSeconds().toString().padStart(2, "0")
+
+}
+
+if (verbose) { app.use((req, res, next) => { console.log("\x1b[32m%s\x1b[0m", "<INFO> " + req.ip + " requested: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")"); next(); }) }
 
 function randomUUID() {
     return crypto.randomBytes(4).toString("hex") + "-" + crypto.randomBytes(2).toString("hex") + "-" + crypto.randomBytes(2).toString("hex") + "-" + crypto.randomBytes(2).toString("hex") + "-" + crypto.randomBytes(6).toString("hex")
@@ -224,45 +293,44 @@ async function checkInternet() {
     try {
         var result = false
         await new Promise((resolve, reject) => {
-            
 
-        var options = {
-            host: "gstatic.com",
-            path: "/generate_204",
-            port: 443,
-            method: "GET",
-            timeout: 2000
-        }
-
-        var req1 = https.request(options, (res) => {
-
-            var options2 = {
-                host: "assetdelivery.roblox.com",
-                path: "/",
+            const options = {
+                host: "gstatic.com",
+                path: "/generate_204",
                 port: 443,
                 method: "GET",
                 timeout: 2000
             }
 
-            var req2 = https.request(options2, (res1) => {
-                isRobloxAvailable = true
-                result = true
-                resolve()
+            const req1 = https.request(options, (res) => {
 
+                const options2 = {
+                    host: "assetdelivery.roblox.com",
+                    path: "/",
+                    port: 443,
+                    method: "GET",
+                    timeout: 2000
+                }
+
+                const req2 = https.request(options2, (res1) => {
+                    isRobloxAvailable = true
+                    result = true
+                    resolve()
+
+                })
+                req2.on("error", () => {
+                    isRobloxAvailable = false
+                    result = true
+                    resolve()
+                })
+                req2.end()
             })
-            req2.on("error", () => {
-                isRobloxAvailable = false
-                result = true
+            req1.on("error", () => {
+                result = false
                 resolve()
             })
-            req2.end()
-        })
-        req1.on("error", () => {
-            result = false
-            resolve()
-        })
 
-        req1.end()
+            req1.end()
         })
 
         return result
@@ -273,384 +341,289 @@ async function checkInternet() {
 
 function getAsset(id, callback) {
     try {
+        id = id.trim()
+        if (id.includes("www.roblox.com")) id = id.replace("http://www.roblox.com/asset/?id=", "");
+        if (id.includes("www.reblox.zip")) id = id.replace("http://www.reblox.zip/asset/?id=", "");
         if (notWorkingAssetIds.indexOf(id) > -1) {
             console.log("\x1b[33m%s\x1b[0m", "<WARN> Ignoring asset " + id + " assuming it's broken at this moment.")
             return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
         } else {
-            if (useAuth == false) {
-                if (verbose == true) {
-                    console.log("\x1b[33m%s\x1b[0m", "<WARN> Not using auth, only limited to decals")
-                }
-                var options = {
-                    host: 'apis.roblox.com',
+            if (useAuth == false && isRobloxAvailable == true) {
+                const options = {
+                    host: "assetdelivery.roblox.com",
                     port: 443,
-                    path: '/toolbox-service/v1/items/details?assetIds=' + id,
-                    method: "GET"
-                }
-                var inforesult = ""
-                var reqh1 = https.request(options, (res1) => {
-                    res1.setEncoding("utf8")
-                    res1.on("data", (chunk) => {
-                        inforesult += chunk
-                    })
-                    res1.on("end", () => {
-                        if (res1.statusCode == 200) {
-                            var jsoninfo = JSON.parse(inforesult)
-                            if (jsoninfo["data"][0]["asset"]["typeId"] == 13) {
-                                var options1 = {
-                                    host: 'thumbnails.roblox.com',
-                                    port: 443,
-                                    path: '/v1/assets?assetIds=' + id + '&returnPolicy=PlaceHolder&size=700x700&format=png',
-                                    method: "GET"
-
-                                }
-                                var infoiresult = ""
-                                https.get(options1, (res2) => {
-
-                                    res2.setEncoding("utf8")
-                                    res2.on("data", (chunk) => {
-                                        infoiresult += chunk
-                                    })
-                                    res2.on("end", () => {
-                                        var jsoninfo1 = JSON.parse(infoiresult)
-                                        var options2 = {
-                                            host: 'tr.rbxcdn.com',
-                                            port: 443,
-                                            path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
-                                            method: "GET",
-                                            headers: {
-                                                "User-Agent": "totallychrome",
-                                                "Accept-Encoding": "gzip,deflate"
-                                            }
-
-                                        }
-                                        https.get(options2, (res3) => {
-
-                                            var data = [], output
-                                            if (res3.headers["content-encoding"] == 'gzip') {
-                                                if (verbose) {
-                                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server (Image) [gzip compression]")
-                                                }
-                                                var gzip = zlib.createGunzip()
-                                                res3.pipe(gzip)
-                                                output = gzip
-                                            }
-                                            else if (res3.headers["content-encoding"] == 'deflate') {
-                                                if (verbose) {
-                                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server (Image) [deflate compression]")
-                                                }
-                                                var deflate = zlib.createDeflate()
-                                                res3.pipe(deflate)
-                                                output = deflate
-                                            }
-                                            else {
-                                                if (verbose) {
-                                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server (Image)")
-                                                }
-                                                output = res3
-                                            }
-                                            output.on("data", (chunk) => {
-                                                data.push(chunk)
-                                            })
-                                            output.on("end", () => {
-                                                var buffer = Buffer.concat(data)
-                                                if (saveFile == true) {
-                                                    if (filesystem.existsSync("./saved")) {
-                                                        filesystem.writeFileSync("./saved/" + id + ".png", buffer)
-                                                    }
-                                                    else {
-                                                        filesystem.mkdirSync("./saved")
-                                                        filesystem.writeFileSync("./saved/" + id + ".png", buffer)
-                                                    }
-                                                }
-                                                return callback(buffer)
-                                            })
-                                        })
-                                    })
-                                })
-                            }
-                            else {
-                                return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
-                            }
-                        }
-                        else {
-                            notWorkingAssetIds.push(id)
-                            return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
-                        }
-                    })
-                })
-
-                reqh1.on("error", () => {
-                    return callback("{\"errors\":[{\"code\": 0, \"message\":\"Something went wrong.\"}]}")
-                })
-                reqh1.end()
-            }
-            else {
-                var options = {
-                    host: 'apis.roblox.com',
-                    port: 443,
-                    path: '/assets/user-auth/v1/assets/' + id + '?readMask=assetType',
+                    path: "/v2/asset/?id=" + id,
                     method: "GET",
                     headers: {
-                        'Cookie': '.ROBLOSECURITY=' + ROBLOSECURITY
+                        "User-Agent": "RobloxStudio/WinInet"
                     }
-
                 }
-                var inforesult = ""
-                https.get(options, (res1) => {
-                    res1.setEncoding("utf8")
-                    res1.on("data", (chunk) => {
-                        inforesult += chunk
+
+                https.get(options, function (res) {
+                    res.setEncoding("utf8")
+
+                    var result = ""
+                    res.on("data", (chunk) => {
+                        result += chunk
                     })
-                    res1.on("end", () => {
-                        if (res1.headers["set-cookie"] != undefined) {
+
+                    res.on("end", () => {
+                        const jsonresult = JSON.parse(result)
+
+                        if (jsonresult["locations"] != undefined) {
+                            const splitted = jsonresult["locations"][0]["location"].split('/', 3)
+
+                            const options2 = {
+                                host: splitted[2],
+                                port: 443,
+                                path: jsonresult["locations"][0]["location"].replace("https://" + splitted[2], ""),
+                                method: "GET"
+                            }
+
+                            https.get(options2, (res1) => {
+                                var data = [], output
+
+                                if (res1.headers["content-encoding"] == "gzip") {
+                                    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    const gzip = zlib.createGunzip()
+                                    res1.pipe(gzip)
+                                    output = gzip
+                                }
+                                else if (res.headers["content-encoding"] == "deflate") {
+                                    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    const deflate = zlib.createDeflate()
+                                    res1.pipe(deflate)
+                                    output = deflate
+                                }
+                                else {
+                                    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    output = res1
+                                }
+
+                                output.on("data", (chunk) => {
+                                    data.push(chunk)
+                                })
+
+                                output.on("end", () => {
+                                    const buffer = Buffer.concat(data)
+
+                                    if (jsonresult["assetTypeId"] == 13) {
+                                        const buffertext = data.toString()
+                                        const regex = new RegExp("<url>(.*)<\/url>")
+                                        const match = regex.exec(buffertext)
+
+                                        if (match != null && match.length > 0) {
+                                            getAsset(match[1], function (data1) {
+                                                return callback(data1)
+                                            })
+                                        }
+                                    }
+                                    else {
+                                        return callback(buffer)
+                                    }
+                                })
+                            }).on("error", () => {
+                                console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong whlie trying to contact the Roblox server!")
+                                return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
+                            })
+                        }
+                        else {
+                            if (verbose) console.log("\x1b[33m%s\x1b[0m", "<WARN> AssetDelivery attempt failed without auth, decals will only be supported.");
+                            const options2 = {
+                                host: "apis.roblox.com",
+                                port: 443,
+                                path: "/toolbox-service/v2/assets/" + id,
+                                method: "GET"
+                            }
+                            https.get(options2, (res1) => {
+                                var result = ""
+
+                                res1.setEncoding("utf8")
+
+                                res1.on("data", (chunk) => {
+                                    result += chunk
+                                })
+
+                                res1.on("end", () => {
+                                    var parsedJSON = JSON.parse(result)
+
+                                    if (parsedJSON["asset"] != undefined) {
+                                        if (parsedJSON["asset"]["assetTypeId"] == 13) {
+                                            const options3 = {
+                                                host: "thumbnails.roblox.com",
+                                                port: 443,
+                                                path: "/v1/assets?assetIds=" + id + "&returnPolicy=PlaceHolder&size=700x700&format=Png&isCircular=false",
+                                                method: "GET"
+                                            }
+
+                                            https.get(options3, (res2) => {
+                                                var result = ""
+
+                                                res2.setEncoding("utf8")
+
+                                                res2.on("data", (chunk) => {
+                                                    result += chunk
+                                                })
+
+                                                res2.on("end", () => {
+                                                    const parsedThumbnails = JSON.parse(result)
+
+                                                    if (parsedThumbnails["data"].length > 0) {
+                                                        const splitted = parsedThumbnails["data"][0]["imageUrl"].split('/', 3)
+                                                        const options4 = {
+                                                            host: splitted[2],
+                                                            port: 443,
+                                                            path: parsedThumbnails["data"][0]["imageUrl"].replace("https://" + splitted[2], ""),
+                                                            method: "GET"
+                                                        }
+
+                                                        https.get(options4, (res3) => {
+                                                            var data = [], output
+
+                                                            if (res3.headers["content-encoding"] == "gzip") {
+                                                                if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (gzip compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                const gzip = zlib.createGunzip()
+                                                                res3.pipe(gzip)
+                                                                output = gzip
+                                                            }
+                                                            else if (res3.headers["content-encoding"] == "deflate") {
+                                                                if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (deflate compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                const deflate = zlib.createDeflate()
+                                                                res3.pipe(deflate)
+                                                                output = deflate
+                                                            }
+                                                            else {
+                                                                if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                output = res3
+                                                            }
+
+                                                            output.on("data", (chunk) => {
+                                                                data.push(chunk)
+                                                            })
+
+                                                            output.on("end", () => {
+                                                                const buffer = Buffer.concat(data)
+
+                                                                return callback(buffer)
+                                                            })
+                                                        })
+                                                    }
+                                                    else {
+                                                        return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
+                                                    }
+                                                })
+                                            })
+                                        }
+                                        else {
+                                            return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
+                                        }
+                                    }
+                                })
+                            })
+                        }
+                    })
+                })
+            }
+            else if (isRobloxAvailable == false) {
+                console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't download assets while the server is in offline mode! Please restart the server once you're connected to the internet.")
+                return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
+            }
+            else if (useAuth == true && isRobloxAvailable == true) {
+                const options = {
+                    host: "assetdelivery.roblox.com",
+                    port: 443,
+                    path: "/v2/asset/?id=" + id,
+                    method: "GET",
+                    headers: {
+                        "Cookie": ".ROBLOSECURITY=" + ROBLOSECURITY,
+                        "User-Agent": "RobloxStudio/WinInet"
+                    }
+                }
+
+                https.get(options, (res) => {
+                    res.setEncoding("utf8")
+
+                    var result = ""
+                    res.on("data", (chunk) => {
+                        result += chunk
+                    })
+
+                    res.on("end", () => {
+
+                        if (res.headers["set-cookie"] != undefined) {
                             var regex1 = new RegExp("\.ROBLOSECURITY=(_\|WARNING:-DO-NOT-SHARE-THIS\.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items\.\|_)(.*)(;)")
-                            var match = regex1.exec(res1.headers["set-cookie"])
+                            var match = regex1.exec(res.headers["set-cookie"])
                             if (match.length > 0) {
                                 ROBLOSECURITY = match[1].concat(match[2]).split(';')[0]
                                 changeROBLOSECURITYOnLauncher(match[1].concat(match[2]).split(';')[0])
                             }
                         }
-                        if (res1.statusCode == 200) {
-                            var jsoninfo = JSON.parse(inforesult)
-                            if (treatImagesAsAssetForUseAuth == false && jsoninfo["assetType"] == "Decal" || treatImagesAsAssetForUseAuth == false && jsoninfo["assetType"] == "Image") {
-                                var options1 = {
-                                    host: 'thumbnails.roblox.com',
-                                    port: 443,
-                                    path: '/v1/assets?assetIds=' + id + '&returnPolicy=PlaceHolder&size=700x700&format=png',
-                                    method: "GET"
+
+                        const jsonresult = JSON.parse(result)
+
+                        if (jsonresult["locations"] != undefined) {
+                            const splitted = jsonresult["locations"][0]["location"].split('/', 3)
+
+                            const options2 = {
+                                host: splitted[2],
+                                port: 443,
+                                path: jsonresult["locations"][0]["location"].replace("https://" + splitted[2], ""),
+                                method: "GET"
+                            }
+
+                            https.get(options2, (res1) => {
+                                var data = [], output
+
+                                if (res1.headers["content-encoding"] == "gzip") {
+                                    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    const gzip = zlib.createGunzip()
+                                    res1.pipe(gzip)
+                                    output = gzip
                                 }
-                                var infoiresult = ""
-                                var req2 = https.request(options1, (res2) => {
+                                else if (res.headers["content-encoding"] == "deflate") {
+                                    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    const deflate = zlib.createDeflate()
+                                    res1.pipe(deflate)
+                                    output = deflate
+                                }
+                                else {
+                                    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    output = res1
+                                }
 
-                                    res2.setEncoding("utf8")
-                                    res2.on("data", (chunk) => {
-                                        infoiresult += chunk
-                                    })
-                                    res2.on("end", () => {
-                                        var jsoninfo1 = JSON.parse(infoiresult)
-                                        if (jsoninfo1["data"] != undefined) {
-                                            var options2 = {
-                                                host: 'tr.rbxcdn.com',
-                                                port: 443,
-                                                path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
-                                                method: "GET",
-                                                headers: {
-                                                    "User-Agent": "totallychrome",
-                                                    "Accept-Encoding": "gzip, deflate"
-                                                }
-                                            }
-                                            https.get(options2, (res3) => {
+                                output.on("data", (chunk) => {
+                                    data.push(chunk)
+                                })
 
-                                                var data = [], output
-                                                if (res3.headers["content-encoding"] == 'gzip') {
-                                                    if (verbose) {
-                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server (Image) [gzip compression]")
-                                                    }
-                                                    var gzip = zlib.createGunzip()
-                                                    res3.pipe(gzip)
-                                                    output = gzip
-                                                }
-                                                else if (res3.headers["content-encoding"] == 'deflate') {
-                                                    if (verbose) {
-                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server (Image) [deflate compression]")
-                                                    }
-                                                    var deflate = zlib.createDeflate()
-                                                    res3.pipe(deflate)
-                                                    output = deflate
-                                                }
-                                                else {
-                                                    if (verbose) {
-                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server (Image)")
-                                                    }
-                                                    output = res3
-                                                }
-                                                output.on("data", (chunk) => {
-                                                    data.push(chunk)
-                                                })
-                                                output.on("end", () => {
-                                                    var buffer = Buffer.concat(data)
-                                                    if (saveFile == true) {
-                                                        if (filesystem.existsSync("./saved")) {
-                                                            filesystem.writeFileSync("./saved/" + id + ".png", buffer)
-                                                        }
-                                                        else {
-                                                            filesystem.mkdirSync("./saved")
-                                                            filesystem.writeFileSync("./saved/" + id + ".png", buffer)
-                                                        }
-                                                    }
-                                                    return callback(buffer)
-                                                })
+                                output.on("end", () => {
+                                    const buffer = Buffer.concat(data)
+
+                                    if (jsonresult["assetTypeId"] == 13) {
+                                        const buffertext = data.toString()
+                                        const regex = new RegExp('<url>(.*)<\/url>')
+                                        const match = regex.exec(buffertext)
+
+                                        if (match != null && match.length > 0) {
+                                            getAsset(match[1], function (data1) {
+                                                return callback(data1)
                                             })
                                         }
                                         else {
-                                            notWorkingAssetIds.push(id)
                                             return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
                                         }
-                                    })
-                                })
-                                req2.end()
-                            }
-                            else {
-
-                                var options2 = {
-                                    host: 'assetdelivery.roblox.com',
-                                    port: 443,
-                                    path: '/v2/asset/?id=' + id,
-                                    method: "GET",
-                                    headers: {
-                                        'Cookie': '.ROBLOSECURITY=' + ROBLOSECURITY
                                     }
-                                }
-                                https.get(options2, (res3) => {
-
-                                    var inforesult = ""
-                                    res3.on("data", (chunk) => {
-                                        inforesult += chunk
-                                    })
-                                    res3.on("end", () => {
-                                        if (res3.headers["set-cookie"] != undefined) {
-                                            var regex1 = new RegExp("\.ROBLOSECURITY=(_\|WARNING:-DO-NOT-SHARE-THIS\.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items\.\|_)(.*)(;)")
-                                            var match = regex1.exec(res3.headers["set-cookie"])
-                                            if (match.length > 0) {
-                                                ROBLOSECURITY = match[1].concat(match[2]).split(';')[0]
-                                                changeROBLOSECURITYOnLauncher(match[1].concat(match[2]).split(';')[0])
-                                            }
-                                        }
-                                        var jsonobject = JSON.parse(inforesult)
-                                        if (jsonobject["locations"] != undefined) {
-                                            var options3 = {
-                                                host: jsonobject["locations"][0]["location"].slice(8).substring(0, 14),
-                                                port: 443,
-                                                path: jsonobject["locations"][0]["location"].slice(22),
-                                                method: "GET",
-                                                headers: {
-                                                    'User-Agent': 'totallychrome',
-                                                    'Cookie': '.ROBLOSECURITY=' + ROBLOSECURITY,
-                                                    'Accept-Encoding': 'gzip, deflate'
-                                                }
-                                            }
-                                            https.get(options3, (res4) => {
-                                                var data = [], output
-                                                if (res4.headers["content-encoding"] == 'gzip') {
-                                                    if (verbose) {
-                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server (Asset) [gzip compression]")
-                                                    }
-                                                    var gzip = zlib.createGunzip()
-                                                    res4.pipe(gzip)
-                                                    output = gzip
-                                                }
-                                                else if (res4.headers["content-encoding"] == 'deflate') {
-                                                    if (verbose) {
-                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server (Asset) [deflate compression]")
-                                                    }
-                                                    var deflate = zlib.createDeflate()
-                                                    res4.pipe(deflate)
-                                                    output = deflate
-                                                }
-                                                else {
-                                                    if (verbose) {
-                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server (Asset)")
-                                                    }
-                                                    output = res4
-                                                }
-                                                output.on("data", (chunk) => {
-                                                    data.push(chunk)
-                                                })
-                                                output.on("end", () => {
-                                                    var buffer = Buffer.concat(data)
-                                                    if (saveFile == true) {
-                                                        if (filesystem.existsSync("./saved")) {
-                                                            if (jsonobject["assetTypeId"] == 3) {
-                                                                if (data[0] == 0x4F && data[1] == 0x67 && data[2] == 0x67) {
-                                                                    filesystem.writeFileSync("./saved/" + id + ".ogg", buffer)
-                                                                }
-                                                                else {
-                                                                    filesystem.writeFileSync("./saved/" + id + ".mp3", buffer)
-                                                                }
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 4) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".mesh", buffer)
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 1) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".png", buffer)
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 13) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".rbxmx", buffer)
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 10) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".rbxm", buffer)
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 9) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".rbxl", buffer)
-                                                            }
-                                                            else {
-                                                                filesystem.writeFileSync("./saved/" + id + ".bin", buffer)
-                                                            }
-                                                        }
-                                                        else {
-                                                            filesystem.mkdirSync("./saved")
-                                                            if (jsonobject["assetTypeId"] == 3) {
-                                                                if (data[0] == 0x4F && data[1] == 0x67 && data[2] == 0x67) {
-                                                                    filesystem.writeFileSync("./saved/" + id + ".ogg", buffer)
-                                                                }
-                                                                else {
-                                                                    filesystem.writeFileSync("./saved/" + id + ".mp3", buffer)
-                                                                }
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 4) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".mesh", buffer)
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 1) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".png", buffer)
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 13) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".rbxmx", buffer)
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 10) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".rbxm", buffer)
-                                                            }
-                                                            else if (jsonobject["assetTypeId"] == 9) {
-                                                                filesystem.writeFileSync("./saved/" + id + ".rbxl", buffer)
-                                                            }
-                                                            else {
-                                                                filesystem.writeFileSync("./saved/" + id + ".bin", buffer)
-                                                            }
-                                                        }
-                                                    }
-                                                    if (jsonobject["assetTypeId"] == 13 && disableParsingDecals == false) {
-
-                                                        var myRegExp = new RegExp("<url>http:\\/\\/www\\.roblox\\.com\\/asset\\/\\?id=(.*?)<\\/url>")
-                                                        var match = myRegExp.exec(buffer.toString("utf8"))
-                                                        if (match.length > 0) {
-                                                            var value = match[1]
-                                                            getAsset(value, (result) => {
-                                                                return callback(result)
-                                                            })
-                                                        }
-                                                        else {
-                                                            return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
-                                                        }
-                                                    }
-                                                    else {
-                                                        return callback(buffer)
-                                                    }
-
-                                                })
-                                            })
-                                        }
-                                        else {
-                                            notWorkingAssetIds.push(id)
-                                            console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download asset " + id + " from the Roblox server!")
-                                            return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
-                                        }
-                                    })
+                                    else {
+                                        return callback(buffer)
+                                    }
                                 })
-                            }
+                            }).on("error", () => {
+                                console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong whlie trying to contact the Roblox server!")
+                                return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
+                            })
                         }
                         else {
                             notWorkingAssetIds.push(id)
-                            return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
+                            return callback(result)
                         }
                     })
                 })
@@ -729,19 +702,51 @@ async function checkRBDFFormat() {
 app.get("/asset", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
+    var assetfound1 = false
     if (isNumeric(req.query.id)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.id.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
                 }
 
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.id.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    }
+
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -754,109 +759,128 @@ app.get("/asset", (req, res) => {
                         assetfound = true
                         return
                     }
-                }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
 
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.id,
-                        method: "GET"
-                    }
+                }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.id,
+                            method: "GET"
+                        }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
-                        }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                                }
+                                output = res1
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 60) {
+                                    if (buffer.toString().startsWith("{\"errors\"")) {
+                                        getAsset(req.query.id, (result) => {
+                                            if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                            res.send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
                                 }
                                 else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            }
-                            else {
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
-                    return
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
                 }
-            }
-            else {
-                getAsset(req.query.id, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                    return
-                })
+                else {
+                    getAsset(req.query.id, (result) => {
+                        if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
+                }
             }
         }
     }
     else if (isNumeric(req.query.assetversionid)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.assetversionid.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
                 }
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.assetversionid.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    }
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -870,94 +894,84 @@ app.get("/asset", (req, res) => {
                         return
                     }
                 }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.assetversionid,
-                        method: "GET"
-                    }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.assetversionid,
+                            method: "GET"
+                        }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
-                        }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                                }
+                                output = res1
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 60) {
+                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
+                                        getAsset(req.query.id, (result) => {
+                                            if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                            res.send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
                                 }
                                 else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            }
-                            else {
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
-                    return
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
+                }
+                else {
+                    getAsset(req.query.assetversionid, (result) => {
+                        if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
                 }
             }
-            else {
-                getAsset(req.query.assetversionid, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                    return
-                })
-            }
         }
+
     }
     else {
         res.status(404).end()
@@ -967,18 +981,51 @@ app.get("/asset", (req, res) => {
 app.get("/asset/", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
+    var assetfound1 = false
     if (isNumeric(req.query.id)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.id.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
                 }
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.id.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    }
+
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -991,107 +1038,128 @@ app.get("/asset/", (req, res) => {
                         assetfound = true
                         return
                     }
-                }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.id,
-                        method: "GET"
-                    }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
-                            }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
+                }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.id,
+                            method: "GET"
                         }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                                }
+                                output = res1
+                            }
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 60) {
+                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
+                                        getAsset(req.query.id, (result) => {
+                                            if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                            res.send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
                                 }
                                 else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            }
-                            else {
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
-                    return
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
                 }
-            }
-            else {
-                getAsset(req.query.id, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                })
+                else {
+                    getAsset(req.query.id, (result) => {
+                        if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
+                }
             }
         }
     }
     else if (isNumeric(req.query.assetversionid)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.assetversionid.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
                 }
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.assetversionid.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    }
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -1105,93 +1173,84 @@ app.get("/asset/", (req, res) => {
                         return
                     }
                 }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.assetversionid,
-                        method: "GET"
-                    }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.assetversionid,
+                            method: "GET"
+                        }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
-                        }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                                }
+                                output = res1
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 60) {
+                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
+                                        getAsset(req.query.id, (result) => {
+                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                            res.send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
                                 }
                                 else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            }
-                            else {
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
-                    return
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
+                }
+                else {
+                    getAsset(req.query.assetversionid, (result) => {
+                        if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
                 }
             }
-            else {
-                getAsset(req.query.assetversionid, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                })
-            }
         }
+
     }
     else {
         res.status(404).end()
@@ -1202,18 +1261,51 @@ app.get("/asset/", (req, res) => {
 app.get("//asset/", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
+    var assetfound1 = false
     if (isNumeric(req.query.id)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.id.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
                 }
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.id.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    }
+
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -1226,107 +1318,128 @@ app.get("//asset/", (req, res) => {
                         assetfound = true
                         return
                     }
-                }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.id,
-                        method: "GET"
-                    }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
-                            }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
+                }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.id,
+                            method: "GET"
                         }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                                }
+                                output = res1
+                            }
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 56) {
+                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
+                                        getAsset(req.query.id, (result) => {
+                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                            res.send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
                                 }
                                 else {
                                     if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            }
-                            else {
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
-                    return
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
                 }
-            }
-            else {
-                getAsset(req.query.id, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                })
+                else {
+                    getAsset(req.query.id, (result) => {
+                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
+                }
             }
         }
     }
     else if (isNumeric(req.query.assetversionid)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.assetversionid.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
                 }
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.assetversionid.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    }
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -1340,93 +1453,84 @@ app.get("//asset/", (req, res) => {
                         return
                     }
                 }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.assetversionid,
-                        method: "GET"
-                    }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.assetversionid,
+                            method: "GET"
+                        }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
-                        }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                                }
+                                output = res1
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 56) {
+                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
+                                        getAsset(req.query.id, (result) => {
+                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                            res.send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
                                 }
                                 else {
                                     if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            }
-                            else {
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
-                    return
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
+                }
+                else {
+                    getAsset(req.query.assetversionid, (result) => {
+                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
                 }
             }
-            else {
-                getAsset(req.query.assetversionid, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                })
-            }
         }
+
     }
     else {
         res.status(404).end()
@@ -1436,18 +1540,51 @@ app.get("//asset/", (req, res) => {
 app.get("/v1/asset", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
+    var assetfound1 = false
     if (isNumeric(req.query.id)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.id.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
                 }
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.id.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    }
+
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -1460,107 +1597,129 @@ app.get("/v1/asset", (req, res) => {
                         assetfound = true
                         return
                     }
-                }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.id,
-                        method: "GET"
-                    }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
-                            }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
+                }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.id,
+                            method: "GET"
                         }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                                }
+                                output = res1
+                            }
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 60) {
+                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
+                                        getAsset(req.query.id, (result) => {
+                                            var statusCode = 200
+                                            if (result.length < 60) { if (result.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); statusCode = 500 } }
+                                            res.status(statusCode).send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 60) { if (result.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
                                 }
                                 else {
                                     if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            } else {
-
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
-
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
                 }
-            }
-            else {
-                getAsset(req.query.id, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                })
+                else {
+                    getAsset(req.query.id, (result) => {
+                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
+                }
             }
         }
     }
     else if (isNumeric(req.query.assetversionid)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.assetversionid.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
                 }
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.assetversionid.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    }
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -1574,91 +1733,84 @@ app.get("/v1/asset", (req, res) => {
                         return
                     }
                 }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.assetversionid,
-                        method: "GET"
-                    }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.assetversionid,
+                            method: "GET"
+                        }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
-                        }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                                }
+                                output = res1
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
-                                } else {
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 56) {
+                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
+                                        getAsset(req.query.id, (result) => {
+                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                            res.send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
+                                }
+                                else {
                                     if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            } else {
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
-
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
+                }
+                else {
+                    getAsset(req.query.assetversionid, (result) => {
+                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
                 }
             }
-            else {
-                getAsset(req.query.assetversionid, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                })
-            }
         }
+
     }
     else {
         res.status(404).end()
@@ -1668,18 +1820,51 @@ app.get("/v1/asset", (req, res) => {
 app.get("/v1/asset/", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
+    var assetfound1 = false
     if (isNumeric(req.query.id)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.id.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
                 }
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.id.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                    }
+
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -1692,105 +1877,129 @@ app.get("/v1/asset/", (req, res) => {
                         assetfound = true
                         return
                     }
-                }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.id,
-                        method: "GET"
-                    }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
-                            }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
+                }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.id,
+                            method: "GET"
                         }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
-                                } else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                                }
+                                output = res1
+                            }
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 60) {
+                                    if (buffer.toString().startsWith("{\"errors\":")) {
+                                        getAsset(req.query.id, (result) => {
+                                            var statusCode = 200
+                                            if (result.length < 60) { if (result.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); statusCode = 500 } }
+                                            res.status(statusCode).send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 60) { if (result.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
+                                }
+                                else {
+                                    if (buffer.length < 60) { if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            } else {
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
-
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
                 }
-            }
-            else {
-                getAsset(req.query.id, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                })
+                else {
+                    getAsset(req.query.id, (result) => {
+                        if (result.length < 60) { if (result.toString().startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
+                }
             }
         }
     }
     else if (isNumeric(req.query.assetversionid)) {
         var duplicatecount = 0
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.assetversionid.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
                 }
-                if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                    if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                        duplicatecount++
-                        //do nothing for christ sake
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.assetversionid.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                    }
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
                     }
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
@@ -1804,92 +2013,84 @@ app.get("/v1/asset/", (req, res) => {
                         return
                     }
                 }
-                else {
-                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    if (file.endsWith(".lua")) {
-                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                    }
-                    assetfound = true
-                    return
-                }
-            }
-        })
-        if (assetfound == false) {
-            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
-            if (assetsFromServer && joining) {
-                try {
-                    var options = {
-                        host: ip,
-                        port: 80,
-                        path: "/asset?id=" + req.query.assetversionid,
-                        method: "GET"
-                    }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.assetversionid,
+                            method: "GET"
+                        }
 
-                    http.get(options, (res1) => {
-                        var data = [], output
-                        if (res1.headers["content-encoding"] == 'gzip') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
                             }
-                            var gzip = zlib.createGunzip()
-                            res1.pipe(gzip)
-                            output = gzip
-                        }
-                        else if (res1.headers["content-encoding"] == 'deflate') {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
                             }
-                            var deflate = zlib.createDeflate()
-                            res1.pipe(deflate)
-                            output = deflate
-                        }
-                        else {
-                            if (verbose) {
-                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                                }
+                                output = res1
                             }
-                            output = res1
-                        }
-                        output.on("data", (chunk) => {
-                            data.push(chunk)
-                        })
-                        output.on("end", () => {
-                            var buffer = Buffer.concat(data)
-                            if (buffer.length < 56) {
-                                if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                    getAsset(req.query.id, (result) => {
-                                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.send(result)
-                                    })
-                                    return
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.length < 56) {
+                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
+                                        getAsset(req.query.id, (result) => {
+                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                            res.send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
                                 }
                                 else {
                                     if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
-                            } else {
-                                if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                res.status(res1.statusCode).send(buffer)
-                                return
-                            }
-
+                            })
                         })
-                    })
 
-                } catch {
-                    res.status(500).end()
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
+                }
+                else {
+                    getAsset(req.query.assetversionid, (result) => {
+                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        res.send(result)
+                        return
+                    })
                 }
             }
-            else {
-                getAsset(req.query.assetversionid, (result) => {
-                    if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                    res.send(result)
-                })
-            }
         }
+
     }
     else {
         res.status(404).end()
@@ -1903,6 +2104,7 @@ function translateAssetTypeToAssetTypeId(assetType) {
         case "Mesh": return 3;
         case "Lua": return 5;
         case "Hat": return 8;
+        case "Place": return 9;
         case "Decal": return 13;
         case "Animation": return 24;
         case "Shirt": return 11;
@@ -2033,93 +2235,105 @@ app.get("/avatar-thumbnail/image", (req, res) => {
 app.get("/Thumbs/GameIcon.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
+    var assetfound1 = false
     if (isNumeric(req.query.assetId)) {
         if (verbose) {
             console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server/file (Image)")
         }
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.assetId.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
                 res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                assetfound = true
+                res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                assetfound1 = true
                 return
             }
         })
-        if (assetfound == false) {
-            var options1 = {
-                host: 'thumbnails.roblox.com',
-                port: 443,
-                path: '/v1/assets?assetIds=' + req.query.assetId + '&returnPolicy=PlaceHolder&size=' + req.query.width + 'x' + req.query.height + '&format=png',
-                method: "GET"
-            }
-            var infoiresult = ""
-            https.get(options1, (res2) => {
 
-                res2.setEncoding("utf8")
-                res2.on("data", (chunk) => {
-                    infoiresult += chunk
-                })
-                res2.on("end", () => {
-                    var jsoninfo1 = JSON.parse(infoiresult)
-                    if (jsoninfo1["data"] != undefined && jsoninfo1["data"].length > 0) {
-                        var options2 = {
-                            host: 'tr.rbxcdn.com',
-                            port: 443,
-                            path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
-                            method: "GET",
-                            headers: {
-                                "User-Agent": "totallychrome",
-                                "Accept-Encoding": "gzip,deflate"
-                            }
-
-                        }
-                        https.get(options2, (res3) => {
-
-                            var data = [], output
-                            if (res3.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res3.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res3.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res3.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image)")
-                                }
-                                output = res3
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetId + ".png\"")
-                                res.status(200).send(buffer)
-                                assetfound = true
-                            })
-                        })
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/gameicon.png"))
-                    }
-                })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.assetId.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                    assetfound = true
+                    return
+                }
             })
-        }
-        else {
-            res.status(200).send(filesystem.readFileSync(assetfolder + "/gameicon.png"))
-        }
+            if (assetfound == false) {
+                var options1 = {
+                    host: 'thumbnails.roblox.com',
+                    port: 443,
+                    path: '/v1/assets?assetIds=' + req.query.assetId + '&returnPolicy=PlaceHolder&size=' + req.query.width + 'x' + req.query.height + '&format=png',
+                    method: "GET"
+                }
+                var infoiresult = ""
+                https.get(options1, (res2) => {
 
+                    res2.setEncoding("utf8")
+                    res2.on("data", (chunk) => {
+                        infoiresult += chunk
+                    })
+                    res2.on("end", () => {
+                        var jsoninfo1 = JSON.parse(infoiresult)
+                        if (jsoninfo1["data"] != undefined && jsoninfo1["data"].length > 0) {
+                            var options2 = {
+                                host: 'tr.rbxcdn.com',
+                                port: 443,
+                                path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                                method: "GET",
+                                headers: {
+                                    "User-Agent": "totallychrome",
+                                    "Accept-Encoding": "gzip,deflate"
+                                }
+
+                            }
+                            https.get(options2, (res3) => {
+
+                                var data = [], output
+                                if (res3.headers["content-encoding"] == 'gzip') {
+                                    if (verbose) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image) [gzip compression]")
+                                    }
+                                    var gzip = zlib.createGunzip()
+                                    res3.pipe(gzip)
+                                    output = gzip
+                                }
+                                else if (res3.headers["content-encoding"] == 'deflate') {
+                                    if (verbose) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image) [deflate compression]")
+                                    }
+                                    var deflate = zlib.createDeflate()
+                                    res3.pipe(deflate)
+                                    output = deflate
+                                }
+                                else {
+                                    if (verbose) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetId + " from Roblox server (Image)")
+                                    }
+                                    output = res3
+                                }
+                                output.on("data", (chunk) => {
+                                    data.push(chunk)
+                                })
+                                output.on("end", () => {
+                                    var buffer = Buffer.concat(data)
+                                    res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetId + ".png\"")
+                                    res.status(200).send(buffer)
+                                    assetfound = true
+                                })
+                            })
+                        }
+                        else {
+                            res.status(200).send(filesystem.readFileSync(assetfolder + "/gameicon.png"))
+                        }
+                    })
+                })
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync(assetfolder + "/gameicon.png"))
+            }
+        }
     }
 })
 
@@ -2131,94 +2345,106 @@ app.get("/Thumbs/HeadShot.ashx", (req, res) => {
 app.get("/Thumbs/Asset.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
+    var assetfound1 = false
     if (isNumeric(((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId))) {
         if (verbose) {
             console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server/file (Image)")
         }
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId).toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
                 res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                assetfound = true
+                res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                assetfound1 = true
                 return
             }
         })
-        if (assetfound == false && isInternetAvailable) {
-            var options1 = {
-                host: 'thumbnails.roblox.com',
-                port: 443,
-                path: '/v1/assets?assetIds=' + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + '&returnPolicy=PlaceHolder&size=700x700&format=' + req.query.format,
-                method: "GET"
-            }
-            var infoiresult = ""
-            https.get(options1, (res2) => {
 
-                res2.setEncoding("utf8")
-                res2.on("data", (chunk) => {
-                    infoiresult += chunk
-                })
-                res2.on("end", () => {
-                    var jsoninfo1 = JSON.parse(infoiresult)
-                    if (jsoninfo1["data"] != undefined) {
-                        var options2 = {
-                            host: 'tr.rbxcdn.com',
-                            port: 443,
-                            path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
-                            method: "GET",
-                            headers: {
-                                "User-Agent": "totallychrome",
-                                "Accept-Encoding": "gzip,deflate"
-                            }
-                        }
-                        https.get(options2, (res3) => {
-
-                            var data = [], output
-                            if (res3.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server (Image) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res3.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res3.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server (Image) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res3.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server (Image)")
-                                }
-                                output = res3
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                res.setHeader("Content-disposition", "attachment; filename=\"" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + "." + req.query.format + "\"")
-                                res.status(200).send(buffer)
-                                if (saveFile) filesystem.writeFileSync("./saved/" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + "." + req.query.format)
-                                assetfound = true
-                            })
-                        })
-                    } else {
-                        console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from the Roblox server!")
-                        res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
-                    }
-
-                })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId).toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                    assetfound = true
+                    return
+                }
             })
-        }
-        else {
-            res.status(404).end()
-        }
+            if (assetfound == false && isInternetAvailable) {
+                var options1 = {
+                    host: 'thumbnails.roblox.com',
+                    port: 443,
+                    path: '/v1/assets?assetIds=' + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + '&returnPolicy=PlaceHolder&size=700x700&format=' + req.query.format,
+                    method: "GET"
+                }
+                var infoiresult = ""
+                https.get(options1, (res2) => {
 
+                    res2.setEncoding("utf8")
+                    res2.on("data", (chunk) => {
+                        infoiresult += chunk
+                    })
+                    res2.on("end", () => {
+                        var jsoninfo1 = JSON.parse(infoiresult)
+                        if (jsoninfo1["data"] != undefined) {
+                            var options2 = {
+                                host: 'tr.rbxcdn.com',
+                                port: 443,
+                                path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                                method: "GET",
+                                headers: {
+                                    "User-Agent": "totallychrome",
+                                    "Accept-Encoding": "gzip,deflate"
+                                }
+                            }
+                            https.get(options2, (res3) => {
+
+                                var data = [], output
+                                if (res3.headers["content-encoding"] == 'gzip') {
+                                    if (verbose) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server (Image) [gzip compression]")
+                                    }
+                                    var gzip = zlib.createGunzip()
+                                    res3.pipe(gzip)
+                                    output = gzip
+                                }
+                                else if (res3.headers["content-encoding"] == 'deflate') {
+                                    if (verbose) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server (Image) [deflate compression]")
+                                    }
+                                    var deflate = zlib.createDeflate()
+                                    res3.pipe(deflate)
+                                    output = deflate
+                                }
+                                else {
+                                    if (verbose) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server (Image)")
+                                    }
+                                    output = res3
+                                }
+                                output.on("data", (chunk) => {
+                                    data.push(chunk)
+                                })
+                                output.on("end", () => {
+                                    var buffer = Buffer.concat(data)
+                                    res.setHeader("Content-disposition", "attachment; filename=\"" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + "." + req.query.format + "\"")
+                                    res.status(200).send(buffer)
+                                    if (saveFile) filesystem.writeFileSync("./saved/" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + "." + req.query.format)
+                                    assetfound = true
+                                })
+                            })
+                        } else {
+                            console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from the Roblox server!")
+                            res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
+                        }
+
+                    })
+                })
+            }
+            else {
+                res.status(404).end()
+            }
+        }
     }
     else {
         res.status(400).end()
@@ -2228,95 +2454,118 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
 app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
+    var assetfound1 = false
+    var assetfound2 = false
     if (isNumeric(req.query.aid)) {
         if (verbose) {
             console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server/file (Image)")
         }
-        filesystem.readdirSync(assetfolder).forEach(file => {
+        filesystem.readdirSync("./icons").forEach(file => {
             var splitted = file.split('.')
             if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
                 res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                assetfound = true
+                res.status(200).send(filesystem.readFileSync("./icons/" + file))
+                assetfound2 = true
                 return
             }
         })
-        if (assetfound == false && isInternetAvailable) {
-            var options1 = {
-                host: 'thumbnails.roblox.com',
-                port: 443,
-                path: '/v1/assets?assetIds=' + req.query.aid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
-                method: "GET"
-            }
-            var infoiresult = ""
-
-            https.get(options1, (res2) => {
-
-                res2.setEncoding("utf8")
-                res2.on("data", (chunk) => {
-                    infoiresult += chunk
-                })
-                res2.on("end", () => {
-                    var jsoninfo1 = JSON.parse(infoiresult)
-                    if (jsoninfo1["data"] == undefined) {
-                        console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + req.query.aid + " from the Roblox server!")
-                        res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
+        if (assetfound2 == false) {
+            filesystem.readdirSync("./uploads").forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    assetfound1 = true
+                    return
+                }
+            })
+            if (assetfound1 == false) {
+                filesystem.readdirSync(assetfolder).forEach(file => {
+                    var splitted = file.split('.')
+                    if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                        assetfound = true
+                        return
                     }
-                    else {
-                        var options2 = {
-                            host: 'tr.rbxcdn.com',
-                            port: 443,
-                            path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
-                            method: "GET",
-                            headers: {
-                                "User-Agent": "totallychrome",
-                                "Accept-Encoding": "gzip,deflate"
-                            }
+                })
+                if (assetfound == false && isInternetAvailable) {
+                    var options1 = {
+                        host: 'thumbnails.roblox.com',
+                        port: 443,
+                        path: '/v1/assets?assetIds=' + req.query.aid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
+                        method: "GET"
+                    }
+                    var infoiresult = ""
 
-                        }
-                        https.get(options2, (res3) => {
+                    https.get(options1, (res2) => {
 
-                            var data = [], output
-                            if (res3.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res3.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res3.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res3.pipe(deflate)
-                                output = deflate
+                        res2.setEncoding("utf8")
+                        res2.on("data", (chunk) => {
+                            infoiresult += chunk
+                        })
+                        res2.on("end", () => {
+                            var jsoninfo1 = JSON.parse(infoiresult)
+                            if (jsoninfo1["data"] == undefined) {
+                                console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + req.query.aid + " from the Roblox server!")
+                                res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
                             }
                             else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image)")
-                                }
-                                output = res3
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.aid + "." + req.query.fmt + "\"")
-                                res.status(200).send(buffer)
-                                assetfound = true
-                            })
-                        })
-                    }
-                })
-            })
-        }
-        else {
-            res.status(404).end()
-        }
+                                var options2 = {
+                                    host: 'tr.rbxcdn.com',
+                                    port: 443,
+                                    path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                                    method: "GET",
+                                    headers: {
+                                        "User-Agent": "totallychrome",
+                                        "Accept-Encoding": "gzip,deflate"
+                                    }
 
+                                }
+                                https.get(options2, (res3) => {
+
+                                    var data = [], output
+                                    if (res3.headers["content-encoding"] == 'gzip') {
+                                        if (verbose) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [gzip compression]")
+                                        }
+                                        var gzip = zlib.createGunzip()
+                                        res3.pipe(gzip)
+                                        output = gzip
+                                    }
+                                    else if (res3.headers["content-encoding"] == 'deflate') {
+                                        if (verbose) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [deflate compression]")
+                                        }
+                                        var deflate = zlib.createDeflate()
+                                        res3.pipe(deflate)
+                                        output = deflate
+                                    }
+                                    else {
+                                        if (verbose) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image)")
+                                        }
+                                        output = res3
+                                    }
+                                    output.on("data", (chunk) => {
+                                        data.push(chunk)
+                                    })
+                                    output.on("end", () => {
+                                        var buffer = Buffer.concat(data)
+                                        res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.aid + "." + req.query.fmt + "\"")
+                                        res.status(200).send(buffer)
+                                        assetfound = true
+                                    })
+                                })
+                            }
+                        })
+                    })
+                }
+                else {
+                    res.status(404).end()
+                }
+            }
+        }
     }
 })
 
@@ -2329,14 +2578,13 @@ app.get("/game/GetCurrentUser.ashx", (req, res) => {
     }
 })
 
-const options = {
-    key: filesystem.readFileSync("cert-key.pem"),
-    cert: filesystem.readFileSync("cert.pem")
-}
-
 app.get("/my/settings/json", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"ChangeUsernameEnabled\":true,\"IsAdmin\":false,\"UserId\":" + userId + ",\"Name\":\"" + username + "\",\"DisplayName\": \"" + username + "\", \"UserAbove13\":" + accountOver13 + ", \"IsEmailOnFile\":true,\"IsEmailVerified\":true,\"UserEmail\":\"r*****@fakerebloxemail.com\",\"UserEmailMasked\":true,\"UserEmailVerified\":true,\"LocaleApiDomain\":\"http://locale.reblox.zip\",\"ApiProxyDomain\":\"http://api.reblox.zip\",\"AuthDomain\":\"http://auth.reblox.zip\", \"IsOBC\": false, \"IsTBC\": false, \"IsAnyBC\": false, \"IsPremium\":false,\"AccountAgeInDays\":365,\"ClientIpAddress\":\"127.0.0.1\",\"IsDisplayNamesEnabled\": true,\"PremiumFeatureId\": null,\"HasValidPasswordSet\": true, \"AgeBracket\": 0, \"IsUiBootstrapModalV2Enabled\": true, \"InApp\": false, \"HasFreeNameChange\": false, \"IsAgeDownEnabled\": true, \"Facebook\": null, \"Twitter\": null, \"YouTube\": null, \"Twitch\": null}")
+})
+
+app.post("/AbuseReport/InGameChatHandler.ashx", (_, res) => {
+    res.status(200).end() //STUB
 })
 
 app.post("/game/join.ashx", (req, res) => {
@@ -2410,7 +2658,26 @@ app.get("/v1/places/:id/symbolic-links", (req, res) => {
 })
 app.post("/Data/Upload.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
-    res.status(200).send(req.query.assetid + " 1") //STUB
+
+    if (allowUploadFiles) {
+        if (filesystem.existsSync("./uploads")) {
+            if (filesystem.existsSync("./uploads/" + req.query.assetid)) {
+                filesystem.unlinkSync("./uploads/" + req.query.assetid)
+                filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+            }
+            else {
+                filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+            }
+        }
+        else {
+            filesystem.mkdirSync("./uploads")
+            filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+        }
+    }
+    else {
+        if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Blocked an upload from " + req.ip)
+    }
+    res.status(200).send(req.query.assetid + " 1")
 })
 
 app.post("/Analytics/Measurement.ashx", (_, res) => {
@@ -2476,24 +2743,29 @@ app.get("/Asset/CharacterFetch.ashx", (req, res) => {
     else {
         console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /Asset/CharacterFetch.ashx")
         if (localClothes == true) {
-            var tempclothes = ";"
-            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
-                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
-                if (json["asset"] != undefined) {
-                    for (var i = 0; i < json["asset"].length; i++) {
-                        if (i == json["asset"].length - 1) {
-                            tempclothes = tempclothes + "http://reblox.zip/asset/?id=" + json["asset"][i]["id"]
-                        }
-                        else {
-                            tempclothes = tempclothes + "http://reblox.zip/asset/?id=" + json["asset"][i]["id"] + ";"
+            if (isNumeric(req.query.userId)) {
+                var tempclothes = ";"
+                if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                    var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
+                    if (json["asset"] != undefined) {
+                        for (var i = 0; i < json["asset"].length; i++) {
+                            if (i == json["asset"].length - 1) {
+                                tempclothes = tempclothes + "http://reblox.zip/asset/?id=" + json["asset"][i]["id"]
+                            }
+                            else {
+                                tempclothes = tempclothes + "http://reblox.zip/asset/?id=" + json["asset"][i]["id"] + ";"
+                            }
                         }
                     }
+                    if (tempclothes == ";") tempclothes = ""
+                    res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + tempclothes)
                 }
-                if (tempclothes == ";") tempclothes = ""
-                res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + tempclothes)
+                else {
+                    res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId)
+                }
             }
             else {
-                res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId)
+                res.status(400).end()
             }
         }
         else {
@@ -2682,25 +2954,30 @@ app.get("/v1.1/avatar-fetch", (req, res) => {
         }
     }
     else {
-        console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1.1/avatar-fetch")
         if (localClothes == true) {
-            var tempclothes = ""
-            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
-                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
-                if (json["asset"] != undefined) {
-                    for (var i = 0; i < json["asset"].length; i++) {
-                        if (i == json["asset"].length - 1) {
-                            tempclothes = tempclothes + json["asset"][i]["id"]
-                        }
-                        else {
-                            tempclothes = tempclothes + json["asset"][i]["id"] + ","
+            if (isNumeric(req.query.userId)) {
+                console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1.1/avatar-fetch")
+                var tempclothes = ""
+                if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                    var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
+                    if (json["asset"] != undefined) {
+                        for (var i = 0; i < json["asset"].length; i++) {
+                            if (i == json["asset"].length - 1) {
+                                tempclothes = tempclothes + json["asset"][i]["id"]
+                            }
+                            else {
+                                tempclothes = tempclothes + json["asset"][i]["id"] + ","
+                            }
                         }
                     }
+                    res.status(200).send("{\"resolvedAvatarType\":\"" + json["bodyType"] + "\",\"accessoryVersionIds\":[" + tempclothes + "],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":" + json["colors"]["headColor"] + ",\"LeftArmColor\":" + json["colors"]["leftArmColor"] + ",\"LeftLegColor\":" + json["colors"]["leftLegColor"] + ",\"RightArmColor\":" + json["colors"]["rightArmColor"] + ",\"RightLegColor\":" + json["colors"]["rightLegColor"] + ",\"TorsoColor\":" + json["colors"]["torsoColor"] + "},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
                 }
-                res.status(200).send("{\"resolvedAvatarType\":\"" + json["bodyType"] + "\",\"accessoryVersionIds\":[" + tempclothes + "],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":" + json["colors"]["headColor"] + ",\"LeftArmColor\":" + json["colors"]["leftArmColor"] + ",\"LeftLegColor\":" + json["colors"]["leftLegColor"] + ",\"RightArmColor\":" + json["colors"]["rightArmColor"] + ",\"RightLegColor\":" + json["colors"]["rightLegColor"] + ",\"TorsoColor\":" + json["colors"]["torsoColor"] + "},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
+                else {
+                    res.status(200).send("{\"resolvedAvatarType\":\"" + ((avatarR15) ? "R15" : "R6") + "\",\"accessoryVersionIds\":[],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":194,\"LeftArmColor\":194,\"LeftLegColor\":194,\"RightArmColor\":194,\"RightLegColor\":194,\"TorsoColor\":194},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
+                }
             }
             else {
-                res.status(200).send("{\"resolvedAvatarType\":\"" + ((avatarR15) ? "R15" : "R6") + "\",\"accessoryVersionIds\":[],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":194,\"LeftArmColor\":194,\"LeftLegColor\":194,\"RightArmColor\":194,\"RightLegColor\":194,\"TorsoColor\":194},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
+                res.status(400).end()
             }
         }
         else {
@@ -2898,82 +3175,11 @@ app.get("/v1/avatar-fetch", async (req, res) => {
         }
     }
     else {
-        console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1/avatar-fetch")
         if (localClothes == true) {
-            var tempclothes = "{"
-            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
-                cloth2021finished = false
-                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json", "utf8"))
-                var tempi = 0
-                if (json["asset"] != undefined) {
-                    for (var i = 0; i < json["asset"].length; i++) {
-                        await getAssetType(json["asset"][i]["id"], (typenumber) => {
-                            if (tempi == json["asset"].length - 1) {
-                                tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}"
-                                cloth2021finished = true
-                                sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + tempclothes + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
-                            }
-                            else {
-                                if (tempi < json["asset"].length) {
-                                    tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}, {"
-                                }
-                            }
-                            tempi = tempi + 1
-                        })
-                    }
-                } else {
-                    cloth2021finished = true
-                    sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
-                }
-
-            }
-            else {
-                res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": 144, \"torsoColorId\": 144, \"rightArmColorId\": 144, \"leftArmColorId\": 144, \"rightLegColorId\": 144, \"leftLegColorId\": 144},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
-            }
-        }
-        else {
-            res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + clothidsstring + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": " + avatarBodyColor[0] + ", \"torsoColorId\": " + avatarBodyColor[5] + ", \"rightArmColorId\": " + avatarBodyColor[3] + ", \"leftArmColorId\": " + avatarBodyColor[1] + ", \"rightLegColorId\": " + avatarBodyColor[4] + ", \"leftLegColorId\": " + avatarBodyColor[2] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
-        }
-    }
-})
-
-app.get("/users/inventory/list-json", (req, res) => {
-    res.status(200).send("{\"IsValid\": true, \"Data\":{\"TotalItems\":0,\"nextPageCursor\":null,\"previousPageCursor\":null,\"PageType\":\"inventory\",\"Items\":[]}}") //STUB
-})
-
-app.get("/v1/avatar", async (req, res) => {
-    res.setHeader("cache-control", "no-cache")
-    res.setHeader("content-type", "application/json; charset=utf-8")
-    if (joining) {
-        try {
-            var options = {
-                host: ip,
-                port: 80,
-                path: "/v1/avatar?userId=" + req.query.userId,
-                method: "GET"
-            }
-
-            http.get(options, (res1) => {
-                res1.setEncoding("utf-8")
-                var data = ""
-                res1.on("data", (chunk) => {
-                    data += chunk
-                })
-                res1.on("end", () => {
-                    res.status(res1.statusCode).send(data)
-                })
-            })
-
-        } catch {
-            res.status(500).end()
-        }
-    }
-    else {
-        console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1/avatar")
-        if (localClothes == true) {
-            var tempclothes = "{"
-            if (req.query.userId != undefined) {
+            if (isNumeric(req.query.userId)) {
+                var tempclothes = "{"
                 if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                    console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1/avatar-fetch")
                     cloth2021finished = false
                     var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json", "utf8"))
                     var tempi = 0
@@ -3002,41 +3208,65 @@ app.get("/v1/avatar", async (req, res) => {
                 else {
                     res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": 144, \"torsoColorId\": 144, \"rightArmColorId\": 144, \"leftArmColorId\": 144, \"rightLegColorId\": 144, \"leftLegColorId\": 144},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
                 }
-            } else {
-                if (filesystem.existsSync("./clothes/" + userId + ".json")) {
-                    cloth2021finished = false
-                    var json = JSON.parse(filesystem.readFileSync("./clothes/" + userId + ".json", "utf8"))
-                    var tempi = 0
-                    if (json["asset"] != undefined) {
-                        for (var i = 0; i < json["asset"].length; i++) {
-                            await getAssetType(json["asset"][i]["id"], (typenumber) => {
-                                if (tempi == json["asset"].length - 1) {
-                                    tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}"
-                                    cloth2021finished = true
-                                    sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + tempclothes + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
-                                }
-                                else {
-                                    if (tempi < json["asset"].length) {
-                                        tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}, {"
-                                    }
-                                }
-                                tempi = tempi + 1
-                            })
-                        }
-                    } else {
-                        cloth2021finished = true
-                        sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
-                    }
-
-                }
-                else {
-                    res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": 144, \"torsoColorId\": 144, \"rightArmColorId\": 144, \"leftArmColorId\": 144, \"rightLegColorId\": 144, \"leftLegColorId\": 144},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
-                }
+            }
+            else {
+                res.status(400).end()
             }
         }
         else {
             res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + clothidsstring + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": " + avatarBodyColor[0] + ", \"torsoColorId\": " + avatarBodyColor[5] + ", \"rightArmColorId\": " + avatarBodyColor[3] + ", \"leftArmColorId\": " + avatarBodyColor[1] + ", \"rightLegColorId\": " + avatarBodyColor[4] + ", \"leftLegColorId\": " + avatarBodyColor[2] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
         }
+    }
+})
+
+app.post("/users/filter-friends", (_, res) => {
+    res.status(200).send("[]")
+})
+
+app.get("/users/inventory/list-json", (req, res) => {
+    res.status(200).send("{\"IsValid\": true, \"Data\":{\"TotalItems\":0,\"nextPageCursor\":null,\"previousPageCursor\":null,\"PageType\":\"inventory\",\"Items\":[]}}") //STUB
+})
+
+app.get("/v1/avatar", async (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+
+    console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + userId + " via /v1/avatar")
+    if (localClothes == true) {
+        var tempclothes = "{"
+
+        if (filesystem.existsSync("./clothes/" + userId + ".json")) {
+            cloth2021finished = false
+            var json = JSON.parse(filesystem.readFileSync("./clothes/" + userId + ".json", "utf8"))
+            var tempi = 0
+            if (json["asset"] != undefined) {
+                for (var i = 0; i < json["asset"].length; i++) {
+                    await getAssetType(json["asset"][i]["id"], (typenumber) => {
+                        if (tempi == json["asset"].length - 1) {
+                            tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}"
+                            cloth2021finished = true
+                            sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + tempclothes + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+                        }
+                        else {
+                            if (tempi < json["asset"].length) {
+                                tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}, {"
+                            }
+                        }
+                        tempi = tempi + 1
+                    })
+                }
+            } else {
+                cloth2021finished = true
+                sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+            }
+
+        }
+        else {
+            res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": 144, \"torsoColorId\": 144, \"rightArmColorId\": 144, \"leftArmColorId\": 144, \"rightLegColorId\": 144, \"leftLegColorId\": 144},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+        }
+    }
+    else {
+        res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + clothidsstring + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": " + avatarBodyColor[0] + ", \"torsoColorId\": " + avatarBodyColor[5] + ", \"rightArmColorId\": " + avatarBodyColor[3] + ", \"leftArmColorId\": " + avatarBodyColor[1] + ", \"rightLegColorId\": " + avatarBodyColor[4] + ", \"leftLegColorId\": " + avatarBodyColor[2] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
     }
 })
 
@@ -3075,13 +3305,63 @@ app.get("/v1/locales/supported-locales", (_, res) => {
 app.get("/v2/universes/:id/configuration", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": false, \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"isStudioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"Public\", \"fiatModerationStatus\": \"NotModerated\"}")
+
+    if (filesystem.existsSync("./games.json")) {
+        var gamesjson = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        if (gamesjson.length > 0) {
+            var found = false
+            gamesjson.forEach((game) => {
+                if (game["id"] == req.params.id) {
+                    found = true
+                    res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": " + game["isArchived"] + ", \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"isStudioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"" + game["privacyType"] + "\", \"fiatModerationStatus\": \"NotModerated\"}")
+                    return
+                }
+            })
+            if (found == false) res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": false, \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"isStudioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"Public\", \"fiatModerationStatus\": \"NotModerated\"}")
+        }
+    }
+    else {
+        res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": false, \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"isStudioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"Public\", \"fiatModerationStatus\": \"NotModerated\"}")
+    }
 })
 
 app.get("/v1/universes/:id/icon", (req, res) => {
-    res.setHeader("cache-control", "no-cache")
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"imageId\":133293265,\"isApproved\":true}") //STUB
+    res.setHeader("cache-control", "no-cache")
+    var found1 = false
+    var imageId = 133293265
+    if (filesystem.existsSync("./gametemplates.json")) {
+        var jsondata = JSON.parse("{\"data\": [" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}")
+
+        if (jsondata["data"].length > 0) {
+            jsondata["data"].forEach((template) => {
+                if (template["universe"]["id"] == req.params.id) {
+                    found1 = true
+                    imageId = template["universe"]["rootPlaceId"]
+                    return
+                }
+            })
+        }
+    }
+
+    if (found1 == false) {
+        if (filesystem.existsSync("./games.json")) {
+            var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+            if (jsondata.length > 0) {
+                jsondata.forEach((game) => {
+                    if (game["id"] == req.params.id) {
+                        imageId = game["rootPlaceId"]
+                        return
+                    }
+                })
+            }
+        }
+    }
+
+    if (filesystem.existsSync("./icons/" + imageId + ".png") == false) imageId = 133293265
+    res.status(200).send("{\"imageId\":" + imageId + ", \"isApproved\":true}")
 })
 
 app.get("/Asset/BodyColors.ashx", (req, res) => {
@@ -3112,14 +3392,19 @@ app.get("/Asset/BodyColors.ashx", (req, res) => {
         }
     }
     else {
-        if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
-            var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json", "utf8"))
-            res.setHeader("content-type", "text/plain")
-            res.status(200).send("<roblox xmlns:xmime=\"http://www.w3.org/2005/05/xmlmime\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://www.roblox.com/roblox.xsd\" version=\"4\">\r\n <External>null</External>\r\n <External>nil</External>\r\n <Item class=\"BodyColors\">\r\n  <Properties>\r\n   <int name=\"HeadColor\">" + json["colors"]["headColor"] + "</int>\r\n   <int name=\"LeftArmColor\">" + json["colors"]["leftArmColor"] + "</int>\r\n   <int name=\"LeftLegColor\">" + json["colors"]["leftLegColor"] + "</int>\r\n   <string name=\"Name\">Body Colors</string>\r\n   <int name=\"RightArmColor\">" + json["colors"]["rightArmColor"] + "</int>\r\n   <int name=\"RightLegColor\">" + json["colors"]["rightLegColor"] + "</int>\r\n   <int name=\"TorsoColor\">" + json["colors"]["torsoColor"] + "</int>\r\n   <bool name=\"archivable\">true</bool>\r\n  </Properties>\r\n </Item>\r\n</roblox>")
+        if (isNumeric(req.query.userId)) {
+            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json", "utf8"))
+                res.setHeader("content-type", "text/plain")
+                res.status(200).send("<roblox xmlns:xmime=\"http://www.w3.org/2005/05/xmlmime\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://www.roblox.com/roblox.xsd\" version=\"4\">\r\n <External>null</External>\r\n <External>nil</External>\r\n <Item class=\"BodyColors\">\r\n  <Properties>\r\n   <int name=\"HeadColor\">" + json["colors"]["headColor"] + "</int>\r\n   <int name=\"LeftArmColor\">" + json["colors"]["leftArmColor"] + "</int>\r\n   <int name=\"LeftLegColor\">" + json["colors"]["leftLegColor"] + "</int>\r\n   <string name=\"Name\">Body Colors</string>\r\n   <int name=\"RightArmColor\">" + json["colors"]["rightArmColor"] + "</int>\r\n   <int name=\"RightLegColor\">" + json["colors"]["rightLegColor"] + "</int>\r\n   <int name=\"TorsoColor\">" + json["colors"]["torsoColor"] + "</int>\r\n   <bool name=\"archivable\">true</bool>\r\n  </Properties>\r\n </Item>\r\n</roblox>")
+            }
+            else {
+                res.setHeader("content-type", "text/plain")
+                res.status(200).send("<roblox xmlns:\"http://www.w3.org/2005/05/xmlmime\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://www.roblox.com/roblox.xsd\" version=\"4\"> <External>null</External> <External>nil</External> <Item class=\"BodyColors\"> <Properties> <int name=\"HeadColor\">194</int> <int name=\"LeftArmColor\">194</int> <int name=\"LeftLegColor\">194</int> <string name=\"Name\">Body Colors</string> <int name=\"RightArmColor\">194</int> <int name=\"RightLegColor\">194</int> <int name=\"TorsoColor\">194</int> <bool name=\"archivable\">true</bool> </Properties> </Item> </roblox>")
+            }
         }
         else {
-            res.setHeader("content-type", "text/plain")
-            res.status(200).send("<roblox xmlns:\"http://www.w3.org/2005/05/xmlmime\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://www.roblox.com/roblox.xsd\" version=\"4\"> <External>null</External> <External>nil</External> <Item class=\"BodyColors\"> <Properties> <int name=\"HeadColor\">194</int> <int name=\"LeftArmColor\">194</int> <int name=\"LeftLegColor\">194</int> <string name=\"Name\">Body Colors</string> <int name=\"RightArmColor\">194</int> <int name=\"RightLegColor\">194</int> <int name=\"TorsoColor\">194</int> <bool name=\"archivable\">true</bool> </Properties> </Item> </roblox>")
+            res.status(400).end()
         }
     }
 })
@@ -3128,6 +3413,9 @@ app.get("/userblock/getblockedusers", (req, res) => {
     res.status(200).send("{\"data\":{\"blockedUserIds\":[],\"blockedUsers\":[],\"cursor\":null},\"error\":null}") //STUB
 })
 
+app.get("/universal-app-configuration/v1/behaviors/studio/content", (_, res) => {
+    res.status(200).send("{}")
+})
 app.post("/v1/avatar/set-avatar", (req, res) => {
     //custom api for ReBlox
 
@@ -3159,12 +3447,17 @@ app.post("/v1/avatar/set-avatar", (req, res) => {
         try {
             if (req.headers["x-token"] != undefined) {
                 if (crypto.verify("SHA1", JSON.stringify(req.body), publicKeyObj, Buffer.from(req.headers["x-token"], "base64"))) {
-                    if (req.query.username != undefined) memoryUsers.push({ "userId": req.query.userId, "username": req.query.username })
-                    console.log("\x1b[32m%s\x1b[0m", "<INFO> Saving the avatar of " + req.query.userId + " to file...")
-                    if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) filesystem.unlinkSync("./clothes/" + req.query.userId + ".json")
-                    if (filesystem.existsSync("./clothes") == false) filesystem.mkdirSync("./clothes")
-                    filesystem.writeFileSync("./clothes/" + req.query.userId + ".json", JSON.stringify(req.body))
-                    res.status(200).end()
+                    if (isNumeric(req.query.userId)) {
+                        if (req.query.username != undefined) memoryUsers.push({ "userId": req.query.userId, "username": req.query.username })
+                        console.log("\x1b[32m%s\x1b[0m", "<INFO> Saving the avatar of " + req.query.userId + " to file...")
+                        if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) filesystem.unlinkSync("./clothes/" + req.query.userId + ".json")
+                        if (filesystem.existsSync("./clothes") == false) filesystem.mkdirSync("./clothes")
+                        filesystem.writeFileSync("./clothes/" + req.query.userId + ".json", JSON.stringify(req.body))
+                        res.status(200).end()
+                    }
+                    else {
+                        res.status(400).end()
+                    }
                 }
                 else {
                     res.status(500).send("{\"errors\": [{\"code\": 0, \"message\": \"Invalid verification (Not matching)\"}]}")
@@ -3181,16 +3474,198 @@ app.post("/v1/avatar/set-avatar", (req, res) => {
     }
 })
 
-app.post("/universes/create", (req, res) => {
+app.post("/universes/create", async (req, res) => {
+    var universeId = 1
+    var placeId = 1
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{ \"UniverseId\": 2, \"RootPlaceId\": 1818 }")
+    res.setHeader("cache-control", "no-cache")
+    if (filesystem.existsSync("./games.json")) {
+        var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        json.forEach((game) => {
+            if (game["id"] == universeId) {
+                universeId++
+            }
+        })
+    }
+    if (filesystem.existsSync("./gametemplates.json")) {
+        var json = JSON.parse("[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]")
+
+        json.forEach((game) => {
+            if (game["universe"]["id"] == universeId) {
+                universeId++
+            }
+        })
+    }
+    if (filesystem.existsSync("./assets")) {
+        var list = await filesystem.readdirSync("./assets")
+
+        for (var i = 0; i < list.length; i++) {
+            list[i] = list[i].replace(new RegExp("\.[^/.]+$"), "")
+        }
+        list.sort(function (a, b) { return a - b })
+        for (var i = 0; i < list.length; i++) {
+            console.log(list[i])
+            if (list[i] == placeId) {
+                placeId++
+            }
+        }
+    }
+    if (filesystem.existsSync("./uploads")) {
+        var list = filesystem.readdirSync("./uploads")
+
+        list.sort(function (a, b) { return a - b })
+
+        for (var i = 0; i < list.length; i++) {
+            if (list[i] == placeId) {
+                placeId++
+            }
+        }
+    }
+    if (allowUploadFiles) {
+        var marketplace = filesystem.readFileSync("./marketplace.json", "utf8")
+        var games = filesystem.readFileSync("./games.json", "utf8")
+        var marketplacejson = JSON.parse(marketplace)
+        var gamesjson = JSON.parse(games)
+
+        gamesjson.push({ id: universeId, name: "Baseplate", description: "", "isArchived": false, "rootPlaceId": placeId, isActive: false, privacyType: "Private", creatorType: "User", creatorTargetId: userId, creatorName: username, created: (new Date(Date.now()).toISOString()), updated: (new Date(Date.now()).toISOString()) })
+        marketplacejson.push({ id: placeId, name: "Baseplate", description: "", assetType: 9, imageId: placeId, robux: 0 })
+
+        var gamesrecompiled = JSON.stringify(gamesjson)
+        var marketplacerecompiled = JSON.stringify(marketplacejson)
+
+        if (filesystem.existsSync("./marketplace.json")) filesystem.unlinkSync("./marketplace.json")
+        filesystem.writeFileSync("./marketplace.json", marketplacerecompiled)
+        if (filesystem.existsSync("./games.json")) filesystem.unlinkSync("./games.json")
+        filesystem.writeFileSync("./games.json", gamesrecompiled)
+
+        if (filesystem.existsSync("./uploads/" + placeId)) {
+            filesystem.unlinkSync("./uploads/" + placeId)
+            if (filesystem.existsSync("./assets/" + req.body["templatePlaceIdToUse"] + ".rbxl")) {
+                filesystem.writeFileSync("./uploads/" + placeId, filesystem.readFileSync("./assets/" + req.body["templatePlaceIdToUse"] + ".rbxl"))
+            }
+            else {
+                getAsset(req.body["templatePlaceIdToUse"], (result) => {
+                    filesystem.writeFileSync("./uploads/" + placeId, result)
+                })
+            }
+        }
+        else {
+            if (filesystem.existsSync("./assets/" + req.body["templatePlaceIdToUse"] + ".rbxl")) {
+                filesystem.writeFileSync("./uploads/" + placeId, filesystem.readFileSync("./assets/" + req.body["templatePlaceIdToUse"] + ".rbxl"))
+            }
+            else {
+                getAsset(req.body["templatePlaceIdToUse"], (result) => {
+                    filesystem.writeFileSync("./uploads/" + placeId, result)
+                })
+            }
+        }
+    }
+    if (forceCanManageTrue) {
+        res.status(200).send("{ \"UniverseId\": 2, \"RootPlaceId\": 1818 }")
+    }
+    else {
+        res.status(200).send("{ \"UniverseId\": " + universeId + ", \"RootPlaceId\": " + placeId + " }")
+    }
 })
 
+app.post("/v1/universes/:id/deactivate", (req, res) => {
+    res.status(200).send("{}") //STUB
+})
+
+app.post("/v1/universes/:id/activate", (req, res) => {
+    res.status(200).send("{}") //STUB
+})
+
+app.get("/places/:id/update", (_, res) => {
+    res.send("<pre>*insert edit place here*</pre>") //STUB
+})
+
+app.get("/universes/configure", (_, res) => {
+    res.send("<pre>*insert edit universe here*</pre>") //STUB
+})
+
+app.get("/games/:id", (_, res) => {
+    res.send("<pre>*insert game page here*</pre>") //STUB
+})
 app.get("/v1/places/:id/teamcreate/active_session/members", (req, res) => {
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
 })
-app.post("/ide/places/createV2", (req, res) => {
-    res.status(200).send("{\"Success\":true, \"PlaceId\":1818}")
+app.post("/ide/places/createV2", async (req, res) => {
+    var placeId = 1
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+
+    if (filesystem.existsSync("./assets")) {
+        var list = await filesystem.readdirSync("./assets")
+
+        for (var i = 0; i < list.length; i++) {
+            list[i] = list[i].replace(new RegExp("\.[^/.]+$"), "")
+        }
+        list.sort(function (a, b) { return a - b })
+        for (var i = 0; i < list.length; i++) {
+            console.log(list[i])
+            if (list[i] == placeId) {
+                placeId++
+            }
+        }
+    }
+    if (filesystem.existsSync("./uploads")) {
+        var list = filesystem.readdirSync("./uploads")
+
+        list.sort(function (a, b) { return a - b })
+
+        for (var i = 0; i < list.length; i++) {
+            if (list[i] == placeId) {
+                placeId++
+            }
+        }
+    }
+    if (allowUploadFiles) {
+        var marketplace = filesystem.readFileSync("./marketplace.json", "utf8")
+        var games = filesystem.readFileSync("./games.json", "utf8")
+        var marketplacejson = JSON.parse(marketplace)
+        var gamesjson = JSON.parse(games)
+
+        gamesjson.push({ id: req.query.universeId, name: "Baseplate", description: "", "isArchived": false, "rootPlaceId": placeId, isActive: false, privacyType: "Private", creatorType: "User", creatorTargetId: userId, creatorName: username, created: (new Date(Date.now()).toISOString()), updated: (new Date(Date.now()).toISOString()) })
+        marketplacejson.push({ id: placeId, name: "Baseplate", description: "", assetType: 9, imageId: placeId, robux: 0 })
+
+        var gamesrecompiled = JSON.stringify(gamesjson)
+        var marketplacerecompiled = JSON.stringify(marketplacejson)
+
+        if (filesystem.existsSync("./marketplace.json")) filesystem.unlinkSync("./marketplace.json")
+        filesystem.writeFileSync("./marketplace.json", marketplacerecompiled)
+        if (filesystem.existsSync("./games.json")) filesystem.unlinkSync("./games.json")
+        filesystem.writeFileSync("./games.json", gamesrecompiled)
+
+        if (filesystem.existsSync("./uploads/" + placeId)) {
+            filesystem.unlinkSync("./uploads/" + placeId)
+            if (filesystem.existsSync("./assets/" + req.query.templatePlaceIdToUse + ".rbxl")) {
+                filesystem.writeFileSync("./uploads/" + placeId, filesystem.readFileSync("./assets/" + req.query.templatePlaceIdToUse + ".rbxl"))
+            }
+            else {
+                getAsset(req.query.templatePlaceIdToUse, (result) => {
+                    filesystem.writeFileSync("./uploads/" + placeId, result)
+                })
+            }
+        }
+        else {
+            if (filesystem.existsSync("./assets/" + req.query.templatePlaceIdToUse + ".rbxl")) {
+                filesystem.writeFileSync("./uploads/" + placeId, filesystem.readFileSync("./assets/" + req.query.templatePlaceIdToUse + ".rbxl"))
+            }
+            else {
+                getAsset(req.query.templatePlaceIdToUse, (result) => {
+                    filesystem.writeFileSync("./uploads/" + placeId, result)
+                })
+            }
+        }
+    }
+    if (forceCanManageTrue) {
+        res.status(200).send("{\"Success\":true, \"PlaceId\":1818}")
+    }
+    else {
+        res.status(200).send("{\"Success\":true, \"PlaceId\":" + placeId + "}")
+    }
 })
 
 app.post("/v1/usernames/users", (req, res) => {
@@ -3424,16 +3899,49 @@ app.get("/users/account-info", (req, res) => {
     res.status(200).send("{ \"UserId\": " + userId + ", \"Username\": \"" + username + "\",\"HasPasswordSet\": true, \"Email\": {\"Value\": \"r*****@fakerebloxemail.com\", \"IsVerified\": true }, \"AgeBracket\": 0, \"Roles\": [], \"MembershipType\": 0, \"RobuxBalance\": " + robux + ", \"CountryCode\": \"US\"}")
 })
 
-app.get("/users/:userid/canmanage/:id", (req, res) => {
+app.get("/users/:userid/canmanage/:placeid", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.send("{ \"Success\": true, \"CanManage\": true }")
+    res.setHeader("cache-control", "no-cache")
+    if (filesystem.existsSync("./games.json")) {
+        var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        if (json.length > 0) {
+            var canManage = false
+            for (var i = 0; i < json.length; i++) {
+                if (json[i]["rootPlaceId"] == req.params.placeid) {
+                    canManage = true
+                    break
+                }
+            }
+            res.send("{ \"Success\": true, \"CanManage\": " + canManage + " }")
+        }
+        else {
+            res.send("{ \"Success\": true, \"CanManage\": false }")
+        }
+    } else {
+        res.send("{ \"Success\": true, \"CanManage\": true }")
+    }
+})
+
+app.post("//moderation/filtertext/", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+
+    res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + req.body["text"] + "\", \"black\": \"\"}}")
+})
+
+app.post("/moderation/filtertext/", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+
+    res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + req.body["text"] + "\", \"black\": \"\"}}")
 })
 
 app.get("//game/players/:id", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
-    
-    res.status(200).send("{\"ChatFilter\": \"whitelist\"}")
+
+    res.status(200).send("{ \"ChatFilter\": \"whitelist\" }")
 })
 
 app.get("/users/:id", (req, res) => {
@@ -3506,7 +4014,61 @@ app.get("/IDE/Toolbox/Items", (req, res) => {
 
 app.get("/v1/search/universes", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+    res.setHeader("cache-control", "no-cache")
+    if (req.query.q.includes(' ')) {
+        var splitted = req.query.q.split(' ')
+        var ogwithoutcreator = req.query.q.slice(0, req.query.q.length - splitted[splitted.length - 1].length).trim()
+        if (splitted[splitted.length - 1] == "creator:Team") {
+            res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+        }
+        else {
+            if (filesystem.existsSync("./games.json")) {
+                var data = []
+
+                var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+                if (json.length > 0) {
+                    json.forEach((game) => {
+                        if (game["name"].toLowerCase().includes(ogwithoutcreator.toLowerCase())) {
+                            data.push(game)
+                        }
+                    })
+                    res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":" + JSON.stringify(data) + "}")
+                }
+                else {
+                    res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+                }
+            }
+            else {
+                res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+            }
+        }
+    }
+    else {
+        if (req.query.q == "creator:Team") {
+            res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+        }
+        else {
+            if (filesystem.existsSync("./games.json")) {
+                var data = []
+
+                var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+                if (json.length > 0) {
+                    json.forEach((game) => {
+                        data.push(game)
+                    })
+                    res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":" + JSON.stringify(data) + "}")
+                }
+                else {
+                    res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+                }
+            }
+            else {
+                res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+            }
+        }
+    }
 })
 app.get("/v2/auth/metadata", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
@@ -3514,12 +4076,56 @@ app.get("/v2/auth/metadata", (req, res) => {
 })
 
 app.get("/universes/get-universe-places", (req, res) => {
+    var templates = filesystem.existsSync("./gametemplates.json") ? ("[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]") : "[]"
+    var templatesjson = JSON.parse(templates)
+    var gamesjson = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesparsed = JSON.parse(gamesjson)
+
     res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    if (gamesparsed.length > 0) {
+        for (var i = 0; i < gamesparsed.length; i++) {
+            if (gamesparsed[i]["id"] == req.query.universeId) {
+                res.status(200).send("{\"FinalPage\": true, \"RootPlace\": " + gamesparsed[i]["rootPlaceId"] + ", \"Places\":[{\"PlaceId\":" + gamesparsed[i]["rootPlaceId"] + ", \"Name\":\"" + gamesparsed[i]["name"] + "\"}], \"PageSize\":50}")
+                return
+            }
+        }
+    }
+    if (templatesjson.length > 0) {
+        for (var i = 0; i < templatesjson.length; i++) {
+            if (templatesjson[i]["universe"]["id"] == req.query.universeId) {
+                res.status(200).send("{\"FinalPage\": true, \"RootPlace\": " + templatesjson[i]["universe"]["rootPlaceId"] + ", \"Places\":[{\"PlaceId\":" + templatesjson[i]["universe"]["rootPlaceId"] + ", \"Name\":\"" + templatesjson[i]["universe"]["name"] + "\"}], \"PageSize\":50}")
+                return
+            }
+        }
+    }
     res.status(200).send("{\"FinalPage\": true, \"RootPlace\": 1818, \"Places\":[{\"PlaceId\":1818, \"Name\":\"ReBlox Place\"}], \"PageSize\":50}")
 })
 
 app.get("/v1/universes/:id/places", (req, res) => {
+    var templates = filesystem.existsSync("./gametemplates.json") ? ("[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]") : "[]"
+    var templatesjson = JSON.parse(templates)
+    var gamesjson = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesparsed = JSON.parse(gamesjson)
+
     res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    if (gamesparsed.length > 0) {
+        for (var i = 0; i < gamesparsed.length; i++) {
+            if (gamesparsed[i]["id"] == req.params.id) {
+                res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[{\"id\": " + gamesparsed[i]["rootPlaceId"] + ", \"universeId\": " + req.params.id + ", \"name\": \"" + gamesparsed[i]["name"] + "\", \"description\": \"A place that's on ReBlox.\"}]}")
+                return
+            }
+        }
+    }
+    if (templatesjson.length > 0) {
+        for (var i = 0; i < templatesjson.length; i++) {
+            if (templatesjson[i]["universe"]["id"] == req.params.id) {
+                res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[{\"id\": " + templatesjson[i]["universe"]["rootPlaceId"] + ", \"universeId\": " + req.params.id + ", \"name\": \"" + templatesjson[i]["universe"]["name"] + "\", \"description\": \"" + templatesjson[i]["universe"]["description"] + "\"}]}")
+                return
+            }
+        }
+    }
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[{\"id\": 1818, \"universeId\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\"}]}")
 })
 
@@ -3531,12 +4137,31 @@ app.get("/v1/games/multiget-place-details", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     var splitted = req.query.placeIds.split(',')
     var edited = ""
+
+    var templatesjson = {}
+    if (filesystem.existsSync("gametemplates.json")) templatesjson = JSON.parse("{\"data\":[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}")
     splitted.forEach((id) => {
-        if (id == splitted[splitted.length - 1]) {
-            edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"Reblox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+        if (templatesjson.length > 0) {
+            if (templatesjson["data"].length > 0) {
+                templatesjson.forEach((template) => {
+                    if (template["universe"]["rootPlaceId"] == id) {
+                        if (id == splitted[splitted.length - 1]) {
+                            edited += "{\"placeId\": " + id + ",\"name\": \"" + template["universe"]["name"] + "\", \"description\": \"" + template["universe"]["description"] + "\", \"sourceName\": \"" + template["universe"]["name"] + "\", \"sourceDescription\": \"" + template["universe"]["description"] + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["universe"]["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["universe"]["creatorName"] + "\", \"builderId\": " + template["universe"]["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["universe"]["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+                        }
+                        else {
+                            edited += "{\"placeId\": " + id + ",\"name\": \"" + template["universe"]["name"] + "\", \"description\": \"" + template["universe"]["description"] + "\", \"sourceName\": \"" + template["universe"]["name"] + "\", \"sourceDescription\": \"" + template["universe"]["description"] + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["universe"]["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["universe"]["creatorName"] + "\", \"builderId\": " + template["universe"]["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["universe"]["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+                        }
+                    }
+                })
+            }
         }
         else {
-            edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"Reblox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+            if (id == splitted[splitted.length - 1]) {
+                edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"ReBlox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+            }
+            else {
+                edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"ReBlox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+            }
         }
     })
 
@@ -3594,14 +4219,91 @@ app.get("/v1/resale-tax-rate", (req, res) => {
 })
 app.get("/v2/universes/:id/places", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"maxPlayerCount\": 50, \"socialSlotType\": \"Automatic\", \"customSocialSlotsCount\": 15, \"allowCopying\": false, \"currentSavedVersion\":1,\"isAllGenresAllowed\": null, \"allowedGearTypes\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"updated\": \"2021-08-26T22:01:58.237Z\", \"id\": 1, \"universeId\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"description\": \"A place on ReBlox\", \"isRootPlace\": true}]}")
+
+    var games = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesjson = JSON.parse(games)
+
+    if (gamesjson.length > 0) {
+        var found = false
+        gamesjson.forEach((game) => {
+            if (game["id"] == req.params.id) {
+                found = true
+                res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"maxPlayerCount\": 50, \"socialSlotType\": \"Automatic\", \"customSocialSlotsCount\": 15, \"allowCopying\": false, \"currentSavedVersion\":1,\"isAllGenresAllowed\": null, \"allowedGearTypes\": null, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"id\": " + game["rootPlaceId"] + ", \"universeId\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"isRootPlace\": true}]}")
+                return
+            }
+        })
+        if (found == false) res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"maxPlayerCount\": 50, \"socialSlotType\": \"Automatic\", \"customSocialSlotsCount\": 15, \"allowCopying\": false, \"currentSavedVersion\":1,\"isAllGenresAllowed\": null, \"allowedGearTypes\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"updated\": \"2021-08-26T22:01:58.237Z\", \"id\": 1, \"universeId\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"description\": \"A place on ReBlox\", \"isRootPlace\": true}]}")
+    }
+    else {
+        res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"maxPlayerCount\": 50, \"socialSlotType\": \"Automatic\", \"customSocialSlotsCount\": 15, \"allowCopying\": false, \"currentSavedVersion\":1,\"isAllGenresAllowed\": null, \"allowedGearTypes\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"updated\": \"2021-08-26T22:01:58.237Z\", \"id\": 1, \"universeId\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"description\": \"A place on ReBlox\", \"isRootPlace\": true}]}")
+    }
 })
 app.get("/v1/assets/:id/saved-versions", (req, res) => {
-    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + userId + ", \"creatingUniverseId\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"isPublished\": true}]}")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+
+    var games = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesjson = JSON.parse(games)
+
+    if (gamesjson.length > 0) {
+        var found = false
+        gamesjson.forEach((game) => {
+            if (game["id"] == req.params.id) {
+                found = true
+                res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatingUniverseId\": null, \"created\": \"" + game["created"] + "\", \"isPublished\": true}]}")
+                return
+            }
+        })
+        if (found == false) res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + userId + ", \"creatingUniverseId\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"isPublished\": true}]}")
+    }
+    else {
+        res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + userId + ", \"creatingUniverseId\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"isPublished\": true}]}")
+    }
 })
+
+app.get("/v1/assets/:id/published-versions", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+
+    var games = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesjson = JSON.parse(games)
+
+    if (gamesjson.length > 0) {
+        var found = false
+        gamesjson.forEach((game) => {
+            if (game["id"] == req.params.id) {
+                found = true
+                res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatingUniverseId\": null, \"created\": \"" + game["created"] + "\", \"isPublished\": true, \"isEqualToCurrentPublishedVersion\": true}]}")
+                return
+            }
+        })
+        if (found == false) res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + userId + ", \"creatingUniverseId\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"isPublished\": true, \"isEqualToCurrentPublishedVersion\": true}]}")
+    }
+    else {
+        res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + userId + ", \"creatingUniverseId\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"isPublished\": true, \"isEqualToCurrentPublishedVersion\": true}]}")
+    }
+})
+
 app.get("/v2/assets/:id/versions", (req, res) => {
-    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + userId + ", \"creatingUniverseId\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"isPublished\": true}]}")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    var games = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesjson = JSON.parse(games)
+
+    if (gamesjson.length > 0) {
+        var found = false
+        gamesjson.forEach((game) => {
+            if (game["id"] == req.params.id) {
+                found = true
+                res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatingUniverseId\": null, \"created\": \"" + game["created"] + "\", \"isPublished\": true}]}")
+                return
+            }
+        })
+        if (found == false) res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + userId + ", \"creatingUniverseId\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"isPublished\": true}]}")
+    }
+    else {
+        res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"Id\": 0, \"assetId\": " + req.params.id + ", \"assetVersionNumber\":1, \"creatorType\": \"User\", \"creatorTargetId\": " + userId + ", \"creatingUniverseId\": null, \"created\": \"2021-08-26T22:01:58.237Z\", \"isPublished\": true}]}")
+    }
 })
+
 app.get("/v1/universes/:id/badges", (req, res) => {
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}")
 })
@@ -3614,9 +4316,7 @@ app.get("/v1/universes/:id/symbolic-links", (req, res) => {
 app.get("/universes/get-aliases", (req, res) => {
     res.status(200).send("{\"FinalPage\": true, \"Aliases\": [], \"PageSize\": 50}")
 })
-app.get("/v1/games/:id/media", (req, res) => {
-    res.status(200).send("{\"data\":[{\"id\":133293265,\"assetTypeId\":1,\"assetType\":\"Image\",\"imageId\":133293265,\"videoHash\":null,\"videoTitle\":null,\"approved\":true,\"altText\":null}]}")
-})
+
 app.post("/product-experimentation-platform/v1/projects/:isthisid/values", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"projectId\": " + req.params.isthisid + ", \"version\": -1, \"publishedAt\": -1, \"layers\": { \"ClientTestBtidLayer\": {\"experimentName\": null, \"isAudienceSpecified\": false, \"isAudienceMember\": null, \"segment\": -1, \"experimentVariant\": \"da39a3e\", \"parameters\": {}, \"primaryUnit\": null, \"primaryUnitValue\": null, \"holdoutGroupExperimentName\": null }} }, \"userAgent\": \"" + req.headers["user-agent"] + "\", \"platformType\": \"Unknown\", \"platformTypeId\": 8 }")
@@ -3649,12 +4349,58 @@ app.get("/universes/get-info", (req, res) => {
     res.status(200).send("{\"Name\":\"ReBlox Place\", \"Description\":\"A ReBlox place launched from the launcher\", \"RootPlace\":1, \"StudioAccessToApisAllowed\":true,\"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
 })
 
-app.get("/Game/LuaWebService/HandleSocialRequest.ashx", (req, res) => {
+app.get("/Game/LuaWebService/HandleSocialRequest.ashx", async (req, res) => {
     if (req.query.method == "IsInGroup") {
         res.status(200).send("<Value Type=\"boolean\">false</Value>")
     }
     else if (req.query.method == "GetGroupRank") {
         res.status(200).send("<Value Type=\"integer\">0</Value>")
+    }
+    else if (req.query.method == "IsFriendsWith") {
+        if (isNumeric(req.query.playerid) && isNumeric(req.query.userid)) {
+            var verified = false
+            if (enableFriendships == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+                if (filesystem.existsSync(RBDFpath)) {
+                    var areFriends = false
+                    const stream = filesystem.createReadStream(RBDFpath)
+
+                    const rl = readline.createInterface({
+                        input: stream,
+                        crlfDelay: Infinity
+                    })
+
+                    for await (const line of rl) {
+                        if (line == "RBDF==") {
+                            verified = true
+                        }
+                        else {
+                            if (line.startsWith("<Friendship")) {
+                                if (line == "<Friendship Receiver=" + req.query.playerid + " Sender=" + req.query.userid + ">" || line == "<Friendship Receiver=" + req.query.userid + " Sender=" + req.query.playerid + ">") {
+                                    areFriends = true
+                                }
+                            }
+                        }
+                    }
+                    stream.destroy()
+                    rl.close()
+                    if (verified == true) {
+                        res.status(200).send("<Value type=\"boolean\">" + areFriends + "</Value>")
+                    }
+                    else {
+                        res.status(200).send("<Value type=\"boolean\">false</Value>")
+                    }
+                }
+                else {
+                    res.status(200).send("<Value type=\"boolean\">false</Value>")
+                }
+            }
+            else {
+                res.status(200).send("<Value type=\"boolean\">false</Value>")
+            }
+        }
+        else {
+            res.status(400).end()
+        }
     }
     else {
         if (verbose) console.log("\x1b[33m%s\x1b[0m", "<STUB> Unknown SocialRequest method: " + req.query.method)
@@ -3662,7 +4408,7 @@ app.get("/Game/LuaWebService/HandleSocialRequest.ashx", (req, res) => {
     }
 })
 
-app.get("/universes/:id/cloudeditenabled", (req, res) => {
+app.get("/universes/:id/cloudeditenabled", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"enabled\":false}") //Required for creating place in 2018+ studio
 })
@@ -3672,14 +4418,54 @@ app.get("/v1/users/:userid/groups/roles", (req, res) => {
     res.status(200).send("{\"data\":[]}") //STUB
 })
 
+app.get("/localization/games/:id/configure", (_, res) => {
+    res.status(200).get("<pre>*insert localization configuration page here*</pre>")
+})
+
 app.get("/v1/universes/:id/permissions", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"canManage\":true,\"canCloudEdit\":false}")
+    res.setHeader("cache-control", "no-cache")
+    if (filesystem.existsSync("./games.json")) {
+        var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        if (json.length > 0) {
+            var canManage = false
+            for (var i = 0; i < json.length; i++) {
+                if (json[i]["id"] == req.params.id) {
+                    canManage = true
+                    break
+                }
+            }
+            res.status(200).send("{\"canManage\":" + canManage + ",\"canCloudEdit\":false}")
+        }
+        else {
+            res.status(200).send("{\"canManage\":false,\"canCloudEdit\":false}")
+        }
+    } else {
+        res.status(200).send("{\"canManage\":true,\"canCloudEdit\":false}")
+    }
 })
 
 app.get("/places/:id/settings", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"Creator\":{\"Name\":\"" + username + ",\"CreatorType\":1,\"CreatorTargetId\":" + userId + "}}") //STUB
+    res.setHeader("cache-control", "no-cache")
+    var games = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesjson = JSON.parse(games)
+
+    if (gamesjson.length > 0) {
+        var found = false
+        gamesjson.forEach((game) => {
+            if (game["rootPlaceId"] == req.params.id) {
+                found = true
+                res.status(200).send("{\"Creator\":{\"Name\":\"" + game["creatorName"] + ",\"CreatorType\":1,\"CreatorTargetId\":" + game["creatorTargetId"] + "}}")
+                return
+            }
+        })
+        if (found == false) res.status(200).send("{\"Creator\":{\"Name\":\"" + username + ",\"CreatorType\":1,\"CreatorTargetId\":" + userId + "}}")
+    }
+    else {
+        res.status(200).send("{\"Creator\":{\"Name\":\"" + username + ",\"CreatorType\":1,\"CreatorTargetId\":" + userId + "}}")
+    }
 })
 
 app.get("/Game/Badge/HasBadge.ashx", async (req, res) => {
@@ -4044,16 +4830,35 @@ app.get("/v1/gametemplates", (_, res) => {
 })
 
 app.get("/IDE/Upload.aspx", (_, res) => {
-    res.status(200).send("Uploading maps is not supported, since it's supposed to be local anyways")
+    res.status(200).send("Uploading maps is not supported in 2020E and below, since it's supposed to be local anyways. HOWEVER! You can upload your game locally if you allow uploading files and use 2020M+")
 })
 
-app.get("/v1/user/groups/canmanage", (_, res) => {
+app.get("/v1/user/groups/canmanage", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\":[]}")
 })
-app.get("//users/:userid/canmanage/:uid", (_, res) => {
+app.get("//users/:userid/canmanage/:placeid", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{ \"Success\": true, \"CanManage\": true }")
+    res.setHeader("cache-control", "no-cache")
+    if (filesystem.existsSync("./games.json")) {
+        var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        if (json.length > 0) {
+            var canManage = false
+            for (var i = 0; i < json.length; i++) {
+                if (json[i]["rootPlaceId"] == req.params.placeid) {
+                    canManage = true
+                    break
+                }
+            }
+            res.send("{ \"Success\": true, \"CanManage\": " + canManage + " }")
+        }
+        else {
+            res.send("{ \"Success\": true, \"CanManage\": false }")
+        }
+    } else {
+        res.send("{ \"Success\": true, \"CanManage\": true }")
+    }
 })
 
 function getMD5FileHash(path) {
@@ -4067,50 +4872,256 @@ function getMD5FileHash(path) {
 }
 app.get("/GetAllowedMD5Hashes/", async (_, res) => {
     res.setHeader("cache-control", "no-cache")
-    if (filesystem.existsSync("./RobloxPlayerBeta.exe")) {
-        const hash = await getMD5FileHash("./RobloxPlayerBeta.exe")
-        res.status(200).send("{\"data\":[\"" + hash + "\"]}")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    if (joining) {
+        var options = {
+            host: ip,
+            port: 80,
+            path: "/GetAllowedMD5Hashes/?apiKey=",
+            method: "GET"
+        }
+
+        http.get(options, (res1) => {
+            res1.setEncoding("utf8")
+
+            var result = ""
+            res1.on("data", (chunk) => {
+                result += chunk
+            })
+
+            res1.on("end", () => {
+                res.status(200).send(result)
+            })
+        })
     }
     else {
-        res.status(200).send("{\"data\":[\"\"]}")
+        if (filesystem.existsSync("./RobloxPlayerBeta.exe")) {
+            const hash = await getMD5FileHash("./RobloxPlayerBeta.exe")
+            res.status(200).send("{\"data\":[\"" + hash + "\"]}")
+        }
+        else {
+            res.status(200).send("{\"data\":[\"\"]}")
+        }
     }
 })
 
 app.get("/GetAllowedSecurityVersions/", (_, res) => {
     res.setHeader("cache-control", "no-cache")
-    if (filesystem.existsSync("./version.txt")) {
-        res.status(200).send("{\"data\":[\"" + filesystem.readFileSync("./version.txt") + "pcplayer\"]}")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    if (joining) {
+        var options = {
+            host: ip,
+            port: 80,
+            path: "/GetAllowedSecurityVersions/?apiKey=",
+            method: "GET"
+        }
+
+        http.get(options, (res1) => {
+            res1.setEncoding("utf8")
+
+            var result = ""
+            res1.on("data", (chunk) => {
+                result += chunk
+            })
+
+            res1.on("end", () => {
+                res.status(200).send(result)
+            })
+        })
     }
     else {
-        res.status(200).send("{\"data\":[\"0.0.0pcplayer\"]}")
+        if (filesystem.existsSync("./version.txt")) {
+            var stringcheck = filesystem.readFileSync("./version.txt", "utf8")
+            if (stringcheck.includes('[') || stringcheck.includes(']') || stringcheck.includes('{') || stringcheck.includes('}')) {
+                console.log("\x1b[31m%s\x1b[0m", "<ERROR> Special characters are not allowed in version.txt") 
+                res.status(200).send("{\"data\":[]}")
+                return
+            }
+            res.status(200).send("{\"data\":[" + filesystem.readFileSync("./version.txt") + "]}")
+        }
+        else {
+            res.status(200).send("{\"data\":[\"0.0.0pcplayer\"]}")
+        }
     }
 })
 
-app.patch("/v1/places/:id", (req, res) => {
-    res.status(200).send("{\"id\": " + req.params.id + ", \"universeId\": 2, \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+app.post("/v1/places/:placeId", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    var found = false
+    var found1 = false
+    if (filesystem.existsSync("./gametemplates.json")) {
+        var jsondata = JSON.parse("{\"data\": [" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}")
+
+        if (jsondata["data"].length > 0) {
+            jsondata["data"].forEach((template) => {
+                if (template["universe"]["rootPlaceId"] == req.query.placeId) {
+                    found1 = true
+                    res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": " + template["universe"]["id"] + ", \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+                    return
+                }
+            })
+        }
+        else {
+            res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": 2, \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+        }
+    }
+
+    if (found1 == false) {
+        if (filesystem.existsSync("./games.json")) {
+            var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+            if (jsondata.length > 0) {
+                jsondata.forEach((game) => {
+                    if (game["rootPlaceId"] == req.query.placeId) {
+                        found = true
+                        res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": " + game["id"] + ", \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+                        return
+                    }
+                })
+            }
+            else {
+                res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": 2, \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+            }
+        }
+        if (found == false) res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": 2, \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+    }
+})
+
+app.patch("/v1/places/:placeId", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    var found = false
+    var found1 = false
+    if (filesystem.existsSync("./gametemplates.json")) {
+        var jsondata = JSON.parse("{\"data\": [" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}")
+
+        if (jsondata["data"].length > 0) {
+            jsondata["data"].forEach((template) => {
+                if (template["universe"]["rootPlaceId"] == req.query.placeId) {
+                    found1 = true
+                    res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": " + template["universe"]["id"] + ", \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+                    return
+                }
+            })
+        }
+        else {
+            res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": 2, \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+        }
+    }
+
+    if (found1 == false) {
+        if (filesystem.existsSync("./games.json")) {
+            var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+            if (jsondata.length > 0) {
+                jsondata.forEach((game) => {
+                    if (game["rootPlaceId"] == req.query.placeId) {
+                        found = true
+                        res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": " + game["id"] + ", \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+                        return
+                    }
+                })
+            }
+            else {
+                res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": 2, \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+            }
+        }
+        if (found == false) res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": 2, \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+    }
 })
 
 app.patch("/v2/universes/:id/configuration", (req, res) => {
-    res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+    var found = false
+    if (filesystem.existsSync("./games.json")) {
+        var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+        var marketplacejson = JSON.parse(filesystem.readFileSync("./marketplace.json", "utf8"))
+        var placeid = 1818
+        var oldname = ""
+        var olddescription = ""
+
+        if (jsondata.length > 0) {
+            for (var i = 0; i < jsondata.length; i++) {
+                if (jsondata[i]["id"] == req.params.id) {
+                    found = true
+                    placeid = jsondata[i]["rootPlaceId"]
+                    oldname = jsondata[i]["name"]
+                    olddescription = jsondata[i]["description"]
+                    jsondata[i]["updated"] = new Date(Date.now()).toISOString()
+                    var keys = Object.keys(req.body)
+
+                    for (var x = 0; x < keys.length; x++) {
+                        if (jsondata[i][keys[x]] != undefined) {
+                            jsondata[i][keys[x]] = req.body[keys[x]]
+                            
+                        }
+                    }
+                    break
+                }
+            }
+            for (var i = 0; i < marketplacejson.length; i++) {
+                if (marketplacejson[i]["id"] == placeid) {
+                    if (req.body.name != undefined) marketplacejson[i]["name"] = (req.body.name != undefined ? req.body.name : oldname)
+                    if (req.body.description != undefined) marketplacejson[i]["description"] = (req.body.description != undefined ? req.body.description : olddescription)
+                    break
+                }
+            }
+
+            var jsondatarecompiled = JSON.stringify(jsondata)
+            var marketplacerecompiled = JSON.stringify(marketplacejson)
+
+            filesystem.unlinkSync("./games.json")
+            filesystem.unlinkSync("./marketplace.json")
+
+            filesystem.writeFileSync("./games.json", jsondatarecompiled)
+            filesystem.writeFileSync("./marketplace.json", marketplacerecompiled)
+            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": " + placeid + ", \"name\": \"" + (req.body.name != undefined ? req.body.name : oldname) + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : olddescription) + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+        }
+        else {
+            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+        }
+    }
+    if (found == false) res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+
 })
 
-app.post("/v1/autolocalization/games/:id/autolocalizationtable", (_, res) => {
-    res.status(200).send("{\"isAutolocalizationEnabled\": false, \"shouldUseLocalizationTable\": false, \"autoLocalizationTableId\": \"" + randomUUID() + "\", \"assetId\": 0}") //STUB
+app.post("/v1/autolocalization/games/:id/autolocalizationtable", (req, res) => {
+    if (req.params.id > 0) {
+        res.status(200).send("{\"isAutolocalizationEnabled\": false, \"shouldUseLocalizationTable\": false, \"autoLocalizationTableId\": \"" + randomUUID() + "\", \"assetId\": 0}") //STUB
+    }
+    else {
+        res.status(400).send("{\"errors\": [{ \"code\": 14, \"message\": \"Invalid game id\"}]}")
+    }
 })
 
 app.get("/v1/autolocalization/games/:id", (_, res) => {
     res.status(200).send("{}")
 })
-app.get("/v1/source-language/games/:id", (_, res) => {
-    res.status(200).send("{\"name\": \"English\", \"nativeName\": \"English\", \"languageCode\": \"en\"}")
+app.get("/v1/source-language/games/:id", (req, res) => {
+    if (req.params.id > 0) {
+        res.status(200).send("{\"name\": \"English\", \"nativeName\": \"English\", \"languageCode\": \"en\"}")
+    }
+    else {
+        res.status(400).send("{\"errors\": [{\"code\":14, \"message\": \"Invalid game id\"}]}")
+    }
 })
 
 app.get("/v1/automatic-translation/games/:id/feature-status", (req, res) => {
-    res.status(200).send("{\"gameId\": " + req.params.id + ", \"isAutomaticTranslationAllowed\": false, \"isAutomaticTranslationSwitchesUIEnabled\": false}")
+    if (req.params.id > 0) {
+        res.status(200).send("{\"gameId\": " + req.params.id + ", \"isAutomaticTranslationAllowed\": false, \"isAutomaticTranslationSwitchesUIEnabled\": false}")
+    }
+    else {
+        res.status(500).send("{\"errors\":[{\"code\": 0, \"message\": \"InternalServerError\"}]}")
+    }
 })
 
-app.get("/v1/supported-languages/games/:id/automatic-translation-status", (_, res) => {
-    res.status(200).send("{\"data\":[{\"languageCodeType\": \"Language\", \"languageCode\": \"en\", \"isAutomaticTranslationEnabled\": false}]}")
+app.get("/v1/supported-languages/games/:id/automatic-translation-status", (req, res) => {
+    if (req.params.id > 0) {
+        res.status(200).send("{\"data\":[{\"languageCodeType\": \"Language\", \"languageCode\": \"en\", \"isAutomaticTranslationEnabled\": false}]}")
+    }
+    else {
+        res.status(400).send("{\"errors\": [{\"code\": 14, \"message\": \"Invalid game id\"}]}")
+    }
 })
 
 app.get("/v1/automatic-translation/languages/:lang/target-languages", (req, res) => {
@@ -4255,16 +5266,16 @@ app.get("/v1/favorites/users/:userid/bundles/:id/favorite", (req, res) => {
     res.status(200).send("null")
 })
 
-app.get("/v1/users/authenticated", (req, res) => {
+app.get("/v1/users/authenticated", (_, res) => {
     res.setHeader("cache-control", "no-cache")
     res.status(200).send("{\"id\": " + userId + ", \"name\": \"" + username + "\", \"displayName\": \"" + username + "\"}")
 })
 
-app.get("/v1/users/authenticated/app-launch-info", (req, res) => {
+app.get("/v1/users/authenticated/app-launch-info", (_, res) => {
     res.status(200).send("{\"ageBracket\": 0, \"countryCode\": \"US\", \"isPremium\": false, \"id\": " + userId + ", \"name\": \"" + username + "\", \"displayName\": \"" + username + "\"}")
 })
 
-app.get("/v1/users/authenticated/roles", (req, res) => {
+app.get("/v1/users/authenticated/roles", (_, res) => {
     res.status(200).send("{ \"roles\": [] }")
 })
 
@@ -4281,10 +5292,10 @@ app.get("/v1/products/:id", (req, res) => {
                 res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":" + req.params.id + ", \"assetName\":\"" + product["name"] + "\", \"assetType\": \"" + translateAssetTypeIdToAssetType(product["assetType"]) + "\", \"assetTypeDisplayName\": \"" + translateAssetTypeIdToAssetType(product["assetType"]) + "\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
             }
         })
-        if (sent == false) res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":" + req.params.id + ", \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
+        if (sent == false) res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":133293265, \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
     }
     else {
-        res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":" + req.params.id + ", \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
+        res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":133293265, \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
     }
 })
 
@@ -4366,7 +5377,7 @@ app.get("/v2/assets/:id/details", (req, res) => {
     }
 })
 
-app.get("/latency-measurements/get-servers-to-ping", (req, res) => {
+app.get("/latency-measurements/get-servers-to-ping", (_, res) => {
     res.status(200).end()
 })
 app.get("/ownership/hasasset", async (req, res) => {
@@ -4524,18 +5535,104 @@ app.post("/marketplace/purchase", async (req, res) => {
     }
 })
 
-app.post("/marketplace/validatepurchase", (req, res) => {
+app.post("/marketplace/validatepurchase", (_, res) => {
     res.status(200).send("{\"playerId\": " + userId + ", \"placeId\": 1818, \"isValid\": true, \"productId\": " + lastProductId + "}")
 })
-app.get("/currency/balance", (req, res) => {
+app.get("/currency/balance", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"robux\": " + robux + ", \"tickets\": 255}")
 })
 
+app.get("/v1/name-description/games/:id", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+
+    if (req.params.id > 0) {
+        var found = false
+        var found1 = false
+        if (filesystem.existsSync("./gametemplates.json")) {
+            var jsondata = JSON.parse("{\"data\": [" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}")
+
+            if (jsondata["data"].length > 0) {
+                jsondata["data"].forEach((template) => {
+                    if (template["universe"]["id"] == req.params.id) {
+                        found1 = true
+                        res.status(200).send("{\"data\": [{\"name\":\"" + template["universe"]["name"] + "\", \"description\":\"" + template["universe"]["description"] + "\", \"updateType\": null, \"languageCode\": \"en\"}]}")
+                        return
+                    }
+                })
+            }
+            else {
+                res.status(200).send("{\"data\": [{\"name\":\"ReBlox Place\", \"description\":\"\", \"updateType\": null, \"languageCode\": \"en\"}]}")
+            }
+        }
+
+        if (found1 == false) {
+            if (filesystem.existsSync("./games.json")) {
+                var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+                if (jsondata.length > 0) {
+                    jsondata.forEach((game) => {
+                        if (game["id"] == req.params.id) {
+                            found = true
+                            res.status(200).send("{\"data\": [{\"name\":\"" + game["name"] + "\", \"description\":\"" + game["description"] + "\", \"updateType\": null, \"languageCode\": \"en\"}]}")
+                            return
+                        }
+                    })
+                }
+                else {
+                    res.status(200).send("{\"data\": [{\"name\":\"ReBlox Place\", \"description\":\"\", \"updateType\": null, \"languageCode\": \"en\"}]}")
+                }
+            }
+            if (found == false) res.status(200).send("{\"data\": [{\"name\":\"ReBlox Place\", \"description\":\"\", \"updateType\": null, \"languageCode\": \"en\"}]}")
+        }
+    }
+    else {
+        res.status(400).send("{\"errors\": [{ \"code\": 14, \"message\": \"Invalid game id\"}]}")
+    }
+})
+
 app.get("/universes/get-universe-containing-place", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"UniverseId\":2}")
+    res.setHeader("cache-control", "no-cache")
+    var found = false
+    var found1 = false
+    if (filesystem.existsSync("./gametemplates.json")) {
+        var jsondata = JSON.parse("{\"data\": [" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}")
 
+        if (jsondata["data"].length > 0) {
+            jsondata["data"].forEach((template) => {
+                if (template["universe"]["rootPlaceId"] == req.query.placeId) {
+                    found1 = true
+                    res.status(200).send("{\"UniverseId\":" + template["universe"]["id"] + "}")
+                    return
+                }
+            })
+        }
+        else {
+            res.status(200).send("{\"UniverseId\":2}")
+        }
+    }
+
+    if (found1 == false) {
+        if (filesystem.existsSync("./games.json")) {
+            var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+            if (jsondata.length > 0) {
+                jsondata.forEach((game) => {
+                    if (game["rootPlaceId"] == req.query.placeId) {
+                        found = true
+                        res.status(200).send("{\"UniverseId\":" + game["id"] + "}")
+                        return
+                    }
+                })
+            }
+            else {
+                res.status(200).send("{\"UniverseId\":2}")
+            }
+        }
+        if (found == false) res.status(200).send("{\"UniverseId\":2}")
+    }
 })
 
 app.get("/v1.1/game-start-info/", (req, res) => {
@@ -4631,10 +5728,6 @@ app.get("/asset-thumbnail/json", (_, res) => {
 app.get("/universal-app-configuration/v1/behaviors/app-policy/content", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"ChatHeaderSearch\": true, \"ChatPlayTogether\": true, \"GamePlayerCounts\": true, \"Notifications\": true, \"SearchBar\": true, \"GameReportingDisabled\": false, \"FriendFinder\": true, \"UseBottomBar\": true, \"ShowYoutubeAgeAlert\": false, \"ShowDisplayName\": true, \"CatalogReportingDisabled\": false, \"ShowVideoThumbnails\": true, \"EnableInGameHomeIcon\": false, \"EnableVoiceReportAbuseMenu\": true, \"EnablePremiumUserFeatures\": true, \"PlatformGroup\": \"Unknown\", \"RealNamesInDisplayNamesEnabled\": false, \"SystemBarPlacement\": \"Bottom\"}")
-})
-
-app.get("/universal-app-configuration/v1/behaviors/studio/content", (_, res) => {
-    res.status(200).send("{}") //This should make 2021L+ Studio work.
 })
 
 app.get("/v1/assets/:id/bundles", (req, res) => {
@@ -4832,12 +5925,47 @@ app.get("/v1/user/studiodata", (req, res) => {
 })
 
 app.get("/v1/universes/multiget", (req, res) => {
-    res.status(200).send("{\"data\": []}")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    var games = (filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json") : "[]")
+    var gamesjson = JSON.parse(games)
+
+    if (gamesjson.length > 0) {
+        var found = false
+        var ids = req.query.ids
+        var result = ""
+        gamesjson.forEach((game) => {
+            if (ids.includes(game["id"].toString())) {
+                result += JSON.stringify(game) + ","
+                found = true
+            }
+        })
+        if (found == false) res.status(200).send("{\"data\": []}"); else res.status(200).send("{\"data\": [" + result.slice(0, result.length - 1) + "]}")
+    }
+    else {
+        res.status(200).send("{\"data\": []}")
+    }
 })
 
 app.get("/v1/universes/:id", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"id\":" + req.params.id + ",\"name\":\"ReBlox Place\",\"description\": \"A ReBlox place launched from the launcher\",\"isArchived\":false,\"rootPlaceId\":1818,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":" + userId + ",\"creatorName\":\"" + username + "\",\"created\":\"2013-10-31T17:46:37.747Z\",\"updated\":\"2019-04-03T00:04:34.373Z\"}")
+    var games = (filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json") : "[]")
+    var gamesjson = JSON.parse(games)
+
+    if (gamesjson.length > 0) {
+        var found = false
+        gamesjson.forEach((game) => {
+            if (req.params.id == game["id"]) {
+                res.status(200).send(JSON.stringify(game))
+                found = true
+                return
+            }
+        })
+        if (found == false) res.status(200).send("{\"id\":" + req.params.id + ",\"name\":\"ReBlox Place\",\"description\": \"A ReBlox place launched from the launcher\",\"isArchived\":false,\"rootPlaceId\":1818,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":" + userId + ",\"creatorName\":\"" + username + "\",\"created\":\"2013-10-31T17:46:37.747Z\",\"updated\":\"2019-04-03T00:04:34.373Z\"}")
+    }
+    else {
+        res.status(200).send("{\"id\":" + req.params.id + ",\"name\":\"ReBlox Place\",\"description\": \"A ReBlox place launched from the launcher\",\"isArchived\":false,\"rootPlaceId\":1818,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":" + userId + ",\"creatorName\":\"" + username + "\",\"created\":\"2013-10-31T17:46:37.747Z\",\"updated\":\"2019-04-03T00:04:34.373Z\"}")
+    }
+
 })
 
 app.get("/My/Places.aspx", (_, res) => {
@@ -4885,6 +6013,10 @@ app.get("/v1/settings/application", (req, res) => {
     }
 })
 
+app.get("/v1/settings/universe/:id", (_, res) => {
+    res.status(200).send("{\"isUniverseEnabledForVoice\": false, \"isUniverseEnabledForAvatarVideo\": false, \"isChatGroupsApiEnabled\": false}") //STUB
+})
+
 app.get("/v2/settings/application/PCStudioApp", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     if (filesystem.existsSync("./ClientAppSettings.json")) {
@@ -4895,7 +6027,7 @@ app.get("/v2/settings/application/PCStudioApp", (req, res) => {
     }
 })
 
-app.post("/v1/authentication-ticket/redeem", (req, res) => {
+app.post("/v1/authentication-ticket/redeem", (_, res) => {
     res.status(200).end()
 })
 
@@ -4913,15 +6045,15 @@ app.get("/universes/:id/game-start-info", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"r15Morphing\": false}")
 })
-app.get("/game/logout.aspx", (req, res) => {
+app.get("/game/logout.aspx", (_, res) => {
     res.status(200).end()
 })
-app.get("/Game/JoinRate.ashx", (req, res) => {
+app.get("/Game/JoinRate.ashx", (_, res) => {
     //STUB
     res.status(200).end()
 })
 
-app.get("/Game/ClientPresence.ashx", (req, res) => {
+app.get("/Game/ClientPresence.ashx", (_, res) => {
     //STUB
     res.status(200).end()
 })
@@ -4948,11 +6080,51 @@ app.get("/asset-gameicon/multiget", (req, res) => {
 
 app.get("/v1/games/icons", (req, res) => {
     res.setHeader("cache-control", "no-cache")
+
     if (isRobloxAvailable) {
+        var idsplitted = req.query.universeIds.split(",")
+        var edit = ""
+        var idneeded = []
+        var placeidneeded = []
+        var gamesjson = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+        var templatesjson = filesystem.existsSync("./gametemplates.json") ? ("[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]") : "[]"
+        var templatesjsonparsed = JSON.parse(templatesjson)
+
+        idsplitted.forEach((id) => {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+
+                if (templatesjsonparsed.length > 0) {
+                    templatesjsonparsed.forEach((template) => {
+                        if (template["universe"]["id"] == id) {
+                            if (splitted[0] == id.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                idneeded.push(id)
+                                placeidneeded.push(template["universe"]["rootPlaceId"])
+                            }
+                        }
+                    })
+                }
+            })
+            filesystem.readdirSync("./icons").forEach(file => {
+                var splitted = file.split('.')
+
+                if (templatesjsonparsed.length > 0) {
+                    templatesjsonparsed.forEach((template) => {
+                        if (template["universe"]["id"] == id) {
+                            if (splitted[0] == id.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                idneeded.push(id)
+                                placeidneeded.push(template["universe"]["rootPlaceId"])
+                            }
+                        }
+                    })
+                }
+
+            })
+        })
         var options = {
             host: "thumbnails.roblox.com",
             port: 443,
-            path: (req.get("host") + req.originalUrl).replace(new RegExp("thumbnails.reblox.zip", "g"), ""),
+            path: (req.get("host") + req.originalUrl).replace(new RegExp("thumbnails.reblox.zip", "g"), "").replace("AutoGenerated", "PlaceHolder"),
             method: "GET"
         }
 
@@ -4963,7 +6135,32 @@ app.get("/v1/games/icons", (req, res) => {
                 jsondata += chunk
             })
             res1.on("end", () => {
-                res.status(200).send(jsondata)
+
+                var jsonparsed = JSON.parse(jsondata)
+                var gamesjsonparsed = JSON.parse(gamesjson)
+                if (jsonparsed["data"].length > 0) {
+                    jsonparsed["data"].forEach((imageData) => {
+                        for (var i = 0; i < idneeded.length; i++) {
+                            if (imageData["targetId"] == idneeded[i]) {
+                                imageData["imageUrl"] = "http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + placeidneeded[i]
+                            }
+                        }
+                        if (gamesjsonparsed.length > 0) {
+                            gamesjsonparsed.forEach((game) => {
+                                if (imageData["targetId"] == game["id"]) {
+                                    if (filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".png") || filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".jpg") || filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".jpeg")) imageData["imageUrl"] = "http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"]
+                                }
+                            })
+                        }
+                    })
+
+                    var recompiledJSON = JSON.stringify(jsonparsed)
+                    res.status(200).send(recompiledJSON)
+
+                }
+                else {
+                    res.status(200).send(jsondata)
+                }
             })
         })
     }
@@ -4972,7 +6169,7 @@ app.get("/v1/games/icons", (req, res) => {
         var edit = ""
 
         if (filesystem.existsSync("./gametemplates.json")) {
-            var json = "{\"data\":[" + filesystem.readFileSync("./gametemplates.json") + "]}"
+            var json = "{\"data\":[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}"
 
             var jsonparsed = JSON.parse(json)
 
@@ -5015,6 +6212,132 @@ app.get("/v1/games/icons", (req, res) => {
     }
 })
 
+app.post("/v1/games/:id/icon", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    var games = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesjson = JSON.parse(games)
+    if (gamesjson.length > 0) {
+        var found = false
+        gamesjson.forEach((game) => {
+            if (game["id"] == req.params.id) {
+                found = true
+                var rawtext = Buffer.from(req.body).toString("hex")
+                var splittedraw = rawtext.split(Buffer.from('name="request.files"\r\n\r\n', "utf8").toString("hex"))
+
+                if (filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".png")) filesystem.unlinkSync("./icons/" + game["rootPlaceId"] + ".png");
+                filesystem.writeFileSync("./icons/" + game["rootPlaceId"] + ".png", Buffer.from(splittedraw[1], "hex"))
+                res.status(200).send("{\"targetId\": " + game["rootPlaceId"] + "}")
+                return
+            }
+        })
+        if (found == false) res.status(200).send("{\"targetId\": 1818}")
+    }
+    else {
+        res.status(200).send("{\"targetId\": 1818}")
+    }
+})
+
+app.get("/v1/games/:id/media", (req, res) => {
+    res.status(200).send("{\"data\":[]}") //STUB
+})
+
+app.get("/v1/games", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    var result = ""
+    var valid = true
+    const games = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    const gamesjson = JSON.parse(games)
+
+    if (typeof (req.query.universeIds) == "string") {
+        const splitorstring = (req.query.universeIds.includes(",") ? req.query.universeIds.split(',') : req.query.universeIds)
+        if (typeof (splitorstring) == "string") {
+            if (parseInt(splitorstring) > 0) {
+                if (isNumeric(splitorstring) == false) {
+                    valid = false
+                }
+
+                if (gamesjson.length > 0 && valid == true) {
+                    gamesjson.forEach((game) => {
+                        if (game["id"] == splitorstring) {
+                            result += "{\"id\": " + splitorstring + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"sourceName\": null, \"sourceDescription\": null, \"creator\": {\"id\": " + game["creatorTargetId"] + ", \"name\": \"" + game["creatorName"] + "\", \"Type\": \"User\", \"isRNVAccount\": false, \"hasVerifiedBadge\": false}, \"price\": null, \"allowedGearGenres\": [], \"allowedGearCategories\": [], \"isGenreEnforced\": false, \"copyingAllowed\": false, \"playing\": 0, \"visits\": 0, \"maxPlayers\": 29, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"studioAccessToApisAllowed\": true, \"createVipServerAllowed\": true, \"universeAvatarType\": \"PlayerChoice\", \"genre\": \"\", \"isAllGenre\": true, \"isFavoritedByUser\": false, \"canonicalUrlPath\": \"/games/" + game["rootPlaceId"] + "/" + game["name"].replace(new RegExp(" ", "g"), "-") + "\"},"
+                            return
+                        }
+                    })
+                }
+            }
+            else {
+                valid = false
+            }
+        }
+        else {
+            splitorstring.forEach((id) => {
+                if (isNumeric(id) == false) {
+                    valid = false
+                    return
+                }
+
+                if (gamesjson.length > 0 && valid == true) {
+                    gamesjson.forEach((game) => {
+                        if (game["id"] == id) {
+                            result += "{\"id\": " + id + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"sourceName\": null, \"sourceDescription\": null, \"creator\": {\"id\": " + game["creatorTargetId"] + ", \"name\": \"" + game["creatorName"] + "\", \"Type\": \"User\", \"isRNVAccount\": false, \"hasVerifiedBadge\": false}, \"price\": null, \"allowedGearGenres\": [], \"allowedGearCategories\": [], \"isGenreEnforced\": false, \"copyingAllowed\": false, \"playing\": 0, \"visits\": 0, \"maxPlayers\": 29, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"studioAccessToApisAllowed\": true, \"createVipServerAllowed\": true, \"universeAvatarType\": \"PlayerChoice\", \"genre\": \"\", \"isAllGenre\": true, \"isFavoritedByUser\": false, \"canonicalUrlPath\": \"/games/" + game["rootPlaceId"] + "/" + game["name"].replace(new RegExp(" ", "g"), "-") + "\"},"
+                            return
+                        }
+                    })
+                }
+            })
+        }
+        
+        
+        if (valid == false) {
+            res.status(400).send("{\"errors\": [{\"code\": 8, \"message\": \"The universe IDs specified are invalid.\"}]}")
+            return
+        }
+        
+        if (result.length > 0) {
+            res.status(200).send("{\"data\": [" + result.slice(0, result.length - 1) + "]}")
+        }
+        else {
+            res.status(200).send("{\"data\": []}")
+        }
+    }
+    else {
+        if (req.query.universeIds != undefined) {
+            req.query.universeIds.forEach((id) => {
+                if (isNumeric(id) == false) {
+                    valid = false
+                    return
+                }
+
+                if (gamesjson.length > 0 && valid == true) {
+                    gamesjson.forEach((game) => {
+                        if (game["id"] == id) {
+                            result += "{\"id\": " + id + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"sourceName\": null, \"sourceDescription\": null, \"creator\": {\"id\": " + game["creatorTargetId"] + ", \"name\": \"" + game["creatorName"] + "\", \"Type\": \"User\", \"isRNVAccount\": false, \"hasVerifiedBadge\": false}, \"price\": null, \"allowedGearGenres\": [], \"allowedGearCategories\": [], \"isGenreEnforced\": false, \"copyingAllowed\": false, \"playing\": 0, \"visits\": 0, \"maxPlayers\": 29, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"studioAccessToApisAllowed\": true, \"createVipServerAllowed\": true, \"universeAvatarType\": \"PlayerChoice\", \"genre\": \"\", \"isAllGenre\": true, \"isFavoritedByUser\": false, \"canonicalUrlPath\": \"/games/" + game["rootPlaceId"] + "/" + game["name"].replace(new RegExp(" ", "g"), "-") + "\"},"
+                            return
+                        }
+                    })
+                }
+            })
+            if (valid == false) {
+                res.status(400).send("{\"errors\": [{\"code\": 8, \"message\": \"The universe IDs specified are invalid.\"}]}")
+                return
+            } 
+
+            if (result.length > 0) {
+                res.status(200).send("{\"data\": [" + result.slice(0, result.length - 1) + "]}")
+            }
+            else {
+                res.status(200).send("{\"data\": []}")
+            }
+        }
+        else {
+            res.status(400).send("{\"errors\": [{\"code\": 8, \"message\": \"The universe IDs specified are invalid.\"}]}")
+        }
+    }
+
+})
+
 app.get("/Game/AreFriends", async (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.setHeader("content-type", "text/plain")
@@ -5045,7 +6368,7 @@ app.get("/Game/AreFriends", async (req, res) => {
         var verified = false
         var friendsarray = req.query.otherUserIds.includes(",") ? req.query.otherUserIds.split(",") : req.query.otherUserIds
         var friendsExistsList = []
-        if (enableDataStore == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+        if (enableFriendships == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
             if (filesystem.existsSync(RBDFpath)) {
                 const stream = filesystem.createReadStream(RBDFpath)
 
@@ -5070,7 +6393,7 @@ app.get("/Game/AreFriends", async (req, res) => {
                             }
                             else {
                                 for (var i = 0; i < friendsarray.length; i++) {
-                                    if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">") {
+                                    if (line == "<Friendship Receiver=" + req.query.userId + " Sender=" + friendsarray[i] + ">" || line == "<Friendship Receiver=" + friendsarray[i] + " Sender=" + req.query.userId + ">\r\n") {
                                         if (friendsExistsList.includes(friendsarray[i]) == false) {
                                             friendsExistsList.push(friendsarray[i])
                                         }
@@ -5083,18 +6406,18 @@ app.get("/Game/AreFriends", async (req, res) => {
                 stream.destroy()
                 rl.close()
                 if (verified == true) {
-                    res.status(200).send((friendsExistsList.length > 0) ? "," + friendsExistsList.toString() + "," : "S")
+                    res.status(200).send((friendsExistsList.length > 0) ? "," + friendsExistsList.toString() + "," : "")
                 }
                 else {
                     res.status(500).end()
                 }
             }
             else {
-                res.status(200).send("S")
+                res.status(200).send("")
             }
         }
         else {
-            res.status(200).send("S")
+            res.status(200).send("")
         }
     }
 })
@@ -5167,18 +6490,18 @@ app.get("/Friend/AreFriends", async (req, res) => {
                 stream.destroy()
                 rl.close()
                 if (verified == true) {
-                    res.status(200).send((friendsExistsList.length > 0) ? "," + friendsExistsList.toString() + "," : "S")
+                    res.status(200).send((friendsExistsList.length > 0) ? "," + friendsExistsList.toString() + "," : "")
                 }
                 else {
                     res.status(500).end()
                 }
             }
             else {
-                res.status(200).send("S")
+                res.status(200).send("")
             }
         }
         else {
-            res.status(200).send("S")
+            res.status(200).send("")
         }
     }
 })
@@ -5208,7 +6531,7 @@ app.post("/Game/CreateFriend", async (req, res) => {
                     res.status(res1.statusCode).send(data)
                 })
             })
-            req1.write(req.body)
+            req1.write(JSON.stringify(req.body))
             req1.end()
 
         } catch {
@@ -5290,7 +6613,7 @@ app.post("/Game/BreakFriend", async (req, res) => {
                     res.status(res1.statusCode).send(data)
                 })
             })
-            req1.write(req.body)
+            req1.write(JSON.stringify(req.body))
             req1.end()
 
         } catch {
@@ -5366,7 +6689,7 @@ app.post("/Friend/BreakFriend", async (req, res) => {
                     res.status(res1.statusCode).send(data)
                 })
             })
-            req1.write(req.body)
+            req1.write(JSON.stringify(req.body))
             req1.end()
 
         } catch {
@@ -5442,7 +6765,7 @@ app.post("/Friend/CreateFriend", async (req, res) => {
                     res.status(res1.statusCode).send(data)
                 })
             })
-            req1.write(req.body)
+            req1.write(JSON.stringify(req.body))
             req1.end()
 
         } catch {
@@ -5964,6 +7287,7 @@ app.post("/persistence/set", async (req, res) => {
 app.post("/persistence/setblob.ashx", (req, res) => {
     console.log("\x1b[32m%s\x1b[0m", "<STUB> Adding value to datastore (Data Persistence)")
     res.setHeader("cache-control", "no-cache")
+    console.log(req.headers["content-type"])
     console.log(req.body)
     console.log(req.query)
     res.status(200).end() //STUB
@@ -6279,10 +7603,10 @@ app.post("/user/unfollow", async (req, res) => {
                         var filecontent = filesystem.readFileSync(RBDFpath, "utf8")
                         filesystem.unlinkSync(RBDFpath)
                         if (req.query.userId != undefined) {
-                            filesystem.writeFileSync(RBDFpath, filecontent.replace(new RegExp("<Following userId=" + req.query.userId + " followerUserId=" + req.body.followedUserId + ">\r\n", "g"), ""))
+                            filesystem.writeFileSync(RBDFpath, filecontent.replace("<Following userId=" + req.query.userId + " followerUserId=" + req.body.followedUserId + ">\r\n", ""))
                         }
                         else {
-                            filesystem.writeFileSync(RBDFpath, filecontent.replace(new RegExp("<Following userId=" + userId + " followerUserId=" + req.body.followedUserId + ">\r\n", "g"), ""))
+                            filesystem.writeFileSync(RBDFpath, filecontent.replace("<Following userId=" + userId + " followerUserId=" + req.body.followedUserId + ">\r\n", ""))
                         }
                     }
                 }
@@ -6305,7 +7629,25 @@ app.post("/user/unfollow", async (req, res) => {
 
 app.get("/assets/:id/versions", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("[{\"Id\": " + req.params.id + ", \"AssetId\":0, \"VersionNumber\":1, \"RawContentId\":0, \"ParentAssetVersionId\": 0, \"CreatorType\":1, \"CreatorTargetId\": " + userId + ", \"CreatingUniverseId\": null, \"Created\": \"2015-07-13T11:51:12.9073098-05:00\",\"Updated\": \"2015-07-13T11:51:12.9073098-05:00\"}]")
+    res.setHeader("cache-control", "no-cache")
+    var games = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesjson = JSON.parse(games)
+
+    if (gamesjson.length > 0) {
+        var found = false
+        gamesjson.forEach((game) => {
+            if (game["rootPlaceId"] == req.params.id) {
+                found = true
+                res.status(200).send("[{\"Id\": " + game["id"] + ", \"AssetId\":" + req.params.id + ", \"VersionNumber\":1, \"RawContentId\":" + req.params.id + ", \"ParentAssetVersionId\": " + req.params.id + ", \"CreatorType\":1, \"CreatorTargetId\": " + game["creatorTargetId"] + ", \"CreatingUniverseId\": null, \"Created\": \"" + game["created"] + "\",\"Updated\": \"" + game["updated"] + "\"}]")
+                return
+            }
+        })
+        if (found == false) res.status(200).send("[{\"Id\": " + req.params.id + ", \"AssetId\":0, \"VersionNumber\":1, \"RawContentId\":0, \"ParentAssetVersionId\": 0, \"CreatorType\":1, \"CreatorTargetId\": " + userId + ", \"CreatingUniverseId\": null, \"Created\": \"2015-07-13T11:51:12.9073098-05:00\",\"Updated\": \"2015-07-13T11:51:12.9073098-05:00\"}]")
+    }
+    else {
+        res.status(200).send("[{\"Id\": " + req.params.id + ", \"AssetId\":0, \"VersionNumber\":1, \"RawContentId\":0, \"ParentAssetVersionId\": 0, \"CreatorType\":1, \"CreatorTargetId\": " + userId + ", \"CreatingUniverseId\": null, \"Created\": \"2015-07-13T11:51:12.9073098-05:00\",\"Updated\": \"2015-07-13T11:51:12.9073098-05:00\"}]")
+    }
+
 })
 app.get("/user/get-friendship-count", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
@@ -6354,14 +7696,42 @@ app.get("/headshot-thumbnail/image", (req, res) => {
     res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
 })
 
-app.get("/v1/locales", (req, res) => {
-    res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"data\": [{\"locale\":{\"id\":1, \"locale\":\"en_us\", \"name\": \"English (US)\", \"nativeName\":\"English\",\"language\":{\"id\":41,\"name\":\"English\",\"nativeName\":\"English\",\"languageCode\":\"en\"}},\"isEnabledForFullExperience\":true,\"IsEnabledForSignupAndLogin\":true,\"IsEnabledForInGameUgc\":true}]}")
+app.get("/headshot-thumbnail/json", (_, res) => {
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("Content-disposition", "attachment; filename=\"headshot.png\"")
+    res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image\", \"Final\": true}")
 })
 
+app.get("/v1/locales", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.status(200).send("{\"data\": [{\"locale\":{\"id\":1, \"locale\":\"en_us\", \"name\": \"English (United States)\", \"nativeName\":\"English (United States)\",\"language\":{\"id\":41,\"name\":\"English\",\"nativeName\":\"English\",\"languageCode\":\"en\", \"isRightToLeft\": false}},\"isEnabledForFullExperience\":true,\"IsEnabledForSignupAndLogin\":true,\"IsEnabledForInGameUgc\":true}]}")
+})
+
+app.get("/v1/game-localization-roles/games/:id/current-user/roles", (req, res) => {
+    if (filesystem.existsSync("./games.json")) {
+        var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        var found = false
+        json.forEach((game) => {
+            if (game["id"] == req.params.id) {
+                found = true
+                res.status(200).send("{\"data\": [ \"owner\" ]}")
+            }
+        })
+
+        if (found == false) res.status(200).send("{\"data\": []}")
+    }
+    else {
+        res.status(200).send("{\"data\": []}")
+    }
+})
 app.get("/v2/users/:userid/groups/roles", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\":[]}")
+})
+
+app.get("/v2/users/:id/inventory/:typeid", (_, res) => {
+    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}")
 })
 
 app.use((req, res) => {
@@ -6371,12 +7741,27 @@ app.use((req, res) => {
     if (req.method == "POST") {
         console.log("\x1b[33m%s\x1b[0m", "<WARN> Request Body:\n" + toString(req.body))
     }
+    else if (req.method == "PUT") {
+        console.log("\x1b[33m%s\x1b[0m", "<WARN> Request Body:\n" + toString(req.body))
+    }
+    else if (req.method == "PATCH") {
+        console.log("\x1b[33m%s\x1b[0m", "<WARN> Request Body:\n" + toString(req.body))
+    }
 });
-
-https.createServer(options, app).listen(443, (req, res) => {
-    console.log("\x1b[32m%s\x1b[0m", "<INFO> Started a HTTPS server at port 443")
-})
 
 app.listen(80, (req, res) => {
     console.log("\x1b[32m%s\x1b[0m", "<INFO> Started a HTTP server at port 80")
 })
+
+if (enableHTTPS) {
+    const options = {
+        ca: filesystem.readFileSync("./../../../ca.pem"), //CHANGE THIS WHEN YOU USE THIS IN A DIFFERENT DIRECTORY!
+        key: filesystem.readFileSync("cert-key.pem"),
+        cert: filesystem.readFileSync("cert.pem")
+    }
+
+    https.createServer(options, app).listen(443, (req, res) => {
+        console.log("\x1b[32m%s\x1b[0m", "<INFO> Started a HTTPS server at port 443")
+    })
+
+}
