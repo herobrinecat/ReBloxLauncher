@@ -439,5 +439,29 @@ namespace ReBloxLauncher.Properties {
                 this["FadeImageSupport"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EnableDataPersistence {
+            get {
+                return ((bool)(this["EnableDataPersistence"]));
+            }
+            set {
+                this["EnableDataPersistence"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("default.rbdf")]
+        public string RBDFPath {
+            get {
+                return ((string)(this["RBDFPath"]));
+            }
+            set {
+                this["RBDFPath"] = value;
+            }
+        }
     }
 }

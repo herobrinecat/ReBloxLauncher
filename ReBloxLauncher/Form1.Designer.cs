@@ -50,6 +50,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
             this.ExperimentsPanel = new System.Windows.Forms.Panel();
+            this.checkBox18 = new System.Windows.Forms.CheckBox();
             this.checkBox15 = new System.Windows.Forms.CheckBox();
             this.checkBox14 = new System.Windows.Forms.CheckBox();
             this.label41 = new System.Windows.Forms.Label();
@@ -137,6 +138,7 @@
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.tabPage4 = new System.Windows.Forms.TabPage();
             this.tabPage7 = new System.Windows.Forms.TabPage();
+            this.checkBox16 = new System.Windows.Forms.CheckBox();
             this.label35 = new System.Windows.Forms.Label();
             this.label34 = new System.Windows.Forms.Label();
             this.button11 = new System.Windows.Forms.Button();
@@ -149,6 +151,9 @@
             this.tabPage5 = new System.Windows.Forms.TabPage();
             this.tabPage6 = new System.Windows.Forms.TabPage();
             this.panel6 = new System.Windows.Forms.Panel();
+            this.button24 = new System.Windows.Forms.Button();
+            this.button23 = new System.Windows.Forms.Button();
+            this.checkBox17 = new System.Windows.Forms.CheckBox();
             this.checkBox12 = new System.Windows.Forms.CheckBox();
             this.checkBox11 = new System.Windows.Forms.CheckBox();
             this.checkBox9 = new System.Windows.Forms.CheckBox();
@@ -166,7 +171,6 @@
             this.label9 = new System.Windows.Forms.Label();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.fadeImageTimer = new System.Windows.Forms.Timer(this.components);
-            this.checkBox16 = new System.Windows.Forms.CheckBox();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -432,6 +436,7 @@
             // 
             this.ExperimentsPanel.AutoScroll = true;
             this.ExperimentsPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.ExperimentsPanel.Controls.Add(this.checkBox18);
             this.ExperimentsPanel.Controls.Add(this.checkBox15);
             this.ExperimentsPanel.Controls.Add(this.checkBox14);
             this.ExperimentsPanel.Controls.Add(this.label41);
@@ -441,6 +446,19 @@
             this.ExperimentsPanel.Size = new System.Drawing.Size(520, 259);
             this.ExperimentsPanel.TabIndex = 33;
             this.ExperimentsPanel.Visible = false;
+            // 
+            // checkBox18
+            // 
+            this.checkBox18.AutoSize = true;
+            this.checkBox18.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.checkBox18.Location = new System.Drawing.Point(20, 181);
+            this.checkBox18.Name = "checkBox18";
+            this.checkBox18.Size = new System.Drawing.Size(204, 21);
+            this.checkBox18.TabIndex = 34;
+            this.checkBox18.Text = "Enable RBDF Binary Format";
+            this.toolTip1.SetToolTip(this.checkBox18, "Switches from text-based RBDF to binary-based RBDF");
+            this.checkBox18.UseVisualStyleBackColor = true;
+            this.checkBox18.Visible = false;
             // 
             // checkBox15
             // 
@@ -1588,6 +1606,18 @@
             this.tabPage7.TabIndex = 6;
             this.tabPage7.Text = "Servers";
             // 
+            // checkBox16
+            // 
+            this.checkBox16.AutoSize = true;
+            this.checkBox16.Location = new System.Drawing.Point(383, 18);
+            this.checkBox16.Name = "checkBox16";
+            this.checkBox16.Size = new System.Drawing.Size(148, 17);
+            this.checkBox16.TabIndex = 40;
+            this.checkBox16.Text = "Only show current version";
+            this.toolTip1.SetToolTip(this.checkBox16, "Filter the LAN Servers list to the version of the launcher that you have. You mus" +
+        "t refresh the server list for this change to take effect.");
+            this.checkBox16.UseVisualStyleBackColor = true;
+            // 
             // label35
             // 
             this.label35.AutoSize = true;
@@ -1705,6 +1735,9 @@
             // panel6
             // 
             this.panel6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.panel6.Controls.Add(this.button24);
+            this.panel6.Controls.Add(this.button23);
+            this.panel6.Controls.Add(this.checkBox17);
             this.panel6.Controls.Add(this.checkBox12);
             this.panel6.Controls.Add(this.checkBox11);
             this.panel6.Controls.Add(this.checkBox9);
@@ -1716,6 +1749,41 @@
             this.panel6.Name = "panel6";
             this.panel6.Size = new System.Drawing.Size(511, 300);
             this.panel6.TabIndex = 0;
+            // 
+            // button24
+            // 
+            this.button24.BackColor = System.Drawing.Color.White;
+            this.button24.ForeColor = System.Drawing.Color.Black;
+            this.button24.Location = new System.Drawing.Point(372, 218);
+            this.button24.Name = "button24";
+            this.button24.Size = new System.Drawing.Size(126, 28);
+            this.button24.TabIndex = 10;
+            this.button24.Text = "Reset RBDF Path";
+            this.button24.UseVisualStyleBackColor = false;
+            this.button24.Click += new System.EventHandler(this.button24_Click);
+            // 
+            // button23
+            // 
+            this.button23.BackColor = System.Drawing.Color.White;
+            this.button23.ForeColor = System.Drawing.Color.Black;
+            this.button23.Location = new System.Drawing.Point(372, 252);
+            this.button23.Name = "button23";
+            this.button23.Size = new System.Drawing.Size(126, 28);
+            this.button23.TabIndex = 9;
+            this.button23.Text = "Change RBDF Path";
+            this.button23.UseVisualStyleBackColor = false;
+            this.button23.Click += new System.EventHandler(this.button23_Click);
+            // 
+            // checkBox17
+            // 
+            this.checkBox17.AutoSize = true;
+            this.checkBox17.Location = new System.Drawing.Point(18, 263);
+            this.checkBox17.Name = "checkBox17";
+            this.checkBox17.Size = new System.Drawing.Size(143, 17);
+            this.checkBox17.TabIndex = 8;
+            this.checkBox17.Text = "Enable Data Persistence";
+            this.checkBox17.UseVisualStyleBackColor = true;
+            this.checkBox17.CheckedChanged += new System.EventHandler(this.checkBox17_CheckedChanged);
             // 
             // checkBox12
             // 
@@ -1796,7 +1864,7 @@
             // 
             this.openFileDialog1.CheckFileExists = false;
             this.openFileDialog1.DefaultExt = "rbdf";
-            this.openFileDialog1.FileName = "openFileDialog1";
+            this.openFileDialog1.FileName = "default";
             this.openFileDialog1.Filter = "RBDF File|*.rbdf";
             this.openFileDialog1.Title = "Pick a RBDF that you want to use";
             // 
@@ -1883,18 +1951,6 @@
             // 
             this.fadeImageTimer.Interval = 10000;
             this.fadeImageTimer.Tick += new System.EventHandler(this.fadeImageTimer_Tick);
-            // 
-            // checkBox16
-            // 
-            this.checkBox16.AutoSize = true;
-            this.checkBox16.Location = new System.Drawing.Point(383, 18);
-            this.checkBox16.Name = "checkBox16";
-            this.checkBox16.Size = new System.Drawing.Size(148, 17);
-            this.checkBox16.TabIndex = 40;
-            this.checkBox16.Text = "Only show current version";
-            this.toolTip1.SetToolTip(this.checkBox16, "Filter the LAN Servers list to the version of the launcher that you have. You mus" +
-        "t refresh the server list for this change to take effect.");
-            this.checkBox16.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -2120,6 +2176,10 @@
         private System.Windows.Forms.Label label42;
         private System.Windows.Forms.Button button22;
         private System.Windows.Forms.CheckBox checkBox16;
+        private System.Windows.Forms.Button button23;
+        private System.Windows.Forms.CheckBox checkBox17;
+        private System.Windows.Forms.Button button24;
+        private System.Windows.Forms.CheckBox checkBox18;
     }
 }
 

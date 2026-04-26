@@ -126,11 +126,8 @@ contains many bugs, please be aware and report any bugs
 that are within these experiments. You may need to restart your launcher
 for these experiments to take effects.</value>
   </data>
-  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>244, 17</value>
-  </metadata>
   <data name="label26.Text" xml:space="preserve">
-    <value>ReBlox Datastore File (RBDF) is a file format created by ReBlox that is used to store datastore and badges. You can shift click on the host button to choose the file, otherwise it would use the default file. You can adjust your file settings here. (This is experimental, please be aware of bugs and changes that may be breaking).</value>
+    <value>ReBlox Datastore File (RBDF) is a file format created by ReBlox that is used to store datastore and badges. You can choose a file by clicking on "Change RBDF Path", otherwise it would use the default file. You can adjust your file settings here. (This is experimental, please be aware of bugs and changes that may be breaking).</value>
   </data>
   <metadata name="openFileDialog1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>

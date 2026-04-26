@@ -107,5 +107,11 @@
     <Setting Name="FadeImageSupport" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="EnableDataPersistence" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="RBDFPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">default.rbdf</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
