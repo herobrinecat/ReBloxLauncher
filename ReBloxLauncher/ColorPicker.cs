@@ -468,7 +468,7 @@ namespace ReBloxLauncher
                     panel.Location = new Point(lastx + 40, lasty);
                     panel.Click += new EventHandler((sender1, e1) => {
                         this.DialogResult = DialogResult.OK;
-                        launcher1.resultBrickColor = int.Parse(panel.Name);
+                        launcher1.resultBrickColor = uint.Parse(panel.Name);
                         this.Close();
                     });
                     lastx = lastx + 40;

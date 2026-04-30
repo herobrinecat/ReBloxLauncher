@@ -1,138 +1,186 @@
 [
-  {
-    "id": 67,
-    "name": "Testing item",
-    "description": "This is a test!",
-    "assetType": 10,
-    "imageId": 67,
-    "robux": 1847
-  },
-  {
-    "id": 1818,
-    "name": "ReBlox Place",
-    "description": "Play here!",
-    "assetType": 9,
-    "imageId": 133293265,
-    "robux": 0
-  },
-  {
-    "id": 379736082,
-    "name": "Starting Place",
-    "description": "",
-    "assetType": 9,
-    "imageId": 379736082,
-    "robux": 0
-  },
-  {
-    "id": 6560363541,
-    "name": "Classic Baseplate",
-    "description": "",
-    "assetType": 9,
-    "imageId": 6560363541,
-    "robux": 0
-  },
-  {
-    "id": 95206881,
-    "name": "Baseplate",
-    "description": "",
-    "assetType": 9,
-    "imageId": 95206881,
-    "robux": 0
-  },
-  {
-    "id": 95206192,
-    "name": "Flat Terrain",
-    "description": "",
-    "assetType": 9,
-    "imageId": 95206192,
-    "robux": 0
-  },
-  {
-    "id": 520390648,
-    "name": "Village",
-    "description": "",
-    "assetType": 9,
-    "imageId": 520390648,
-    "robux": 0
-  },
-  {
-    "id": 301530843,
-    "name": "Line Runner",
-    "description": "",
-    "assetType": 9,
-    "imageId": 301530843,
-    "robux": 0
-  },
-  {
-    "id": 203812057,
-    "name": "Obby",
-    "description": "",
-    "assetType": 9,
-    "imageId": 203812057,
-    "robux": 0
-  },
-  {
-    "id": 203783329,
-    "name": "City",
-    "description": "",
-    "assetType": 9,
-    "imageId": 203783329,
-    "robux": 0
-  },
-  {
-    "id": 366130569,
-    "name": "Suburban",
-    "description": "",
-    "assetType": 9,
-    "imageId": 366130569,
-    "robux": 0
-  },
-  {
-    "id": 203885589,
-    "name": "Combat",
-    "description": "",
-    "assetType": 9,
-    "imageId": 203885589,
-    "robux": 0
-  },
-  {
-    "id": 215383192,
-    "name": "Racing",
-    "description": "",
-    "assetType": 9,
-    "imageId": 215383192,
-    "robux": 0
-  },
-  {
-    "id": 86487700,
-    "name": "Man Face",
-    "description": "",
-    "assetType": 18,
-    "imageId": 83017053,
-    "robux": 0
-  },
-  {
-    "id": 62234425,
-    "name": "Brown Hair",
-    "description": "",
-    "assetType": 41,
-    "imageId": 62234425,
-    "robux": 0
-  },
-  {
-    "id": 376526673,
-    "name": "Stylish Aviators",
-    "description": "Shades this stylish can't be beat!",
-    "assetType": 42,
-    "imageId": 376526673,
-    "robux": 0
-  },
-  {
-    "id": 3239236979,
-    "name": "HD Admin MainModule",
-    "description": "The source code powering HD Admin.",
-    "assetType": 10,
-    "imageId": 3239236979,
-    "robux": 0
-  }
+    {
+        "id": 67,
+        "name": "Testing item",
+        "description": "This is a test!",
+        "assetType": 10,
+        "imageId": 67,
+        "robux": 1847
+    },
+    {
+        "id": 1818,
+        "name": "ReBlox Place",
+        "description": "Play here!",
+        "assetType": 9,
+        "imageId": 133293265,
+        "robux": 0
+    },
+    {
+        "id": 379736082,
+        "name": "Starting Place",
+        "description": "",
+        "assetType": 9,
+        "imageId": 379736082,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 6560363541,
+        "name": "Classic Baseplate",
+        "description": "",
+        "assetType": 9,
+        "imageId": 6560363541,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 95206881,
+        "name": "Baseplate",
+        "description": "",
+        "assetType": 9,
+        "imageId": 95206881,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 95206192,
+        "name": "Flat Terrain",
+        "description": "",
+        "assetType": 9,
+        "imageId": 95206192,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 520390648,
+        "name": "Village",
+        "description": "",
+        "assetType": 9,
+        "imageId": 520390648,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 301530843,
+        "name": "Line Runner",
+        "description": "",
+        "assetType": 9,
+        "imageId": 301530843,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 203812057,
+        "name": "Obby",
+        "description": "",
+        "assetType": 9,
+        "imageId": 203812057,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 203783329,
+        "name": "City",
+        "description": "",
+        "assetType": 9,
+        "imageId": 203783329,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 366130569,
+        "name": "Suburban",
+        "description": "",
+        "assetType": 9,
+        "imageId": 366130569,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 203885589,
+        "name": "Combat",
+        "description": "",
+        "assetType": 9,
+        "imageId": 203885589,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 215383192,
+        "name": "Racing",
+        "description": "",
+        "assetType": 9,
+        "imageId": 215383192,
+        "robux": 0,
+        "creatorTargetId": 998796,
+        "creatorName": "Templates"
+    },
+    {
+        "id": 86487700,
+        "name": "Man Face",
+        "description": "",
+        "assetType": 18,
+        "imageId": 83017053,
+        "robux": 0,
+        "creatorTargetId": 1,
+        "creatorName": "ROBLOX"
+    },
+    {
+        "id": 62234425,
+        "name": "Brown Hair",
+        "description": "",
+        "assetType": 41,
+        "imageId": 62234425,
+        "robux": 0,
+        "creatorTargetId": 1,
+        "creatorName": "ROBLOX"
+    },
+    {
+        "id": 376526673,
+        "name": "Stylish Aviators",
+        "description": "Shades this stylish can't be beat!",
+        "assetType": 42,
+        "imageId": 376526673,
+        "robux": 0,
+        "creatorTargetId": 1,
+        "creatorName": "ROBLOX"
+    },
+    {
+        "id": 3239236979,
+        "name": "HD Admin MainModule",
+        "description": "The source code powering HD Admin.",
+        "assetType": 10,
+        "imageId": 3239236979,
+        "robux": 0
+    },
+    {
+        "id": 67328156,
+        "name": "Red Flannel",
+        "description": "Requested by Jake116116",
+        "assetType": 11,
+        "imageId": 67328156,
+        "robux": 0,
+        "creatorTargetId": 4233848,
+        "creatorName": "Buddyredmitt"
+    },
+    {
+        "id": 3258123,
+        "name": "Jeans",
+        "description": "Some classic jeans with shoes.",
+        "assetType": 12,
+        "imageId": 3258123,
+        "robux": 5,
+        "creatorTargetId": 610948,
+        "creatorName": "armitroner"
+    }
 ]

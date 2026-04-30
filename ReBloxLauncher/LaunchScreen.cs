@@ -557,18 +557,19 @@ namespace ReBloxLauncher
         }
         public class BodyColors
         {
-            public int headColor { get; set; } = 194;
-            public int leftArmColor { get; set; } = 194;
-            public int leftLegColor { get; set; } = 194;
-            public int rightArmColor { get; set; } = 194;
-            public int rightLegColor { get; set; } = 194;
-            public int torsoColor { get; set; } = 194;
+            public uint headColor { get; set; } = 194;
+            public uint leftArmColor { get; set; } = 194;
+            public uint leftLegColor { get; set; } = 194;
+            public uint rightArmColor { get; set; } = 194;
+            public uint rightLegColor { get; set; } = 194;
+            public uint torsoColor { get; set; } = 194;
         }
         public class AvatarType
         {
             public string bodyType { get; set; } = "R6";
             public IList<AssetData> asset { get; set; }
             public BodyColors colors { get; set; }
+            public string[] inventory { get; set; }
         }
 
         private bool IsNodeFromAppRunning()
@@ -614,7 +615,8 @@ namespace ReBloxLauncher
                     {
                         bodyType = (Properties.Settings.Default.avatarR15 ? "R15" : "R6"),
                         asset = data,
-                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor }
+                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor },
+                        inventory = Properties.Settings.Default.ClothesArray.Split('|')
                     };
                 }
                 else
@@ -623,7 +625,8 @@ namespace ReBloxLauncher
                     {
                         bodyType = (Properties.Settings.Default.avatarR15 ? "R15" : "R6"),
                         asset = { },
-                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor }
+                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor },
+                        inventory = { }
                     };
                 }
 

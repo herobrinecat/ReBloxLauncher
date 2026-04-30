@@ -54,7 +54,7 @@ namespace ReBloxLauncher
         readonly List<string> directoryasset = new List<string>();
         DiscordRpcClient client;
         readonly System.Timers.Timer timer = new System.Timers.Timer(150);
-        public int resultBrickColor = 0;
+        public uint resultBrickColor = 0;
         bool launchershortcut = false;
         bool useNewRoblox = false;
         bool isJoiningOrStudio = false;
@@ -957,7 +957,7 @@ namespace ReBloxLauncher
             starting = false;
         }
 
-        private Color convertBrickColortoColor(int brickcolor)
+        private Color convertBrickColortoColor(uint brickcolor)
         {
             switch (brickcolor)
             {
@@ -2097,13 +2097,20 @@ namespace ReBloxLauncher
                         }
                         else
                         {
-                            ProcessStartInfo ps = new ProcessStartInfo();
-                            ps.UseShellExecute = true;
-                            ps.FileName = Application.ExecutablePath;
-                            ps.Verb = "runas";
-                            ps.Arguments = "--installCA";
-                            Process.Start(ps);
-                            Application.Exit();
+                            try
+                            {
+                                ProcessStartInfo ps = new ProcessStartInfo();
+                                ps.UseShellExecute = true;
+                                ps.FileName = Application.ExecutablePath;
+                                ps.Verb = "runas";
+                                ps.Arguments = "--installCA";
+                                Process.Start(ps);
+                                Application.Exit();
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
                         }
                     }
                     else if (result == DialogResult.Cancel)
@@ -2307,13 +2314,20 @@ namespace ReBloxLauncher
                                 }
                                 else
                                 {
-                                    ProcessStartInfo ps = new ProcessStartInfo();
-                                    ps.UseShellExecute = true;
-                                    ps.FileName = Application.ExecutablePath;
-                                    ps.Verb = "runas";
-                                    ps.Arguments = "--editHosts";
-                                    Process.Start(ps);
-                                    Application.Exit();
+                                    try
+                                    {
+                                        ProcessStartInfo ps = new ProcessStartInfo();
+                                        ps.UseShellExecute = true;
+                                        ps.FileName = Application.ExecutablePath;
+                                        ps.Verb = "runas";
+                                        ps.Arguments = "--editHosts";
+                                        Process.Start(ps);
+                                        Application.Exit();
+                                    }
+                                    catch
+                                    {
+                                        MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    }
                                 }
                             }
                             else
@@ -2947,12 +2961,19 @@ namespace ReBloxLauncher
                 }
                 else
                 {
-                    ProcessStartInfo ps = new ProcessStartInfo();
-                    ps.UseShellExecute = true;
-                    ps.FileName = Application.ExecutablePath;
-                    ps.Verb = "runas";
-                    Process.Start(ps);
-                    Application.Exit();
+                    try
+                    {
+                        ProcessStartInfo ps = new ProcessStartInfo();
+                        ps.UseShellExecute = true;
+                        ps.FileName = Application.ExecutablePath;
+                        ps.Verb = "runas";
+                        Process.Start(ps);
+                        Application.Exit();
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
             else
@@ -2991,18 +3012,19 @@ namespace ReBloxLauncher
         }
         public class BodyColors
         {
-            public int headColor { get; set; } = 194;
-            public int leftArmColor { get; set; } = 194;
-            public int leftLegColor { get; set; } = 194;
-            public int rightArmColor { get; set; } = 194;
-            public int rightLegColor { get; set; } = 194;
-            public int torsoColor { get; set; } = 194;
+            public uint headColor { get; set; } = 194;
+            public uint leftArmColor { get; set; } = 194;
+            public uint leftLegColor { get; set; } = 194;
+            public uint rightArmColor { get; set; } = 194;
+            public uint rightLegColor { get; set; } = 194;
+            public uint torsoColor { get; set; } = 194;
         }
         public class AvatarType
         {
             public string bodyType { get; set; } = "R6";
             public IList<AssetData> asset { get; set; }
             public BodyColors colors { get; set; }
+            public string[] inventory { get; set; }
             public string base64FullBody { get; set; }
             public string base64HeadShot { get; set; }
         }
@@ -3057,7 +3079,8 @@ namespace ReBloxLauncher
                     {
                         bodyType = Properties.Settings.Default.avatarR15 ? "R15" : "R6",
                         asset = data,
-                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor }
+                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor },
+                        inventory = Properties.Settings.Default.ClothesArray.Split('|')
                     };
                 }
                 else
@@ -3066,7 +3089,8 @@ namespace ReBloxLauncher
                     {
                         bodyType = Properties.Settings.Default.avatarR15 ? "R15" : "R6",
                         asset = { },
-                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor }
+                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor },
+                        inventory = { }
                     };
                 }
 
@@ -3282,13 +3306,20 @@ namespace ReBloxLauncher
                                     }
                                     else
                                     {
-                                        ProcessStartInfo ps = new ProcessStartInfo();
-                                        ps.UseShellExecute = true;
-                                        ps.FileName = Application.ExecutablePath;
-                                        ps.Verb = "runas";
-                                        ps.Arguments = "--editHosts";
-                                        Process.Start(ps);
-                                        Application.Exit();
+                                        try
+                                        {
+                                            ProcessStartInfo ps = new ProcessStartInfo();
+                                            ps.UseShellExecute = true;
+                                            ps.FileName = Application.ExecutablePath;
+                                            ps.Verb = "runas";
+                                            ps.Arguments = "--editHosts";
+                                            Process.Start(ps);
+                                            Application.Exit();
+                                        }
+                                        catch
+                                        {
+                                            MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        }
                                     }
                                 }
                                 else
@@ -3582,13 +3613,20 @@ namespace ReBloxLauncher
                                     }
                                     else
                                     {
-                                        ProcessStartInfo ps = new ProcessStartInfo();
-                                        ps.UseShellExecute = true;
-                                        ps.FileName = Application.ExecutablePath;
-                                        ps.Verb = "runas";
-                                        ps.Arguments = "--editHosts";
-                                        Process.Start(ps);
-                                        Application.Exit();
+                                        try
+                                        {
+                                            ProcessStartInfo ps = new ProcessStartInfo();
+                                            ps.UseShellExecute = true;
+                                            ps.FileName = Application.ExecutablePath;
+                                            ps.Verb = "runas";
+                                            ps.Arguments = "--editHosts";
+                                            Process.Start(ps);
+                                            Application.Exit();
+                                        }
+                                        catch
+                                        {
+                                            MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        }
                                     }
                                 }
                                 else
@@ -3902,13 +3940,20 @@ namespace ReBloxLauncher
                                                 }
                                                 else
                                                 {
-                                                    ProcessStartInfo ps = new ProcessStartInfo();
-                                                    ps.UseShellExecute = true;
-                                                    ps.FileName = Application.ExecutablePath;
-                                                    ps.Verb = "runas";
-                                                    ps.Arguments = "--editHosts";
-                                                    Process.Start(ps);
-                                                    Application.Exit();
+                                                    try
+                                                    {
+                                                        ProcessStartInfo ps = new ProcessStartInfo();
+                                                        ps.UseShellExecute = true;
+                                                        ps.FileName = Application.ExecutablePath;
+                                                        ps.Verb = "runas";
+                                                        ps.Arguments = "--editHosts";
+                                                        Process.Start(ps);
+                                                        Application.Exit();
+                                                    }
+                                                    catch
+                                                    {
+                                                        MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    }
                                                 }
                                             }
                                             else
@@ -4129,13 +4174,20 @@ namespace ReBloxLauncher
                                             }
                                             else
                                             {
-                                                ProcessStartInfo ps = new ProcessStartInfo();
-                                                ps.UseShellExecute = true;
-                                                ps.FileName = Application.ExecutablePath;
-                                                ps.Verb = "runas";
-                                                ps.Arguments = "--editHosts";
-                                                Process.Start(ps);
-                                                Application.Exit();
+                                                try
+                                                {
+                                                    ProcessStartInfo ps = new ProcessStartInfo();
+                                                    ps.UseShellExecute = true;
+                                                    ps.FileName = Application.ExecutablePath;
+                                                    ps.Verb = "runas";
+                                                    ps.Arguments = "--editHosts";
+                                                    Process.Start(ps);
+                                                    Application.Exit();
+                                                }
+                                                catch
+                                                {
+                                                    MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                }
                                             }
                                         }
                                         else
@@ -4370,13 +4422,20 @@ namespace ReBloxLauncher
                                                 }
                                                 else
                                                 {
-                                                    ProcessStartInfo ps = new ProcessStartInfo();
-                                                    ps.UseShellExecute = true;
-                                                    ps.FileName = Application.ExecutablePath;
-                                                    ps.Verb = "runas";
-                                                    ps.Arguments = "--editHosts";
-                                                    Process.Start(ps);
-                                                    Application.Exit();
+                                                    try
+                                                    {
+                                                        ProcessStartInfo ps = new ProcessStartInfo();
+                                                        ps.UseShellExecute = true;
+                                                        ps.FileName = Application.ExecutablePath;
+                                                        ps.Verb = "runas";
+                                                        ps.Arguments = "--editHosts";
+                                                        Process.Start(ps);
+                                                        Application.Exit();
+                                                    }
+                                                    catch
+                                                    {
+                                                        MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    }
                                                 }
                                             }
                                             else
@@ -4606,13 +4665,20 @@ namespace ReBloxLauncher
                                             }
                                             else
                                             {
-                                                ProcessStartInfo ps = new ProcessStartInfo();
-                                                ps.UseShellExecute = true;
-                                                ps.FileName = Application.ExecutablePath;
-                                                ps.Verb = "runas";
-                                                ps.Arguments = "--editHosts";
-                                                Process.Start(ps);
-                                                Application.Exit();
+                                                try
+                                                {
+                                                    ProcessStartInfo ps = new ProcessStartInfo();
+                                                    ps.UseShellExecute = true;
+                                                    ps.FileName = Application.ExecutablePath;
+                                                    ps.Verb = "runas";
+                                                    ps.Arguments = "--editHosts";
+                                                    Process.Start(ps);
+                                                    Application.Exit();
+                                                }
+                                                catch
+                                                {
+                                                    MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                }
                                             }
                                         }
                                         else
@@ -4845,13 +4911,20 @@ namespace ReBloxLauncher
                                                 }
                                                 else
                                                 {
-                                                    ProcessStartInfo ps = new ProcessStartInfo();
-                                                    ps.UseShellExecute = true;
-                                                    ps.FileName = Application.ExecutablePath;
-                                                    ps.Verb = "runas";
-                                                    ps.Arguments = "--editHosts";
-                                                    Process.Start(ps);
-                                                    Application.Exit();
+                                                    try
+                                                    {
+                                                        ProcessStartInfo ps = new ProcessStartInfo();
+                                                        ps.UseShellExecute = true;
+                                                        ps.FileName = Application.ExecutablePath;
+                                                        ps.Verb = "runas";
+                                                        ps.Arguments = "--editHosts";
+                                                        Process.Start(ps);
+                                                        Application.Exit();
+                                                    }
+                                                    catch
+                                                    {
+                                                        MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    }
                                                 }
                                             }
                                             else
@@ -5081,13 +5154,20 @@ namespace ReBloxLauncher
                                             }
                                             else
                                             {
-                                                ProcessStartInfo ps = new ProcessStartInfo();
-                                                ps.UseShellExecute = true;
-                                                ps.FileName = Application.ExecutablePath;
-                                                ps.Verb = "runas";
-                                                ps.Arguments = "--editHosts";
-                                                Process.Start(ps);
-                                                Application.Exit();
+                                                try
+                                                {
+                                                    ProcessStartInfo ps = new ProcessStartInfo();
+                                                    ps.UseShellExecute = true;
+                                                    ps.FileName = Application.ExecutablePath;
+                                                    ps.Verb = "runas";
+                                                    ps.Arguments = "--editHosts";
+                                                    Process.Start(ps);
+                                                    Application.Exit();
+                                                }
+                                                catch
+                                                {
+                                                    MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                }
                                             }
                                         }
                                         else
@@ -5614,11 +5694,11 @@ namespace ReBloxLauncher
         {
             if (numericUpDown1.Value == 366) numericUpDown1.Value = 1000;
             if (numericUpDown1.Value == 1000) numericUpDown1.Value = 365;
-            if (convertBrickColortoColor((int)numericUpDown1.Value) != Color.Empty)
+            if (convertBrickColortoColor((uint)numericUpDown1.Value) != Color.Empty)
             {
-                Properties.Settings.Default.HeadColor = (int)numericUpDown1.Value;
+                Properties.Settings.Default.HeadColor = (uint)numericUpDown1.Value;
                 Properties.Settings.Default.Save();
-                HeadPanel.BackColor = convertBrickColortoColor((int)numericUpDown1.Value);
+                HeadPanel.BackColor = convertBrickColortoColor((uint)numericUpDown1.Value);
             }
             else
             {
@@ -5633,11 +5713,11 @@ namespace ReBloxLauncher
         {
             if (numericUpDown2.Value == 366) numericUpDown2.Value = 1000;
             if (numericUpDown2.Value == 1000) numericUpDown2.Value = 365;
-            if (convertBrickColortoColor((int)numericUpDown2.Value) != Color.Empty)
+            if (convertBrickColortoColor((uint)numericUpDown2.Value) != Color.Empty)
             {
-                Properties.Settings.Default.LeftArmColor = (int)numericUpDown2.Value;
+                Properties.Settings.Default.LeftArmColor = (uint)numericUpDown2.Value;
                 Properties.Settings.Default.Save();
-                LeftArmPanel.BackColor = convertBrickColortoColor((int)numericUpDown2.Value);
+                LeftArmPanel.BackColor = convertBrickColortoColor((uint)numericUpDown2.Value);
             }
             else
             {
@@ -5652,11 +5732,11 @@ namespace ReBloxLauncher
         {
             if (numericUpDown3.Value == 366) numericUpDown3.Value = 1000;
             if (numericUpDown3.Value == 1000) numericUpDown3.Value = 365;
-            if (convertBrickColortoColor((int)numericUpDown3.Value) != Color.Empty)
+            if (convertBrickColortoColor((uint)numericUpDown3.Value) != Color.Empty)
             {
-                Properties.Settings.Default.LeftLegColor = (int)numericUpDown3.Value;
+                Properties.Settings.Default.LeftLegColor = (uint)numericUpDown3.Value;
                 Properties.Settings.Default.Save();
-                LeftLegPanel.BackColor = convertBrickColortoColor((int)numericUpDown3.Value);
+                LeftLegPanel.BackColor = convertBrickColortoColor((uint)numericUpDown3.Value);
             }
             else
             {
@@ -5671,11 +5751,11 @@ namespace ReBloxLauncher
         {
             if (numericUpDown4.Value == 366) numericUpDown4.Value = 1000;
             if (numericUpDown4.Value == 1000) numericUpDown4.Value = 365;
-            if (convertBrickColortoColor((int)numericUpDown4.Value) != Color.Empty)
+            if (convertBrickColortoColor((uint)numericUpDown4.Value) != Color.Empty)
             {
-                Properties.Settings.Default.RightArmColor = (int)numericUpDown4.Value;
+                Properties.Settings.Default.RightArmColor = (uint)numericUpDown4.Value;
                 Properties.Settings.Default.Save();
-                RightArmPanel.BackColor = convertBrickColortoColor((int)numericUpDown4.Value);
+                RightArmPanel.BackColor = convertBrickColortoColor((uint)numericUpDown4.Value);
             }
             else
             {
@@ -5690,11 +5770,11 @@ namespace ReBloxLauncher
         {
             if (numericUpDown5.Value == 366) numericUpDown5.Value = 1000;
             if (numericUpDown5.Value == 1000) numericUpDown5.Value = 365;
-            if (convertBrickColortoColor((int)numericUpDown5.Value) != Color.Empty)
+            if (convertBrickColortoColor((uint)numericUpDown5.Value) != Color.Empty)
             {
-                Properties.Settings.Default.RightLegColor = (int)numericUpDown5.Value;
+                Properties.Settings.Default.RightLegColor = (uint)numericUpDown5.Value;
                 Properties.Settings.Default.Save();
-                RightLegPanel.BackColor = convertBrickColortoColor((int)numericUpDown5.Value);
+                RightLegPanel.BackColor = convertBrickColortoColor((uint)numericUpDown5.Value);
             }
             else
             {
@@ -5709,11 +5789,11 @@ namespace ReBloxLauncher
         {
             if (numericUpDown6.Value == 366) numericUpDown6.Value = 1000;
             if (numericUpDown6.Value == 1000) numericUpDown6.Value = 365;
-            if (convertBrickColortoColor((int)numericUpDown6.Value) != Color.Empty)
+            if (convertBrickColortoColor((uint)numericUpDown6.Value) != Color.Empty)
             {
-                Properties.Settings.Default.TorsoColor = (int)numericUpDown6.Value;
+                Properties.Settings.Default.TorsoColor = (uint)numericUpDown6.Value;
                 Properties.Settings.Default.Save();
-                TorsoPanel.BackColor = convertBrickColortoColor((int)numericUpDown6.Value);
+                TorsoPanel.BackColor = convertBrickColortoColor((uint)numericUpDown6.Value);
             }
             else
             {
@@ -6171,13 +6251,20 @@ namespace ReBloxLauncher
                 }
                 else
                 {
-                    ProcessStartInfo ps = new ProcessStartInfo();
-                    ps.UseShellExecute = true;
-                    ps.FileName = Application.ExecutablePath;
-                    ps.Arguments = "--installCA";
-                    ps.Verb = "runas";
-                    Process.Start(ps);
-                    Application.Exit();
+                    try
+                    {
+                        ProcessStartInfo ps = new ProcessStartInfo();
+                        ps.UseShellExecute = true;
+                        ps.FileName = Application.ExecutablePath;
+                        ps.Verb = "runas";
+                        ps.Arguments = "--installCA";
+                        Process.Start(ps);
+                        Application.Exit();
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }
@@ -6694,13 +6781,20 @@ namespace ReBloxLauncher
                                     }
                                     else
                                     {
-                                        ProcessStartInfo ps = new ProcessStartInfo();
-                                        ps.UseShellExecute = true;
-                                        ps.FileName = Application.ExecutablePath;
-                                        ps.Verb = "runas";
-                                        ps.Arguments = "--editHosts";
-                                        Process.Start(ps);
-                                        Application.Exit();
+                                        try
+                                        {
+                                            ProcessStartInfo ps = new ProcessStartInfo();
+                                            ps.UseShellExecute = true;
+                                            ps.FileName = Application.ExecutablePath;
+                                            ps.Verb = "runas";
+                                            ps.Arguments = "--editHosts";
+                                            Process.Start(ps);
+                                            Application.Exit();
+                                        }
+                                        catch
+                                        {
+                                            MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        }
                                     }
                                 }
                                 else
@@ -7001,13 +7095,20 @@ namespace ReBloxLauncher
                                     }
                                     else
                                     {
-                                        ProcessStartInfo ps = new ProcessStartInfo();
-                                        ps.UseShellExecute = true;
-                                        ps.FileName = Application.ExecutablePath;
-                                        ps.Verb = "runas";
-                                        ps.Arguments = "--editHosts";
-                                        Process.Start(ps);
-                                        Application.Exit();
+                                        try
+                                        {
+                                            ProcessStartInfo ps = new ProcessStartInfo();
+                                            ps.UseShellExecute = true;
+                                            ps.FileName = Application.ExecutablePath;
+                                            ps.Verb = "runas";
+                                            ps.Arguments = "--editHosts";
+                                            Process.Start(ps);
+                                            Application.Exit();
+                                        }
+                                        catch
+                                        {
+                                            MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        }
                                     }
                                 }
                                 else

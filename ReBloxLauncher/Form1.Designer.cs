@@ -312,7 +312,8 @@
             // 
             // listBox1
             // 
-            this.listBox1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.listBox1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.listBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.listBox1.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.listBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.listBox1.ForeColor = System.Drawing.Color.White;
@@ -320,7 +321,7 @@
             this.listBox1.ItemHeight = 16;
             this.listBox1.Location = new System.Drawing.Point(5, 12);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(263, 372);
+            this.listBox1.Size = new System.Drawing.Size(263, 370);
             this.listBox1.TabIndex = 13;
             this.listBox1.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listBox1_DrawItem);
             this.listBox1.SelectedIndexChanged += new System.EventHandler(this.listBox1_SelectedIndexChanged);
@@ -328,7 +329,7 @@
             // 
             // panel1
             // 
-            this.panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
             this.panel1.Controls.Add(this.panel7);
             this.panel1.Controls.Add(this.comboBox2);
             this.panel1.Controls.Add(this.label27);
@@ -415,7 +416,7 @@
             // 
             // panel2
             // 
-            this.panel2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.panel2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
             this.panel2.Controls.Add(this.ExperimentsPanel);
             this.panel2.Controls.Add(this.button22);
             this.panel2.Controls.Add(this.UpdatePage);
@@ -435,7 +436,7 @@
             // ExperimentsPanel
             // 
             this.ExperimentsPanel.AutoScroll = true;
-            this.ExperimentsPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.ExperimentsPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.ExperimentsPanel.Controls.Add(this.checkBox18);
             this.ExperimentsPanel.Controls.Add(this.checkBox15);
             this.ExperimentsPanel.Controls.Add(this.checkBox14);
@@ -523,7 +524,7 @@
             // 
             // UpdatePage
             // 
-            this.UpdatePage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.UpdatePage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.UpdatePage.Controls.Add(this.button21);
             this.UpdatePage.Controls.Add(this.label40);
             this.UpdatePage.Controls.Add(this.label39);
@@ -595,7 +596,7 @@
             // 
             // SecurityPage
             // 
-            this.SecurityPage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.SecurityPage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.SecurityPage.Controls.Add(this.label38);
             this.SecurityPage.Controls.Add(this.checkBox1);
             this.SecurityPage.Controls.Add(this.label7);
@@ -697,7 +698,7 @@
             // 
             // GeneralPage
             // 
-            this.GeneralPage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.GeneralPage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.GeneralPage.Controls.Add(this.label37);
             this.GeneralPage.Controls.Add(this.checkBox3);
             this.GeneralPage.Controls.Add(this.checkBox2);
@@ -845,7 +846,8 @@
             // listBox2
             // 
             this.listBox2.AllowDrop = true;
-            this.listBox2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.listBox2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.listBox2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.listBox2.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.listBox2.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.listBox2.ForeColor = System.Drawing.Color.White;
@@ -853,7 +855,7 @@
             this.listBox2.ItemHeight = 16;
             this.listBox2.Location = new System.Drawing.Point(8, 9);
             this.listBox2.Name = "listBox2";
-            this.listBox2.Size = new System.Drawing.Size(526, 308);
+            this.listBox2.Size = new System.Drawing.Size(526, 306);
             this.listBox2.TabIndex = 17;
             this.listBox2.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listBox2_DrawItem);
             this.listBox2.SelectedIndexChanged += new System.EventHandler(this.listBox2_SelectedIndexChanged);
@@ -938,7 +940,7 @@
             // 
             // panel3
             // 
-            this.panel3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.panel3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
             this.panel3.Controls.Add(this.button16);
             this.panel3.Controls.Add(this.button15);
             this.panel3.Controls.Add(this.label31);
@@ -1005,7 +1007,7 @@
             // 
             // panel4
             // 
-            this.panel4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(70)))), ((int)(((byte)(70)))));
+            this.panel4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.panel4.Controls.Add(this.label29);
             this.panel4.Controls.Add(this.label15);
             this.panel4.Controls.Add(this.button13);
@@ -1086,7 +1088,8 @@
             // 
             // listBox3
             // 
-            this.listBox3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(70)))), ((int)(((byte)(70)))));
+            this.listBox3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.listBox3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.listBox3.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.listBox3.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.listBox3.ForeColor = System.Drawing.Color.White;
@@ -1094,7 +1097,7 @@
             this.listBox3.ItemHeight = 16;
             this.listBox3.Location = new System.Drawing.Point(25, 53);
             this.listBox3.Name = "listBox3";
-            this.listBox3.Size = new System.Drawing.Size(225, 292);
+            this.listBox3.Size = new System.Drawing.Size(225, 290);
             this.listBox3.TabIndex = 1;
             this.listBox3.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listBox3_DrawItem);
             this.listBox3.SelectedIndexChanged += new System.EventHandler(this.listBox3_SelectedIndexChanged);
@@ -1113,7 +1116,7 @@
             // 
             // panel5
             // 
-            this.panel5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.panel5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.panel5.Controls.Add(this.label36);
             this.panel5.Controls.Add(this.numericUpDown7);
             this.panel5.Controls.Add(this.label28);
@@ -1218,13 +1221,14 @@
             // 
             // listBox4
             // 
-            this.listBox4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(55)))), ((int)(((byte)(55)))));
+            this.listBox4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.listBox4.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.listBox4.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.listBox4.ForeColor = System.Drawing.Color.White;
             this.listBox4.FormattingEnabled = true;
             this.listBox4.Location = new System.Drawing.Point(336, 87);
             this.listBox4.Name = "listBox4";
-            this.listBox4.Size = new System.Drawing.Size(176, 238);
+            this.listBox4.Size = new System.Drawing.Size(176, 236);
             this.listBox4.TabIndex = 22;
             this.listBox4.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listBox4_DrawItem);
             // 
@@ -1532,7 +1536,7 @@
             // 
             // tabPage1
             // 
-            this.tabPage1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.tabPage1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
             this.tabPage1.Controls.Add(this.label30);
             this.tabPage1.Controls.Add(this.listBox1);
             this.tabPage1.Controls.Add(this.panel1);
@@ -1556,7 +1560,7 @@
             // 
             // tabPage2
             // 
-            this.tabPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.tabPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.tabPage2.Controls.Add(this.button10);
             this.tabPage2.Controls.Add(this.button9);
             this.tabPage2.Controls.Add(this.listBox2);
@@ -1570,7 +1574,7 @@
             // 
             // tabPage3
             // 
-            this.tabPage3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.tabPage3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
             this.tabPage3.Controls.Add(this.panel5);
             this.tabPage3.ForeColor = System.Drawing.Color.White;
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
@@ -1581,7 +1585,7 @@
             // 
             // tabPage4
             // 
-            this.tabPage4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.tabPage4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
             this.tabPage4.Controls.Add(this.panel3);
             this.tabPage4.ForeColor = System.Drawing.Color.White;
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
@@ -1592,7 +1596,7 @@
             // 
             // tabPage7
             // 
-            this.tabPage7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.tabPage7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
             this.tabPage7.Controls.Add(this.checkBox16);
             this.tabPage7.Controls.Add(this.label35);
             this.tabPage7.Controls.Add(this.label34);
@@ -1672,7 +1676,7 @@
             // 
             // listView1
             // 
-            this.listView1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.listView1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
             this.listView1.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1,
             this.columnHeader2,
@@ -1712,7 +1716,7 @@
             // 
             // tabPage5
             // 
-            this.tabPage5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.tabPage5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
             this.tabPage5.Controls.Add(this.panel2);
             this.tabPage5.ForeColor = System.Drawing.Color.White;
             this.tabPage5.Location = new System.Drawing.Point(4, 22);
@@ -1723,7 +1727,7 @@
             // 
             // tabPage6
             // 
-            this.tabPage6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.tabPage6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
             this.tabPage6.Controls.Add(this.panel6);
             this.tabPage6.ForeColor = System.Drawing.Color.White;
             this.tabPage6.Location = new System.Drawing.Point(4, 22);
@@ -1734,7 +1738,7 @@
             // 
             // panel6
             // 
-            this.panel6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.panel6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
             this.panel6.Controls.Add(this.button24);
             this.panel6.Controls.Add(this.button23);
             this.panel6.Controls.Add(this.checkBox17);
@@ -1956,7 +1960,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
             this.ClientSize = new System.Drawing.Size(550, 552);
             this.Controls.Add(this.pictureBox2);
             this.Controls.Add(this.label33);

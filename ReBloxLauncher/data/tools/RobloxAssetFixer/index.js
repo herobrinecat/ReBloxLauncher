@@ -18,6 +18,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 //Create express server
 const app = express();
+
 app.use(express.json({ limit: "500mb" }))
 app.use(express.urlencoded({ extended: true, limit: "500mb" }))
 app.use(express.raw({ limit: "500mb", type: '*/*' }))
@@ -220,6 +221,11 @@ function isNumeric(str) {
     if (typeof str != "string") return false // we only process strings!  
     return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
         !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+}
+
+function parseISOString(s) {
+    var b = s.split(/\D+/);
+    return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]))
 }
 
 process.on('uncaughtException', (err) => {
@@ -2618,116 +2624,258 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
 
 app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
-    var assetfound = false
-    var assetfound1 = false
-    var assetfound2 = false
-    if (isNumeric(req.query.aid)) {
-        if (verbose) {
-            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server/file (Image)")
+
+    if (joining) {
+        var options = {
+            host: ip,
+            port: 80,
+            path: "/Game/Tools/ThumbnailAsset.ashx?aid=" + req.query.aid + "&wd=" + (req.query.wd != undefined ? req.query.wd : 700) + "&ht=" + (req.query.ht != undefined ? req.query.ht : 700) + "&fmt=" + (req.query.fmt != undefined ? req.query.fmt : "png"),
+            method: "GET"
         }
-        filesystem.readdirSync("./icons").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                res.status(200).send(filesystem.readFileSync("./icons/" + file))
-                assetfound2 = true
-                return
-            }
+
+        http.get(options, (res1) => {
+            var data = []
+
+            res1.on("data", (chunk) => {
+                data.push(chunk)
+            })
+
+            res1.on("end", () => {
+                var buffer = Buffer.concat(data)
+                if (res1.statusCode == 200) {
+                    res.status(res1.statusCode).send(buffer)
+                }
+                else {
+                    var assetfound = false
+                    var assetfound1 = false
+                    var assetfound2 = false
+                    if (isNumeric(req.query.aid)) {
+                        if (verbose) {
+                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server/file (Image)")
+                        }
+                        filesystem.readdirSync("./icons").forEach(file => {
+                            var splitted = file.split('.')
+                            if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                res.status(200).send(filesystem.readFileSync("./icons/" + file))
+                                assetfound2 = true
+                                return
+                            }
+                        })
+                        if (assetfound2 == false) {
+                            filesystem.readdirSync("./uploads").forEach(file => {
+                                var splitted = file.split('.')
+                                if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                                    assetfound1 = true
+                                    return
+                                }
+                            })
+                            if (assetfound1 == false) {
+                                filesystem.readdirSync(assetfolder).forEach(file => {
+                                    var splitted = file.split('.')
+                                    if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                        assetfound = true
+                                        return
+                                    }
+                                })
+                                if (assetfound == false && isInternetAvailable) {
+                                    var options1 = {
+                                        host: 'thumbnails.roblox.com',
+                                        port: 443,
+                                        path: '/v1/assets?assetIds=' + req.query.aid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
+                                        method: "GET"
+                                    }
+                                    var infoiresult = ""
+
+                                    https.get(options1, (res2) => {
+
+                                        res2.setEncoding("utf8")
+                                        res2.on("data", (chunk) => {
+                                            infoiresult += chunk
+                                        })
+                                        res2.on("end", () => {
+                                            var jsoninfo1 = JSON.parse(infoiresult)
+                                            if (jsoninfo1["data"] == undefined) {
+                                                console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + req.query.aid + " from the Roblox server!")
+                                                res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
+                                            }
+                                            else {
+                                                var options2 = {
+                                                    host: 'tr.rbxcdn.com',
+                                                    port: 443,
+                                                    path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                                                    method: "GET",
+                                                    headers: {
+                                                        "User-Agent": "totallychrome",
+                                                        "Accept-Encoding": "gzip,deflate"
+                                                    }
+
+                                                }
+                                                https.get(options2, (res3) => {
+
+                                                    var data = [], output
+                                                    if (res3.headers["content-encoding"] == 'gzip') {
+                                                        if (verbose) {
+                                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [gzip compression]")
+                                                        }
+                                                        var gzip = zlib.createGunzip()
+                                                        res3.pipe(gzip)
+                                                        output = gzip
+                                                    }
+                                                    else if (res3.headers["content-encoding"] == 'deflate') {
+                                                        if (verbose) {
+                                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [deflate compression]")
+                                                        }
+                                                        var deflate = zlib.createDeflate()
+                                                        res3.pipe(deflate)
+                                                        output = deflate
+                                                    }
+                                                    else {
+                                                        if (verbose) {
+                                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image)")
+                                                        }
+                                                        output = res3
+                                                    }
+                                                    output.on("data", (chunk) => {
+                                                        data.push(chunk)
+                                                    })
+                                                    output.on("end", () => {
+                                                        var buffer = Buffer.concat(data)
+                                                        res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.aid + "." + req.query.fmt + "\"")
+                                                        res.status(200).send(buffer)
+                                                        assetfound = true
+                                                    })
+                                                })
+                                            }
+                                        })
+                                    })
+                                }
+                                else {
+                                    res.status(404).end()
+                                }
+                            }
+                        }
+                    }
+                }
+            })
         })
-        if (assetfound2 == false) {
-            filesystem.readdirSync("./uploads").forEach(file => {
+    }
+    else {
+        var assetfound = false
+        var assetfound1 = false
+        var assetfound2 = false
+        if (isNumeric(req.query.aid)) {
+            if (verbose) {
+                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server/file (Image)")
+            }
+            filesystem.readdirSync("./icons").forEach(file => {
                 var splitted = file.split('.')
                 if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
                     res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    assetfound1 = true
+                    res.status(200).send(filesystem.readFileSync("./icons/" + file))
+                    assetfound2 = true
                     return
                 }
             })
-            if (assetfound1 == false) {
-                filesystem.readdirSync(assetfolder).forEach(file => {
+            if (assetfound2 == false) {
+                filesystem.readdirSync("./uploads").forEach(file => {
                     var splitted = file.split('.')
                     if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                        assetfound = true
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        assetfound1 = true
                         return
                     }
                 })
-                if (assetfound == false && isInternetAvailable) {
-                    var options1 = {
-                        host: 'thumbnails.roblox.com',
-                        port: 443,
-                        path: '/v1/assets?assetIds=' + req.query.aid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
-                        method: "GET"
-                    }
-                    var infoiresult = ""
-
-                    https.get(options1, (res2) => {
-
-                        res2.setEncoding("utf8")
-                        res2.on("data", (chunk) => {
-                            infoiresult += chunk
-                        })
-                        res2.on("end", () => {
-                            var jsoninfo1 = JSON.parse(infoiresult)
-                            if (jsoninfo1["data"] == undefined) {
-                                console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + req.query.aid + " from the Roblox server!")
-                                res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
-                            }
-                            else {
-                                var options2 = {
-                                    host: 'tr.rbxcdn.com',
-                                    port: 443,
-                                    path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
-                                    method: "GET",
-                                    headers: {
-                                        "User-Agent": "totallychrome",
-                                        "Accept-Encoding": "gzip,deflate"
-                                    }
-
-                                }
-                                https.get(options2, (res3) => {
-
-                                    var data = [], output
-                                    if (res3.headers["content-encoding"] == 'gzip') {
-                                        if (verbose) {
-                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [gzip compression]")
-                                        }
-                                        var gzip = zlib.createGunzip()
-                                        res3.pipe(gzip)
-                                        output = gzip
-                                    }
-                                    else if (res3.headers["content-encoding"] == 'deflate') {
-                                        if (verbose) {
-                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [deflate compression]")
-                                        }
-                                        var deflate = zlib.createDeflate()
-                                        res3.pipe(deflate)
-                                        output = deflate
-                                    }
-                                    else {
-                                        if (verbose) {
-                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image)")
-                                        }
-                                        output = res3
-                                    }
-                                    output.on("data", (chunk) => {
-                                        data.push(chunk)
-                                    })
-                                    output.on("end", () => {
-                                        var buffer = Buffer.concat(data)
-                                        res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.aid + "." + req.query.fmt + "\"")
-                                        res.status(200).send(buffer)
-                                        assetfound = true
-                                    })
-                                })
-                            }
-                        })
+                if (assetfound1 == false) {
+                    filesystem.readdirSync(assetfolder).forEach(file => {
+                        var splitted = file.split('.')
+                        if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            assetfound = true
+                            return
+                        }
                     })
-                }
-                else {
-                    res.status(404).end()
+                    if (assetfound == false && isInternetAvailable) {
+                        var options1 = {
+                            host: 'thumbnails.roblox.com',
+                            port: 443,
+                            path: '/v1/assets?assetIds=' + req.query.aid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
+                            method: "GET"
+                        }
+                        var infoiresult = ""
+
+                        https.get(options1, (res2) => {
+
+                            res2.setEncoding("utf8")
+                            res2.on("data", (chunk) => {
+                                infoiresult += chunk
+                            })
+                            res2.on("end", () => {
+                                var jsoninfo1 = JSON.parse(infoiresult)
+                                if (jsoninfo1["data"] == undefined) {
+                                    console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + req.query.aid + " from the Roblox server!")
+                                    res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
+                                }
+                                else {
+                                    var options2 = {
+                                        host: 'tr.rbxcdn.com',
+                                        port: 443,
+                                        path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                                        method: "GET",
+                                        headers: {
+                                            "User-Agent": "totallychrome",
+                                            "Accept-Encoding": "gzip,deflate"
+                                        }
+
+                                    }
+                                    https.get(options2, (res3) => {
+
+                                        var data = [], output
+                                        if (res3.headers["content-encoding"] == 'gzip') {
+                                            if (verbose) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [gzip compression]")
+                                            }
+                                            var gzip = zlib.createGunzip()
+                                            res3.pipe(gzip)
+                                            output = gzip
+                                        }
+                                        else if (res3.headers["content-encoding"] == 'deflate') {
+                                            if (verbose) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image) [deflate compression]")
+                                            }
+                                            var deflate = zlib.createDeflate()
+                                            res3.pipe(deflate)
+                                            output = deflate
+                                        }
+                                        else {
+                                            if (verbose) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.aid + " from Roblox server (Image)")
+                                            }
+                                            output = res3
+                                        }
+                                        output.on("data", (chunk) => {
+                                            data.push(chunk)
+                                        })
+                                        output.on("end", () => {
+                                            var buffer = Buffer.concat(data)
+                                            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.aid + "." + req.query.fmt + "\"")
+                                            res.status(200).send(buffer)
+                                            assetfound = true
+                                        })
+                                    })
+                                }
+                            })
+                        })
+                    }
+                    else {
+                        res.status(404).end()
+                    }
                 }
             }
         }
@@ -2736,7 +2884,7 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
 
 app.get("/game/GetCurrentUser.ashx", (req, res) => {
     if (AllowGetCurrentUser) {
-        res.status(200).send(userId) //this will cause the 2019+ clients to hang on "Logging in..."
+        res.status(200).send(userId)
     }
     else {
         res.status(200).send("null")
@@ -2821,23 +2969,29 @@ app.get("/Data/AutoSave.ashx", (req, res) => {
 app.get("/v1/places/:id/symbolic-links", (req, res) => {
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}")
 })
+
 app.post("/Data/Upload.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
-
     if (isNumeric(req.query.assetid)) {
         if (allowUploadFiles) {
-            if (filesystem.existsSync("./uploads")) {
-                if (filesystem.existsSync("./uploads/" + req.query.assetid)) {
-                    filesystem.unlinkSync("./uploads/" + req.query.assetid)
-                    filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+            if (req.body != undefined) {
+                if (filesystem.existsSync("./uploads")) {
+                    if (filesystem.existsSync("./uploads/" + req.query.assetid)) {
+                        filesystem.unlinkSync("./uploads/" + req.query.assetid)
+                        filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+                    }
+                    else {
+                        filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+                    }
                 }
                 else {
+                    filesystem.mkdirSync("./uploads")
                     filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
                 }
             }
             else {
-                filesystem.mkdirSync("./uploads")
-                filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+                res.status(400).end()
+                return
             }
         }
         else {
@@ -3472,6 +3626,30 @@ app.get("/v1/locales/supported-locales", (_, res) => {
     res.status(200).send("{\"supportedLocales\": [{\"id\": 1, \"locale\": \"en_us\", \"name\": \"English (United States)\", \"nativeName\": \"English (United States)\", \"language\": {\"id\": 41, \"name\": \"English\", \"nativeName\": \"English\", \"languageCode\": \"en\", \"isRightToLeft\": false}}]}")
 })
 
+app.get("/v1/universes/:id/configuration", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+
+    if (filesystem.existsSync("./games.json")) {
+        var gamesjson = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        if (gamesjson.length > 0) {
+            var found = false
+            gamesjson.forEach((game) => {
+                if (game["id"] == req.params.id) {
+                    found = true
+                    res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": " + game["isArchived"] + ", \"isFriendsOnly\": " + game["isFriendsOnly"] + ", \"genre\": \"" + game["genre"] + "\", \"playableDevices\": " + JSON.stringify(game["playableDevices"]) + ", \"isForSale\": false, \"price\": 0, \"studioAccessToApisAllowed\": " + game["studioAccessToApisAllowed"] + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"" + game["privacyType"] + "\", \"fiatModerationStatus\": \"NotModerated\"}")
+                    return
+                }
+            })
+            if (found == false) res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": false, \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"Public\", \"fiatModerationStatus\": \"NotModerated\"}")
+        }
+    }
+    else {
+        res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": false, \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"Public\", \"fiatModerationStatus\": \"NotModerated\"}")
+    }
+})
+
 app.get("/v2/universes/:id/configuration", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.setHeader("content-type", "application/json; charset=utf-8")
@@ -3484,15 +3662,15 @@ app.get("/v2/universes/:id/configuration", (req, res) => {
             gamesjson.forEach((game) => {
                 if (game["id"] == req.params.id) {
                     found = true
-                    res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": " + game["isArchived"] + ", \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"isStudioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"" + game["privacyType"] + "\", \"fiatModerationStatus\": \"NotModerated\"}")
+                    res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": " + game["isArchived"] + ", \"isFriendsOnly\": " + game["isFriendsOnly"] + ", \"genre\": \"" + game["genre"] + "\", \"playableDevices\": " + JSON.stringify(game["playableDevices"]) + ", \"isForSale\": false, \"price\": 0, \"studioAccessToApisAllowed\": " + game["studioAccessToApisAllowed"] + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"" + game["privacyType"] + "\", \"fiatModerationStatus\": \"NotModerated\"}")
                     return
                 }
             })
-            if (found == false) res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": false, \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"isStudioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"Public\", \"fiatModerationStatus\": \"NotModerated\"}")
+            if (found == false) res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": false, \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"Public\", \"fiatModerationStatus\": \"NotModerated\"}")
         }
     }
     else {
-        res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": false, \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"isStudioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"Public\", \"fiatModerationStatus\": \"NotModerated\"}")
+        res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": false, \"isFriendsOnly\": false, \"genre\": \"Tutorial\", \"playableDevices\": [\"Computer\", \"Phone\", \"Tablet\"], \"isForSale\": false, \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"Public\", \"fiatModerationStatus\": \"NotModerated\"}")
     }
 })
 
@@ -3698,17 +3876,24 @@ app.post("/universes/create", async (req, res) => {
             var marketplacejson = JSON.parse(marketplace)
             var gamesjson = JSON.parse(games)
 
-            gamesjson.push({ id: universeId, name: "Baseplate", description: "", "isArchived": false, "rootPlaceId": placeId, isActive: false, privacyType: "Private", creatorType: "User", creatorTargetId: userId, creatorName: username, created: (new Date(Date.now()).toISOString()), updated: (new Date(Date.now()).toISOString()) })
-            marketplacejson.push({ id: placeId, name: "Baseplate", description: "", assetType: 9, imageId: placeId, robux: 0 })
+            gamesjson.push({ id: universeId, name: "Baseplate", description: "", "isArchived": false, "rootPlaceId": placeId, isActive: false, genre: "All", isFriendsOnly: false, playableDevices: ["Computer", "Phone", "Tablet"], studioAccessToApisAllowed: false, privacyType: "Private", creatorType: "User", creatorTargetId: userId, creatorName: username, created: new Date(Date.now()).toISOString(), updated: new Date(Date.now()).toISOString() })
+            marketplacejson.push({ id: placeId, name: "Baseplate", description: "", assetType: 9, imageId: placeId, robux: 0, creatorTargetId: userId, creatorName: username })
 
             var gamesrecompiled = JSON.stringify(gamesjson, null, 4)
             var marketplacerecompiled = JSON.stringify(marketplacejson, null, 4)
 
-            if (filesystem.existsSync("./marketplace.json")) filesystem.unlinkSync("./marketplace.json")
-            filesystem.writeFileSync("./marketplace.json", marketplacerecompiled)
-            if (filesystem.existsSync("./games.json")) filesystem.unlinkSync("./games.json")
-            filesystem.writeFileSync("./games.json", gamesrecompiled)
+            if (filesystem.existsSync("./marketplace.json")) filesystem.unlinkSync("./marketplace.json");
+            filesystem.writeFileSync("./marketplace.json", marketplacerecompiled);
+            if (filesystem.existsSync("./games.json")) filesystem.unlinkSync("./games.json");
+            filesystem.writeFileSync("./games.json", gamesrecompiled);
+            if (filesystem.existsSync("./defaulticons")) {
+                var icons = filesystem.readdirSync("./defaulticons")
 
+                if (icons.length > 0) {
+                    if (filesystem.existsSync("./icons") == false) filesystem.mkdirSync("./icons");
+                    filesystem.writeFileSync("./icons/" + placeId + ".png", filesystem.readFileSync("./defaulticons/" + icons[Math.floor(Math.random() * ((icons.length - 1) - 0))]))
+                }
+            }
             if (filesystem.existsSync("./uploads/" + placeId)) {
                 filesystem.unlinkSync("./uploads/" + placeId)
                 if (filesystem.existsSync("./assets/" + req.body["templatePlaceIdToUse"] + ".rbxl")) {
@@ -3741,11 +3926,51 @@ app.post("/universes/create", async (req, res) => {
 })
 
 app.post("/v1/universes/:id/deactivate", (req, res) => {
-    res.status(200).send("{}") //STUB
+    if (filesystem.existsSync("./games.json")) {
+        var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        if (jsondata.length > 0) {
+            for (var i = 0; i < jsondata.length; i++) {
+                if (jsondata[i]["id"] == req.params.id) {
+                    jsondata[i]["isActive"] = false
+                    jsondata[i]["privacyType"] = "Private"
+                    break
+                }
+            }
+
+            var jsondatarecompiled = JSON.stringify(jsondata, null, 4)
+
+            filesystem.unlinkSync("./games.json")
+
+            filesystem.writeFileSync("./games.json", jsondatarecompiled)
+        }
+    }
+
+    res.status(200).send("{}")
 })
 
 app.post("/v1/universes/:id/activate", (req, res) => {
-    res.status(200).send("{}") //STUB
+    if (filesystem.existsSync("./games.json")) {
+        var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        if (jsondata.length > 0) {
+            for (var i = 0; i < jsondata.length; i++) {
+                if (jsondata[i]["id"] == req.params.id) {
+                    jsondata[i]["isActive"] = true
+                    jsondata[i]["privacyType"] = "Public"
+                    break
+                }
+            }
+
+            var jsondatarecompiled = JSON.stringify(jsondata, null, 4)
+
+            filesystem.unlinkSync("./games.json")
+
+            filesystem.writeFileSync("./games.json", jsondatarecompiled)
+        }
+    }
+
+    res.status(200).send("{}")
 })
 
 app.get("/places/:id/update", (_, res) => {
@@ -3798,8 +4023,8 @@ app.post("/ide/places/createV2", async (req, res) => {
             var marketplacejson = JSON.parse(marketplace)
             var gamesjson = JSON.parse(games)
 
-            gamesjson.push({ id: req.query.universeId, name: "Baseplate", description: "", "isArchived": false, "rootPlaceId": placeId, isActive: false, privacyType: "Private", creatorType: "User", creatorTargetId: userId, creatorName: username, created: (new Date(Date.now()).toISOString()), updated: (new Date(Date.now()).toISOString()) })
-            marketplacejson.push({ id: placeId, name: "Baseplate", description: "", assetType: 9, imageId: placeId, robux: 0 })
+            gamesjson.push({ id: req.query.universeId, name: "Baseplate", description: "", "isArchived": false, "rootPlaceId": placeId, isActive: false, genre: "All", isFriendsOnly: false, playableDevices: ["Computer", "Phone", "Tablet"], studioAccessToApisAllowed: false, privacyType: "Private", creatorType: "User", creatorTargetId: userId, creatorName: username, created: (new Date(Date.now()).toISOString()), updated: (new Date(Date.now()).toISOString()) })
+            marketplacejson.push({ id: placeId, name: "Baseplate", description: "", assetType: 9, imageId: placeId, robux: 0, creatorTargetId: userId, creatorName: username })
 
             var gamesrecompiled = JSON.stringify(gamesjson, null, 4)
             var marketplacerecompiled = JSON.stringify(marketplacejson, null, 4)
@@ -3808,6 +4033,15 @@ app.post("/ide/places/createV2", async (req, res) => {
             filesystem.writeFileSync("./marketplace.json", marketplacerecompiled)
             if (filesystem.existsSync("./games.json")) filesystem.unlinkSync("./games.json")
             filesystem.writeFileSync("./games.json", gamesrecompiled)
+
+            if (filesystem.existsSync("./defaulticons")) {
+                var icons = filesystem.readdirSync("./defaulticons")
+
+                if (icons.length > 0) {
+                    if (filesystem.existsSync("./icons") == false) filesystem.mkdirSync("./icons");
+                    filesystem.writeFileSync("./icons/" + placeId + ".png", filesystem.readFileSync("./defaulticons/" + icons[Math.floor(Math.random() * ((icons.length - 1) - 0))]))
+                }
+            }
 
             if (filesystem.existsSync("./uploads/" + placeId)) {
                 filesystem.unlinkSync("./uploads/" + placeId)
@@ -4176,13 +4410,28 @@ app.get("/IDE/Toolbox/Items", (req, res) => {
     res.send("{\"TotalResults\":0,\"Results\":[]}")
 })
 
+function updatedDateSort(a, b) {
+    return parseISOString(b.updated).getTime() - parseISOString(a.updated).getTime();
+}
+
+function dateSort(a, b) {
+    return parseISOString(a.created).getTime() - parseISOString(b.created).getTime();
+}
+
+function reverseDateSort(a, b) {
+    return parseISOString(b.created).getTime() - parseISOString(a.created).getTime();
+}
+
+function compareStrings(a, b) {
+    return (a < b) ? -1 : (a > b) ? 1 : 0;
+}
 app.get("/v1/search/universes", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
     if (req.query.q.includes(' ')) {
         var splitted = req.query.q.split(' ')
         var ogwithoutcreator = req.query.q.slice(0, req.query.q.length - splitted[splitted.length - 1].length).trim()
-        if (splitted[splitted.length - 1] == "creator:Team") {
+        if (splitted[splitted.length - 1] == "creator:Team" || (splitted[0] == "creator:Team" && splitted[1].startsWith("archived:"))) {
             res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
         }
         else {
@@ -4191,10 +4440,25 @@ app.get("/v1/search/universes", (req, res) => {
 
                 var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
 
+                if (req.query.sort == "GameCreated") {
+                    json.sort(dateSort)
+                }
+                else if (req.query.sort == "-GameCreated") {
+                    json.sort(reverseDateSort)
+                }
+                else if (req.query.sort == "-LastUpdated") {
+                    json.sort(updatedDateSort)
+                }
+                else if (req.query.sort == "GameName") {
+                    json.sort(function (a, b) {
+                        return compareStrings(a.name, b.name)
+                    })
+                }
+
                 if (json.length > 0) {
                     json.forEach((game) => {
-                        if (game["name"].toLowerCase().includes(ogwithoutcreator.toLowerCase())) {
-                            data.push(game)
+                        if (game["name"].toLowerCase().includes(ogwithoutcreator.toLowerCase()) || ((splitted[1].split(':')[1] != undefined ? splitted[1].split(':')[1].toLowerCase() : "") == game["isArchived"].toString() && splitted.length == 2)) {
+                            data.push(JSON.parse("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}"))
                         }
                     })
                     res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":" + JSON.stringify(data) + "}")
@@ -4218,9 +4482,24 @@ app.get("/v1/search/universes", (req, res) => {
 
                 var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
 
+                if (req.query.sort == "GameCreated") {
+                    json.sort(dateSort)
+                }
+                else if (req.query.sort == "-GameCreated") {
+                    json.sort(reverseDateSort)
+                }
+                else if (req.query.sort == "-LastUpdated") {
+                    json.sort(updatedDateSort)
+                }
+                else if (req.query.sort == "GameName") {
+                    json.sort(function (a, b) {
+                        return compareStrings(a.name, b.name)
+                    })
+                }
+
                 if (json.length > 0) {
                     json.forEach((game) => {
-                        data.push(game)
+                        data.push(JSON.parse("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}"))
                     })
                     res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":" + JSON.stringify(data) + "}")
                 }
@@ -4352,14 +4631,43 @@ app.post("/ide/publish/uploadnewasset", (req, res) => {
     res.status(200).end()
 })
 
-app.post("/data/upload/json", (req, res) => {
-    res.status(200).send("{\"Success\": true, \"BackingAssetId\": 1111}") //STUB
+app.post("/data/upload/json", async (req, res) => {
+    var assetId = 1
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    if (filesystem.existsSync("./assets")) {
+        var list = await filesystem.readdirSync("./assets")
+
+        for (var i = 0; i < list.length; i++) {
+            list[i] = list[i].replace(new RegExp("\.[^/.]+$"), "")
+        }
+        list.sort(function (a, b) { return a - b })
+        for (var i = 0; i < list.length; i++) {
+            if (list[i] == assetId) {
+                assetId++
+            }
+        }
+    }
+    if (filesystem.existsSync("./uploads")) {
+        var list = filesystem.readdirSync("./uploads")
+
+        list.sort(function (a, b) { return a - b })
+
+        for (var i = 0; i < list.length; i++) {
+            if (list[i] == assetId) {
+                assetId++
+            }
+        }
+    }
+    res.status(200).send("{\"Success\": true, \"BackingAssetId\": " + assetId + "}")
 })
 
 app.post("/universes/create-alias-v2", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{}")
 })
 app.get("/v1/products", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
     if (filesystem.existsSync("./premiumsubscriptions.json")) {
         res.status(200).send(filesystem.readFileSync("./premiumsubscriptions.json"))
@@ -4370,15 +4678,19 @@ app.get("/v1/products", (req, res) => {
 })
 
 app.get("/v1/users/:id/friends", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\": []}")
 })
 app.get("/v1/universes/:id/configuration/vip-servers", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"isEnabled\":true,\"price\":0,\"activeServersCount\":0,\"activeSubscriptionsCount\":0}")
 })
 app.get("/developerproducts/list", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"FinalPage\":true, \"DeveloperProducts\":[], \"PageSize\":0}")
 })
 app.get("/v1/resale-tax-rate", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"taxRate\":0.3, \"minimumFee\":1}")
 })
 app.get("/v2/universes/:id/places", (req, res) => {
@@ -4469,15 +4781,19 @@ app.get("/v2/assets/:id/versions", (req, res) => {
 })
 
 app.get("/v1/universes/:id/badges", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}")
 })
 app.get("/v1/users/:id/currency", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"robux\": " + robux + "}")
 })
 app.get("/v1/universes/:id/symbolic-links", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
 })
 app.get("/universes/get-aliases", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"FinalPage\": true, \"Aliases\": [], \"PageSize\": 50}")
 })
 
@@ -4510,7 +4826,39 @@ app.post("/v2/logout", (req, res) => {
 })
 app.get("/universes/get-info", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"Name\":\"ReBlox Place\", \"Description\":\"A ReBlox place launched from the launcher\", \"RootPlace\":1, \"StudioAccessToApisAllowed\":true,\"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
+    res.setHeader("cache-control", "no-cache")
+
+    if (filesystem.existsSync("./gametemplates.json")) {
+        var json = JSON.parse("[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]")
+
+        if (json.length > 0) {
+            for (var i = 0; i < json.length; i++) {
+                if (json[i]["universe"]["rootPlaceId"] == req.query.placeId) {
+                    res.status(200).send("{\"Name\":\"" + json[i]["universe"]["name"] + "\", \"Description\":\"" + json[i]["universe"]["description"] + "\", \"RootPlace\":" + json[i]["universe"]["rootPlaceId"] + ", \"StudioAccessToApisAllowed\": false, \"CurrentUserHasEditPermissions\":false,\"UniverseAvatarType\":\"PlayerChoice\"}")
+                    return
+                }
+            }
+        }
+    }
+
+    if (filesystem.existsSync("./games.json")) {
+        var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        if (json.length > 0) {
+            for (var i = 0; i < json.length; i++) {
+                if (json[i]["rootPlaceId"] == req.query.placeId) {
+                    res.status(200).send("{\"Name\":\"" + json[i]["name"] + "\", \"Description\":\"" + json[i]["description"] + "\", \"RootPlace\":" + json[i]["rootPlaceId"] + ", \"StudioAccessToApisAllowed\":" + json[i]["studioAccessToApisAllowed"] + ", \"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
+                    return
+                }
+            }
+        }
+        else {
+            res.status(200).send("{\"Name\":\"ReBlox Place\", \"Description\":\"A ReBlox place launched from the launcher\", \"RootPlace\":1, \"StudioAccessToApisAllowed\":true,\"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
+        }
+    } else {
+        res.status(200).send("{\"Name\":\"ReBlox Place\", \"Description\":\"A ReBlox place launched from the launcher\", \"RootPlace\":1, \"StudioAccessToApisAllowed\":true,\"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
+    }
+
 })
 
 app.get("/Game/LuaWebService/HandleSocialRequest.ashx", async (req, res) => {
@@ -4577,6 +4925,10 @@ app.get("/universes/:id/cloudeditenabled", (_, res) => {
     res.status(200).send("{\"enabled\":false}") //Required for creating place in 2018+ studio
 })
 
+app.get("/v1/user/is-verified-creator", (_, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.status(200).send("{\"isVerifiedCreator\": true}")
+})
 app.get("/v1/users/:userid/groups/roles", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\":[]}") //STUB
@@ -4674,7 +5026,7 @@ app.get("/Game/Badge/HasBadge.ashx", async (req, res) => {
                     if (line == "RBDF==") {
                         verified = true
                     }
-                    else if (line.includes("userId=" + req.query.UserID) && line.includes("badgeId=" + req.query.BadgeID)) {
+                    else if (line.startsWith("<Badge userId=" + req.query.UserID) && line.includes("badgeId=" + req.query.BadgeID)) {
                         replacementext = line
                     }
                 }
@@ -4703,6 +5055,130 @@ app.get("/Game/Badge/HasBadge.ashx", async (req, res) => {
     }
 })
 
+app.get("/v1/users/:uid/badges/awarded-dates", async (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    if (joining) {
+        try {
+            var options = {
+                host: ip,
+                port: 80,
+                path: "/v1/users/:uid/badges/awarded-dates?badgeIds=" + (typeof (req.query.badgeIds) == "object" ? req.query.badgeIds.join(',') : req.query.badgeIds),
+                method: "GET"
+            }
+
+            http.get(options, (res1) => {
+                res1.setEncoding("utf-8")
+                var data = ""
+                res1.on("data", (chunk) => {
+                    data += chunk
+                })
+                res1.on("end", () => {
+                    res.status(res1.statusCode).send(data)
+                })
+            })
+
+        } catch {
+            res.status(500).end()
+        }
+    }
+    else {
+        var verified = false
+        var replacementext = ""
+        if (enableBadges == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+            if (filesystem.existsSync(RBDFpath)) {
+                var badges = []
+                const stream = filesystem.createReadStream(RBDFpath)
+
+                const rl = readline.createInterface({
+                    input: stream,
+                    crlfDelay: Infinity
+                })
+
+                for await (const line of rl) {
+                    if (line == "RBDF==") {
+                        verified = true
+                    }
+                    else if (line.startsWith("<Badge userId=" + req.params.uid) && line.endsWith(">")) {
+                        badges.push(line)
+                    }
+                }
+                stream.destroy()
+                rl.close()
+                if (verified == true) {
+                    if (badges.length > 0) {
+                        var jsondata = ""
+
+                        if (typeof (req.query.badgeIds) == "string") {
+                            var splitted = []
+                            if (req.query.badgeIds.includes(',')) splitted = req.query.badgeIds.split(',');
+
+                            if (splitted.length > 0) {
+                                for (var i = 0; i < splitted.length; i++) {
+                                    badges.forEach((badgedata) => {
+                                        if (badgedata.includes("badgeId=" + splitted[i])) {
+                                            if (badgedata.includes("awardDate=\"")) {
+                                                const regex = new RegExp("awardDate=\"(.*)\"")
+                                                var match = regex.exec(badgedata)
+                                                if (match != null && match.length > 0) {
+                                                    jsondata += "{\"badgeId\": " + splitted[i] + ", \"awardedDate\": \"" + match[1] + "\"}, "
+                                                }
+                                            }
+                                        }
+                                    })
+                                }
+                            }
+                            else {
+                                badges.forEach((badgedata) => {
+                                    if (badgedata.includes("badgeId=" + req.query.badgeIds)) {
+                                        if (badgedata.includes("awardDate=\"")) {
+                                            const regex = new RegExp("awardDate=\"(.*)\"")
+                                            var match = regex.exec(badgedata)
+                                            if (match != null && match.length > 0) {
+                                                jsondata += "{\"badgeId\": " + req.query.badgeIds + ", \"awardedDate\": \"" + match[1] + "\"}, "
+                                            }
+                                        }
+                                    }
+                                })
+                            }
+                        }
+                        else if (typeof (req.query.badgeIds) == "object") {
+                            if (req.query.badgeIds != undefined) {
+                                for (var i = 0; i < req.query.badgeIds.length; i++) {
+                                    badges.forEach((badgedata) => {
+                                        if (badgedata.includes("badgeId=" + req.query.badgeIds[i])) {
+                                            if (badgedata.includes("awardDate=\"")) {
+                                                const regex = new RegExp("awardDate=\"(.*)\"")
+                                                var match = regex.exec(badgedata)
+                                                if (match != null && match.length > 0) {
+                                                    jsondata += "{\"badgeId\": " + req.query.badgeIds[i] + ", \"awardedDate\": \"" + match[1] + "\"}, "
+                                                }
+                                            }
+                                        }
+                                    })
+                                }
+                            }
+                        }
+                        res.status(200).send("{\"data\": [" + jsondata.slice(0, jsondata.length - 2) + "]}")
+                    }
+                    else {
+                        res.status(200).send("{\"data\": []}")
+                    }
+
+                }
+                else {
+                    res.status(200).send("{\"data\": []}")
+                }
+            }
+            else {
+                res.status(200).send("{\"data\": []}")
+            }
+        }
+        else {
+            res.status(200).send("{\"data\": []}")
+        }
+    }
+})
 async function getUsernameFromMemory(userid) {
     var value = "unknown"
 
@@ -4717,6 +5193,9 @@ async function getUsernameFromMemory(userid) {
     return value
 }
 
+app.get("/badges/list-badges-for-place/json", (_, res) => {
+    res.status(200).send("{\"Badges\": []. \"FinalPage\": true, \"PageSize\": 50}")
+})
 app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
     if (joining) {
         try {
@@ -4737,7 +5216,6 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
                     res.status(res1.statusCode).send(data)
                 })
             })
-            req1.write("")
             req1.end()
 
         } catch {
@@ -4770,7 +5248,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
                     if (line == "RBDF==") {
                         verified = true
                     }
-                    else if (line.includes("userId=" + req.query.UserID) && line.includes("badgeId=" + req.query.BadgeID)) {
+                    else if (line.startsWith("<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID) && line.endsWith(">")) {
                         replacementtext = line
                         break
                     }
@@ -4783,7 +5261,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
                         return
                     }
                     else {
-                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + ">\r\n")
+                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.now()).toISOString() + "\">\r\n")
                     }
 
                 }
@@ -4793,7 +5271,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
             }
             else {
                 filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
-                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + ">\r\n")
+                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.now()).toISOString() + "\">\r\n")
             }
         }
         if (isNumeric(req.query.BadgeID)) {
@@ -4906,7 +5384,7 @@ app.post("/assets/award-badge", async (req, res) => {
                     if (line == "RBDF==") {
                         verified = true
                     }
-                    else if (line == "<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId + ">") {
+                    else if (line.startsWith("<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId) && line.endsWith(">")) {
                         replacementtext = line
                         break
                     }
@@ -4919,7 +5397,7 @@ app.post("/assets/award-badge", async (req, res) => {
                         return
                     }
                     else {
-                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId + ">\r\n")
+                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId + " awardDate=\"" + new Date(Date.now()).toISOString() + "\">\r\n")
                     }
 
                 }
@@ -4929,7 +5407,7 @@ app.post("/assets/award-badge", async (req, res) => {
             }
             else {
                 filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
-                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId + ">\r\n")
+                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId + " awardDate=\"" + new Date(Date.now()).toISOString() + "\">\r\n")
             }
         }
         if (isNumeric(req.query.badgeId)) {
@@ -4989,6 +5467,7 @@ app.post("/assets/award-badge", async (req, res) => {
 })
 
 app.get("/v1/gametemplates", (_, res) => {
+    res.setHeader("cache-control", "no-cache")
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\":[" + (filesystem.existsSync("./gametemplates.json") ? filesystem.readFileSync("./gametemplates.json", "utf8") : "") + "]}")
 })
@@ -5195,6 +5674,59 @@ app.patch("/v1/places/:placeId", (req, res) => {
     }
 })
 
+app.patch("/v1/universes/:id/configuration", (req, res) => {
+    var found = false
+    if (filesystem.existsSync("./games.json")) {
+        var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+        var marketplacejson = JSON.parse(filesystem.readFileSync("./marketplace.json", "utf8"))
+        var placeid = 1818
+        var oldname = ""
+        var olddescription = ""
+
+        if (jsondata.length > 0) {
+            for (var i = 0; i < jsondata.length; i++) {
+                if (jsondata[i]["id"] == req.params.id) {
+                    found = true
+                    placeid = jsondata[i]["rootPlaceId"]
+                    oldname = jsondata[i]["name"]
+                    olddescription = jsondata[i]["description"]
+                    jsondata[i]["updated"] = new Date(Date.now()).toISOString()
+                    var keys = Object.keys(req.body)
+
+                    for (var x = 0; x < keys.length; x++) {
+                        if (jsondata[i][keys[x]] != undefined) {
+                            jsondata[i][keys[x]] = req.body[keys[x]]
+
+                        }
+                    }
+                    break
+                }
+            }
+            for (var i = 0; i < marketplacejson.length; i++) {
+                if (marketplacejson[i]["id"] == placeid) {
+                    if (req.body.name != undefined) marketplacejson[i]["name"] = (req.body.name != undefined ? req.body.name : oldname)
+                    if (req.body.description != undefined) marketplacejson[i]["description"] = (req.body.description != undefined ? req.body.description : olddescription)
+                    break
+                }
+            }
+
+            var jsondatarecompiled = JSON.stringify(jsondata, null, 4)
+            var marketplacerecompiled = JSON.stringify(marketplacejson, null, 4)
+
+            filesystem.unlinkSync("./games.json")
+            filesystem.unlinkSync("./marketplace.json")
+
+            filesystem.writeFileSync("./games.json", jsondatarecompiled)
+            filesystem.writeFileSync("./marketplace.json", marketplacerecompiled)
+            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": " + placeid + ", \"name\": \"" + (req.body.name != undefined ? req.body.name : oldname) + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : olddescription) + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+        }
+        else {
+            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+        }
+    }
+    if (found == false) res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+})
+
 app.patch("/v2/universes/:id/configuration", (req, res) => {
     var found = false
     if (filesystem.existsSync("./games.json")) {
@@ -5246,7 +5778,6 @@ app.patch("/v2/universes/:id/configuration", (req, res) => {
         }
     }
     if (found == false) res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
-
 })
 
 app.post("/v1/autolocalization/games/:id/autolocalizationtable", (req, res) => {
@@ -5395,7 +5926,7 @@ app.get("/Marketplace/productinfo", (req, res) => {
             if (asset["id"] != undefined) {
                 if (asset["id"] == ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId)) {
                     if (isNumeric(((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId))) {
-                        res.status(200).send("{\"TargetId\":" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + ", \"ProductType\":\"User Product\", \"AssetId\":" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + ", \"ProductId\":" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + userId + ", \"Name\":\"" + username + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + userId + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+                        res.status(200).send("{\"TargetId\":" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + ", \"ProductType\":\"User Product\", \"AssetId\":" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + ", \"ProductId\":" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
                         sent = true
                     }
                     else {
@@ -5453,13 +5984,13 @@ app.get("/v1/products/:id", (req, res) => {
         jsondata.forEach((product) => {
             if (req.params.id == product["id"]) {
                 sent = true
-                res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":" + req.params.id + ", \"assetName\":\"" + product["name"] + "\", \"assetType\": \"" + translateAssetTypeIdToAssetType(product["assetType"]) + "\", \"assetTypeDisplayName\": \"" + translateAssetTypeIdToAssetType(product["assetType"]) + "\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
+                res.status(200).send("{\"assetName\":\"" + product["name"] + "\", \"price\": " + (product["robux"] != undefined ? product["robux"] : 0) + ", \"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1, \"assetId\":" + req.params.id + ", \"assetType\": \"" + translateAssetTypeIdToAssetType(product["assetType"]) + "\", \"assetTypeDisplayName\": \"" + translateAssetTypeIdToAssetType(product["assetType"]) + "\", \"assetIsWearable\": true, \"sellerName\": \"" + (product["creatorName"] != undefined ? product["creatorName"] : "ROBLOX") + "\", \"isMultiPrivateSale\": false}")
             }
         })
-        if (sent == false) res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":133293265, \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
+        if (sent == false) res.status(200).send("{\"assetName\":\"Stub Place/Product Name\", \"price\": 0, \"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1, \"assetId\":133293265, \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
     }
     else {
-        res.status(200).send("{\"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1,\"assetId\":133293265, \"assetName\":\"Stub Place/Product Name\", \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
+        res.status(200).send("{\"assetName\":\"Stub Place/Product Name\", \"price\": 0, \"reason\": \"Success\", \"productId\": " + req.params.id + ", \"currency\": 1, \"assetId\":133293265, \"assetType\": \"TShirt\", \"assetTypeDisplayName\": \"T-Shirt\", \"assetIsWearable\": true, \"sellerName\": \"ROBLOX\", \"isMultiPrivateSale\": false}")
     }
 })
 
@@ -5473,7 +6004,7 @@ app.get("/marketplace/productdetails", (req, res) => {
             if (asset["id"] != undefined) {
                 if (asset["id"] == req.query.productId) {
                     if (isNumeric(req.query.productId)) {
-                        res.status(200).send("{\"TargetId\":" + req.query.productId + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.query.productId + ", \"ProductId\":" + req.query.productId + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + userId + ", \"Name\":\"" + username + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + userId + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+                        res.status(200).send("{\"TargetId\":" + req.query.productId + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.query.productId + ", \"ProductId\":" + req.query.productId + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
                         sent = true
                         return
                     }
@@ -5512,7 +6043,7 @@ app.get("/v2/assets/:id/details", (req, res) => {
             if (asset["id"] != undefined) {
                 if (asset["id"] == req.params.id) {
                     if (isNumeric(req.params.id)) {
-                        res.status(200).send("{\"TargetId\":" + req.params.id + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.params.id + ", \"ProductId\":" + req.params.id + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + userId + ", \"Name\":\"" + username + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + userId + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+                        res.status(200).send("{\"TargetId\":" + req.params.id + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.params.id + ", \"ProductId\":" + req.params.id + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
                         sent = true
                         return
                     }
@@ -5947,7 +6478,7 @@ app.get("/marketplace/game-pass-product-info", (req, res) => {
             if (asset["id"] != undefined) {
                 if (asset["id"] == req.query.gamePassId) {
                     if (isNumeric(req.query.gamePassId)) {
-                        res.status(200).send("{\"TargetId\":" + req.query.gamePassId + ", \"ProductType\":\"Game Pass\", \"AssetId\":" + req.query.gamePassId + ", \"ProductId\":" + req.query.gamePassId + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + userId + ", \"Name\":\"" + username + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + userId + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+                        res.status(200).send("{\"TargetId\":" + req.query.gamePassId + ", \"ProductType\":\"Game Pass\", \"AssetId\":" + req.query.gamePassId + ", \"ProductId\":" + req.query.gamePassId + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
                         sent = true
                     }
                     else {
@@ -5976,6 +6507,18 @@ app.get("/marketplace/game-pass-product-info", (req, res) => {
 
 app.get("/users/friends/list-json", (req, res) => {
     res.status(200).send("{\"UserId\":" + req.query.userId + ", \"TotalFriends\": 0, \"CurrentPage\":" + req.query.currentPage + ", \"PageSize\": 0, \"TotalPages\": 0, \"FriendsType\": \"" + req.query.friendsType + "\", \"Friends\": []}")
+})
+
+app.post("/v1/favorites/users/:uid/assets/:assetid/favorite", (_, res) => {
+    res.setHeader("cache-control", "no-cache")
+
+    res.status(200).send("{}") //STUB
+})
+
+app.delete("/v1/favorites/users/:uid/assets/:assetid/favorite", (_, res) => {
+    res.setHeader("cache-control", "no-cache")
+
+    res.status(200).send("{}") //STUB
 })
 
 app.get("/v2/get-user-conversations", (_, res) => {
@@ -6099,7 +6642,7 @@ app.get("/v1/universes/multiget", (req, res) => {
         var result = ""
         gamesjson.forEach((game) => {
             if (ids.includes(game["id"].toString())) {
-                result += JSON.stringify(game) + ","
+                result += "{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"},"
                 found = true
             }
         })
@@ -6119,7 +6662,7 @@ app.get("/v1/universes/:id", (req, res) => {
         var found = false
         gamesjson.forEach((game) => {
             if (req.params.id == game["id"]) {
-                res.status(200).send(JSON.stringify(game))
+                res.status(200).send("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"] + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}")
                 found = true
                 return
             }
@@ -6236,12 +6779,161 @@ app.post("/v1/user/studiodata", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{}")
 })
+
 app.get("/asset-gameicon/multiget", (req, res) => {
-    //STUB
+    res.setHeader("cache-control", "no-cache")
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("[]")
+
+    if (typeof (req.query.universeId) == "string") {
+        if (filesystem.existsSync("./games.json")) {
+            var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+            var found = false
+            json.forEach((game) => {
+                if (game["id"] == req.query.universeId) {
+                    found = true
+                    if (filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".png")) {
+                        res.status(200).send("[{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}]")
+                    }
+                    else {
+                        res.status(200).send("[{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}]")
+                    }
+                    return
+                }
+            })
+
+            if (found == false) {
+                res.status(200).send("[{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}]")
+            }
+        }
+        else {
+            res.status(200).send("[{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}]")
+        }
+    }
+    else {
+        var complete = ""
+        var json = JSON.parse(filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]")
+        if (req.query.universeId != undefined) {
+            for (var i = 0; i < req.query.universeId.length; i++) {
+                if (i == req.query.universeId.length - 1) {
+                    if (filesystem.existsSync("./games.json")) {
+                        var found = false
+                        json.forEach((game) => {
+                            if (game["id"] == req.query.universeId[i]) {
+                                if (filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".png")) {
+                                    found = true
+                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}"
+                                }
+                                return
+                            }
+                        })
+
+                        if (found == false) {
+                            if (filesystem.existsSync("./gametemplates.json")) {
+                                var json1 = JSON.parse("[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]")
+                                var found1 = false
+                                json1.forEach((game) => {
+                                    if (game["universe"]["id"] == req.query.universeId[i]) {
+                                        found1 = true
+                                        complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}"
+                                        return
+                                    }
+                                })
+
+                                if (found1 == false) {
+                                    complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}"
+                                }
+                            }
+                            else {
+                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}"
+                            }
+                        }
+                    }
+                    else {
+                        if (filesystem.existsSync("./gametemplates.json")) {
+                            var json1 = JSON.parse("[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]")
+                            var found1 = false
+                            json1.forEach((game) => {
+                                if (game["universe"]["id"] == req.query.universeId[i]) {
+                                    found1 = true
+                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}"
+                                    return
+                                }
+                            })
+
+                            if (found1 == false) {
+                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}"
+                            }
+                        }
+                        else {
+                            complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}"
+                        }
+                    }
+                }
+                else {
+                    if (filesystem.existsSync("./games.json")) {
+                        var found = false
+                        json.forEach((game) => {
+                            if (game["id"] == req.query.universeId[i]) {
+                                if (filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".png")) {
+                                    found = true
+                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}, "
+                                }
+                                return
+                            }
+                        })
+
+                        if (found == false) {
+                            if (filesystem.existsSync("./gametemplates.json")) {
+                                var json1 = JSON.parse("[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]")
+                                var found1 = false
+                                json1.forEach((game) => {
+                                    if (game["universe"]["id"] == req.query.universeId[i]) {
+                                        found1 = true
+                                        complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}, "
+                                        return
+                                    }
+                                })
+
+                                if (found1 == false) {
+                                    complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}, "
+                                }
+                            }
+                            else {
+                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}, "
+                            }
+                        }
+                    }
+                    else {
+                        if (filesystem.existsSync("./gametemplates.json")) {
+                            var json1 = JSON.parse("[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]")
+                            var found1 = false
+                            json1.forEach((game) => {
+                                if (game["universe"]["id"] == req.query.universeId[i]) {
+                                    found1 = true
+                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}, "
+                                    return
+                                }
+                            })
+
+                            if (found1 == false) {
+                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}, "
+                            }
+                        }
+                        else {
+                            complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}, "
+                        }
+                    }
+                }
+            }
+        }
+        res.status(200).send("[" + complete + "]")
+    }
 })
 
+app.post("/Analytics/LogFile.ashx", (_, res) => {
+    res.status(200).end()
+})
 app.get("/v1/games/icons", (req, res) => {
     res.setHeader("cache-control", "no-cache")
 
@@ -7979,27 +8671,68 @@ app.post("/v1/batch", (req, res) => {
     for (var i = 0; i != Object.keys(req.body).length; i++) {
         if (req.body[i]["type"] == "AvatarHeadShot") {
             if (i + 1 == Object.keys(req.body).length) {
-                unfinishedstring = unfinishedstring + " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/HeadShot.ashx\", \"version\": \"TN3\" }"
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/HeadShot.ashx\", \"version\": \"TN3\" }"
             }
             else {
-                unfinishedstring = unfinishedstring + " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/HeadShot.ashx\", \"version\": \"TN3\" },"
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/HeadShot.ashx\", \"version\": \"TN3\" },"
             }
         }
         else if (req.body[i]["type"] == "GameIcon") {
-            if (i + 1 == Object.keys(req.body).length) {
-                unfinishedstring = unfinishedstring + " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/gameicon.png\", \"version\": \"TN3\" }"
+            if (filesystem.existsSync("./games.json")) {
+                var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+                var found = false
+                json.forEach((game) => {
+                    if (game["id"] == req.body[i]["targetId"]) {
+                        found = true
+                        if (filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".png")) {
+                            if (i + 1 == Object.keys(req.body).length) {
+                                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"version\": \"TN3\" }"
+                            }
+                            else {
+                                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"version\": \"TN3\" },"
+                            }
+                        }
+                        return
+                    }
+                })
+
+                if (found == false) {
+                    if (i + 1 == Object.keys(req.body).length) {
+                        unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/gameicon.png\", \"version\": \"TN3\" }"
+                    }
+                    else {
+                        unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/gameicon.png\", \"version\": \"TN3\" },"
+                    }
+                }
             }
             else {
-                unfinishedstring = unfinishedstring + " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/gameicon.png\", \"version\": \"TN3\" },"
+                if (i + 1 == Object.keys(req.body).length) {
+                    unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/gameicon.png\", \"version\": \"TN3\" }"
+                }
+                else {
+                    unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/gameicon.png\", \"version\": \"TN3\" },"
+                }
             }
         }
         else if (req.body[i]["type"] == "Asset") {
             if (i + 1 == Object.keys(req.body).length) {
-                unfinishedstring = unfinishedstring + " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + req.body[i]["targetId"] + "&wd=" + req.body[i]["size"].split("x")[0] + "&ht=" + req.body[i]["size"].split("x")[1] + "&fmt=png\", \"version\": \"TN3\" }"
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + req.body[i]["targetId"] + "&wd=" + req.body[i]["size"].split("x")[0] + "&ht=" + req.body[i]["size"].split("x")[1] + "&fmt=png\", \"version\": \"TN3\" }"
             }
             else {
-                unfinishedstring = unfinishedstring + " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + req.body[i]["targetId"] + "&wd=" + req.body[i]["size"].split("x")[0] + "&ht=" + req.body[i]["size"].split("x")[1] + "&fmt=png\", \"version\": \"TN3\" },"
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + req.body[i]["targetId"] + "&wd=" + req.body[i]["size"].split("x")[0] + "&ht=" + req.body[i]["size"].split("x")[1] + "&fmt=png\", \"version\": \"TN3\" },"
             }
+        }
+        else if (req.body[i]["type"] == "AutoGeneratedAsset") {
+            if (i + 1 == Object.keys(req.body).length) {
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + req.body[i]["targetId"] + "&wd=" + req.body[i]["size"].split("x")[0] + "&ht=" + req.body[i]["size"].split("x")[1] + "&fmt=png\", \"version\": \"TN3\" }"
+            }
+            else {
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://assetgame.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + req.body[i]["targetId"] + "&wd=" + req.body[i]["size"].split("x")[0] + "&ht=" + req.body[i]["size"].split("x")[1] + "&fmt=png\", \"version\": \"TN3\" },"
+            }
+        }
+        else {
+            console.log("\x1b[34m%s\x1b[0m", "<STUB> Unknown type: " + req.body[i]["type"])
         }
     }
     res.status(200).send(unfinishedstring + " ] }")
@@ -8023,6 +8756,9 @@ app.get("/v1/locales", (req, res) => {
 })
 
 app.get("/v1/game-localization-roles/games/:id/current-user/roles", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+
+    res.setHeader("content-type", "application/json; charset=utf-8")
     if (filesystem.existsSync("./games.json")) {
         var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
 
@@ -8040,13 +8776,16 @@ app.get("/v1/game-localization-roles/games/:id/current-user/roles", (req, res) =
         res.status(200).send("{\"data\": []}")
     }
 })
-app.get("/v2/users/:userid/groups/roles", (req, res) => {
+app.get("/v2/users/:userid/groups/roles", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\":[]}")
 })
 
 app.get("/v2/users/:id/inventory/:typeid", (_, res) => {
-    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}")
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+
+    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}") //STUB
 })
 
 app.use((req, res) => {

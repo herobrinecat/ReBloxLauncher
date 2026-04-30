@@ -179,9 +179,9 @@ namespace ReBloxLauncher.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("194")]
-        public int HeadColor {
+        public uint HeadColor {
             get {
-                return ((int)(this["HeadColor"]));
+                return ((uint)(this["HeadColor"]));
             }
             set {
                 this["HeadColor"] = value;
@@ -191,9 +191,9 @@ namespace ReBloxLauncher.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("194")]
-        public int TorsoColor {
+        public uint TorsoColor {
             get {
-                return ((int)(this["TorsoColor"]));
+                return ((uint)(this["TorsoColor"]));
             }
             set {
                 this["TorsoColor"] = value;
@@ -203,9 +203,9 @@ namespace ReBloxLauncher.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("194")]
-        public int RightArmColor {
+        public uint RightArmColor {
             get {
-                return ((int)(this["RightArmColor"]));
+                return ((uint)(this["RightArmColor"]));
             }
             set {
                 this["RightArmColor"] = value;
@@ -215,9 +215,9 @@ namespace ReBloxLauncher.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("194")]
-        public int RightLegColor {
+        public uint RightLegColor {
             get {
-                return ((int)(this["RightLegColor"]));
+                return ((uint)(this["RightLegColor"]));
             }
             set {
                 this["RightLegColor"] = value;
@@ -227,9 +227,9 @@ namespace ReBloxLauncher.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("194")]
-        public int LeftArmColor {
+        public uint LeftArmColor {
             get {
-                return ((int)(this["LeftArmColor"]));
+                return ((uint)(this["LeftArmColor"]));
             }
             set {
                 this["LeftArmColor"] = value;
@@ -239,9 +239,9 @@ namespace ReBloxLauncher.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("194")]
-        public int LeftLegColor {
+        public uint LeftLegColor {
             get {
-                return ((int)(this["LeftLegColor"]));
+                return ((uint)(this["LeftLegColor"]));
             }
             set {
                 this["LeftLegColor"] = value;

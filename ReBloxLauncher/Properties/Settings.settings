@@ -41,22 +41,22 @@
     <Setting Name="avatarR15" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="HeadColor" Type="System.Int32" Scope="User">
+    <Setting Name="HeadColor" Type="System.UInt32" Scope="User">
       <Value Profile="(Default)">194</Value>
     </Setting>
-    <Setting Name="TorsoColor" Type="System.Int32" Scope="User">
+    <Setting Name="TorsoColor" Type="System.UInt32" Scope="User">
       <Value Profile="(Default)">194</Value>
     </Setting>
-    <Setting Name="RightArmColor" Type="System.Int32" Scope="User">
+    <Setting Name="RightArmColor" Type="System.UInt32" Scope="User">
       <Value Profile="(Default)">194</Value>
     </Setting>
-    <Setting Name="RightLegColor" Type="System.Int32" Scope="User">
+    <Setting Name="RightLegColor" Type="System.UInt32" Scope="User">
       <Value Profile="(Default)">194</Value>
     </Setting>
-    <Setting Name="LeftArmColor" Type="System.Int32" Scope="User">
+    <Setting Name="LeftArmColor" Type="System.UInt32" Scope="User">
       <Value Profile="(Default)">194</Value>
     </Setting>
-    <Setting Name="LeftLegColor" Type="System.Int32" Scope="User">
+    <Setting Name="LeftLegColor" Type="System.UInt32" Scope="User">
       <Value Profile="(Default)">194</Value>
     </Setting>
     <Setting Name="EnableDataStore" Type="System.Boolean" Scope="User">
