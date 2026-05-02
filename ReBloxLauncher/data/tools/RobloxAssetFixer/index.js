@@ -4854,11 +4854,10 @@ app.get("/universes/get-info", (req, res) => {
         }
         else {
             res.status(200).send("{\"Name\":\"ReBlox Place\", \"Description\":\"A ReBlox place launched from the launcher\", \"RootPlace\":1, \"StudioAccessToApisAllowed\":true,\"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
+            return
         }
-    } else {
-        res.status(200).send("{\"Name\":\"ReBlox Place\", \"Description\":\"A ReBlox place launched from the launcher\", \"RootPlace\":1, \"StudioAccessToApisAllowed\":true,\"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
     }
-
+    res.status(200).send("{\"Name\":\"ReBlox Place\", \"Description\":\"A ReBlox place launched from the launcher\", \"RootPlace\":1, \"StudioAccessToApisAllowed\":true,\"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
 })
 
 app.get("/Game/LuaWebService/HandleSocialRequest.ashx", async (req, res) => {
