@@ -63,7 +63,7 @@ var duplicateBool = undefined // A check if the assets are duplicated
 var lastProductId = 0 //A number for /marketplace/validatepurchase
 var isInternetAvailable = false //A check variable for internet
 var isRobloxAvailable = false //In case Roblox is banned by your country/ISP!
-var RBDFTextFormat = false //Use an older format for RBDF (Not secured for sensitive informations, the magic number determines the format...)
+var RBDFTextFormat = false //Use an older format for RBDF (Not secured for sensitive information, the magic number determines the format...)
 var allowTCPLauncher = true //Allows communication between the server and the launcher via TCP, if you're not using the launcher or don't have the launcher, use --disableTCP
 var allowUploadFiles = false //Allows uploading of files to your computer (This could pose security risks to your computer, so it's disabled by default)
 var forceCanManageTrue = false //Forces the canmanage value to be true (Pre-0.0.1320 behavior)
@@ -206,16 +206,19 @@ function writeBinaryRBDF(path, content) {
 //writeBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", "<Badge userId=1038712 badgeId=58278772>")
 //readBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", 0)
 function trueRaw(req, res, next) {
-    const data = []
-
-    req.on('data', (chunk) => {
-        data.push(chunk)
-    })
-
-    req.on('end', () => {
-        req.body = Buffer.concat(data)
-        next()
-    })
+    if (req.headers["content-type"] == "*/*") {
+        req.body = new Promise(resolve => {
+            var buf = [];
+            req.on('data', x => buf.push(x));
+            req.on('end', () => {
+                resolve(Buffer.concat(buf));
+            });
+        });
+        next();
+    }
+    else {
+        next();
+    }
 }
 function isNumeric(str) {
     if (typeof str != "string") return false // we only process strings!  
@@ -493,8 +496,8 @@ async function checkInternet() {
 function getAsset(id, callback) {
     try {
         id = id.trim()
-        if (id.includes("www.roblox.com")) id = id.replace("http://www.roblox.com/asset/?id=", "");
-        if (id.includes("www.reblox.zip")) id = id.replace("http://www.reblox.zip/asset/?id=", "");
+        if (id.includes("www.roblox.com")) id = id.toLowerCase().replace("http://www.roblox.com/asset/?id=", "");
+        if (id.includes("www.reblox.zip")) id = id.toLowerCase().replace("http://www.reblox.zip/asset/?id=", "");
         if (notWorkingAssetIds.indexOf(id) > -1) {
             console.log("\x1b[33m%s\x1b[0m", "<WARN> Ignoring asset " + id + " assuming it's broken at this moment.")
             return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
@@ -535,19 +538,19 @@ function getAsset(id, callback) {
                                 var data = [], output
 
                                 if (res1.headers["content-encoding"] == "gzip") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const gzip = zlib.createGunzip()
                                     res1.pipe(gzip)
                                     output = gzip
                                 }
                                 else if (res.headers["content-encoding"] == "deflate") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const deflate = zlib.createDeflate()
                                     res1.pipe(deflate)
                                     output = deflate
                                 }
                                 else {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     output = res1
                                 }
 
@@ -632,19 +635,19 @@ function getAsset(id, callback) {
                                                             var data = [], output
 
                                                             if (res3.headers["content-encoding"] == "gzip") {
-                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (gzip compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (gzip compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                                                 const gzip = zlib.createGunzip()
                                                                 res3.pipe(gzip)
                                                                 output = gzip
                                                             }
                                                             else if (res3.headers["content-encoding"] == "deflate") {
-                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (deflate compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (deflate compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                                                 const deflate = zlib.createDeflate()
                                                                 res3.pipe(deflate)
                                                                 output = deflate
                                                             }
                                                             else {
-                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                                                 output = res3
                                                             }
 
@@ -726,19 +729,19 @@ function getAsset(id, callback) {
                                 var data = [], output
 
                                 if (res1.headers["content-encoding"] == "gzip") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const gzip = zlib.createGunzip()
                                     res1.pipe(gzip)
                                     output = gzip
                                 }
                                 else if (res.headers["content-encoding"] == "deflate") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const deflate = zlib.createDeflate()
                                     res1.pipe(deflate)
                                     output = deflate
                                 }
                                 else {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     output = res1
                                 }
 
@@ -976,19 +979,19 @@ app.get("/asset", (req, res) => {
                                 if (buffer.length < 60) {
                                     if (buffer.toString().startsWith("{\"errors\"")) {
                                         getAsset(req.query.id, (result) => {
-                                            if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                            if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                             res.send(result)
                                         })
                                         return
                                     }
                                     else {
-                                        if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                         res.status(res1.statusCode).send(buffer)
                                         return
                                     }
                                 }
                                 else {
-                                    if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -1002,7 +1005,136 @@ app.get("/asset", (req, res) => {
                 }
                 else {
                     getAsset(req.query.id, (result) => {
-                        if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                        res.send(result)
+                        return
+                    })
+                }
+            }
+        }
+    }
+    else if (isNumeric(req.query.ID)) {
+        var duplicatecount = 0
+        filesystem.readdirSync("./uploads").forEach(file => {
+            var splitted = file.split('.')
+            if (splitted[0] == req.query.ID.toString().trim()) {
+                if (verbose) {
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from uploads folder (Asset)")
+                }
+
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.ID.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from asset folder (Asset)")
+                    }
+
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
+                    }
+                    else {
+                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                        if (file.endsWith(".lua")) {
+                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                        }
+                        else {
+                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                        }
+                        assetfound = true
+                        return
+                    }
+
+                }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.ID + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.ID,
+                            method: "GET"
+                        }
+
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
+                            }
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
+                            }
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset)")
+                                }
+                                output = res1
+                            }
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.ID, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
+                                }
+                                else {
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                    res.status(res1.statusCode).send(buffer)
+                                    return
+                                }
+                            })
+                        })
+
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
+                }
+                else {
+                    getAsset(req.query.ID, (result) => {
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -1106,22 +1238,15 @@ app.get("/asset", (req, res) => {
                             })
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
-                                if (buffer.length < 60) {
-                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                        getAsset(req.query.id, (result) => {
-                                            if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                            res.send(result)
-                                        })
-                                        return
-                                    }
-                                    else {
-                                        if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.status(res1.statusCode).send(buffer)
-                                        return
-                                    }
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.ID, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
                                 }
                                 else {
-                                    if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -1135,7 +1260,7 @@ app.get("/asset", (req, res) => {
                 }
                 else {
                     getAsset(req.query.assetversionid, (result) => {
-                        if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -1252,22 +1377,15 @@ app.get("/asset/", (req, res) => {
                             })
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
-                                if (buffer.length < 60) {
-                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                        getAsset(req.query.id, (result) => {
-                                            if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                            res.send(result)
-                                        })
-                                        return
-                                    }
-                                    else {
-                                        if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.status(res1.statusCode).send(buffer)
-                                        return
-                                    }
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.ID, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
                                 }
                                 else {
-                                    if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -1281,7 +1399,136 @@ app.get("/asset/", (req, res) => {
                 }
                 else {
                     getAsset(req.query.id, (result) => {
-                        if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                        res.send(result)
+                        return
+                    })
+                }
+            }
+        }
+    }
+    else if (isNumeric(req.query.ID)) {
+        var duplicatecount = 0
+        filesystem.readdirSync("./uploads").forEach(file => {
+            var splitted = file.split('.')
+            if (splitted[0] == req.query.ID.toString().trim()) {
+                if (verbose) {
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from uploads folder (Asset)")
+                }
+
+                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                if (file.endsWith(".lua")) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                }
+                assetfound1 = true
+                return
+            }
+        })
+        if (assetfound1 == false) {
+            filesystem.readdirSync(assetfolder).forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.ID.toString().trim()) {
+                    if (verbose) {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from asset folder (Asset)")
+                    }
+
+                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
+                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                            duplicatecount++
+                            //do nothing for christ sake
+                        }
+                        else {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            if (file.endsWith(".lua")) {
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
+                            assetfound = true
+                            return
+                        }
+                    }
+                    else {
+                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                        if (file.endsWith(".lua")) {
+                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                        }
+                        else {
+                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                        }
+                        assetfound = true
+                        return
+                    }
+
+                }
+            })
+            if (assetfound == false) {
+                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.ID + "\"")
+                if (assetsFromServer && joining) {
+                    try {
+                        var options = {
+                            host: ip,
+                            port: 80,
+                            path: "/asset?id=" + req.query.ID,
+                            method: "GET"
+                        }
+
+                        http.get(options, (res1) => {
+                            var data = [], output
+                            if (res1.headers["content-encoding"] == 'gzip') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset) [gzip compression]")
+                                }
+                                var gzip = zlib.createGunzip()
+                                res1.pipe(gzip)
+                                output = gzip
+                            }
+                            else if (res1.headers["content-encoding"] == 'deflate') {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset) [deflate compression]")
+                                }
+                                var deflate = zlib.createDeflate()
+                                res1.pipe(deflate)
+                                output = deflate
+                            }
+                            else {
+                                if (verbose) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset)")
+                                }
+                                output = res1
+                            }
+                            output.on("data", (chunk) => {
+                                data.push(chunk)
+                            })
+                            output.on("end", () => {
+                                var buffer = Buffer.concat(data)
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.ID, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
+                                }
+                                else {
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                    res.status(res1.statusCode).send(buffer)
+                                    return
+                                }
+                            })
+                        })
+
+                    } catch {
+                        res.status(500).end()
+                        return
+                    }
+                }
+                else {
+                    getAsset(req.query.ID, (result) => {
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -1385,22 +1632,15 @@ app.get("/asset/", (req, res) => {
                             })
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
-                                if (buffer.length < 60) {
-                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                        getAsset(req.query.id, (result) => {
-                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                            res.send(result)
-                                        })
-                                        return
-                                    }
-                                    else {
-                                        if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.status(res1.statusCode).send(buffer)
-                                        return
-                                    }
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.id, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
                                 }
                                 else {
-                                    if (buffer.length < 60) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -1414,7 +1654,7 @@ app.get("/asset/", (req, res) => {
                 }
                 else {
                     getAsset(req.query.assetversionid, (result) => {
-                        if (result.length < 60) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -1532,22 +1772,15 @@ app.get("//asset/", (req, res) => {
                             })
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
-                                if (buffer.length < 56) {
-                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                        getAsset(req.query.id, (result) => {
-                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                            res.send(result)
-                                        })
-                                        return
-                                    }
-                                    else {
-                                        if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.status(res1.statusCode).send(buffer)
-                                        return
-                                    }
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.id, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
                                 }
                                 else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -1561,7 +1794,7 @@ app.get("//asset/", (req, res) => {
                 }
                 else {
                     getAsset(req.query.id, (result) => {
-                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -1665,22 +1898,16 @@ app.get("//asset/", (req, res) => {
                             })
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
-                                if (buffer.length < 56) {
-                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                        getAsset(req.query.id, (result) => {
-                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                            res.send(result)
-                                        })
-                                        return
-                                    }
-                                    else {
-                                        if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.status(res1.statusCode).send(buffer)
-                                        return
-                                    }
+
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.id, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
                                 }
                                 else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -1694,7 +1921,7 @@ app.get("//asset/", (req, res) => {
                 }
                 else {
                     getAsset(req.query.assetversionid, (result) => {
-                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -1811,23 +2038,15 @@ app.get("/v1/asset", (req, res) => {
                             })
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
-                                if (buffer.length < 60) {
-                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                        getAsset(req.query.id, (result) => {
-                                            var statusCode = 200
-                                            if (result.length < 60) { if (result.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); statusCode = 500 } }
-                                            res.status(statusCode).send(result)
-                                        })
-                                        return
-                                    }
-                                    else {
-                                        if (buffer.length < 60) { if (result.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.status(res1.statusCode).send(buffer)
-                                        return
-                                    }
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.id, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
                                 }
                                 else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -1841,7 +2060,7 @@ app.get("/v1/asset", (req, res) => {
                 }
                 else {
                     getAsset(req.query.id, (result) => {
-                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -1945,22 +2164,16 @@ app.get("/v1/asset", (req, res) => {
                             })
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
-                                if (buffer.length < 56) {
-                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                        getAsset(req.query.id, (result) => {
-                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                            res.send(result)
-                                        })
-                                        return
-                                    }
-                                    else {
-                                        if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.status(res1.statusCode).send(buffer)
-                                        return
-                                    }
+
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.id, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
                                 }
                                 else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -1974,7 +2187,7 @@ app.get("/v1/asset", (req, res) => {
                 }
                 else {
                     getAsset(req.query.assetversionid, (result) => {
-                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -2094,20 +2307,19 @@ app.get("/v1/asset/", (req, res) => {
                                 if (buffer.length < 60) {
                                     if (buffer.toString().startsWith("{\"errors\":")) {
                                         getAsset(req.query.id, (result) => {
-                                            var statusCode = 200
-                                            if (result.length < 60) { if (result.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); statusCode = 500 } }
-                                            res.status(statusCode).send(result)
+                                            if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; statusCode = 400; }
+                                            res.send(result)
                                         })
                                         return
                                     }
                                     else {
-                                        if (buffer.length < 60) { if (result.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                        if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                         res.status(res1.statusCode).send(buffer)
                                         return
                                     }
                                 }
                                 else {
-                                    if (buffer.length < 60) { if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -2121,7 +2333,7 @@ app.get("/v1/asset/", (req, res) => {
                 }
                 else {
                     getAsset(req.query.id, (result) => {
-                        if (result.length < 60) { if (result.toString().startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -2225,22 +2437,15 @@ app.get("/v1/asset/", (req, res) => {
                             })
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
-                                if (buffer.length < 56) {
-                                    if (buffer.toString() == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") {
-                                        getAsset(req.query.id, (result) => {
-                                            if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                            res.send(result)
-                                        })
-                                        return
-                                    }
-                                    else {
-                                        if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
-                                        res.status(res1.statusCode).send(buffer)
-                                        return
-                                    }
+                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
+                                    getAsset(req.query.id, (result) => {
+                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.send(result)
+                                    })
+                                    return
                                 }
                                 else {
-                                    if (buffer.length < 56) { if (Buffer.from(buffer, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                     res.status(res1.statusCode).send(buffer)
                                     return
                                 }
@@ -2254,7 +2459,7 @@ app.get("/v1/asset/", (req, res) => {
                 }
                 else {
                     getAsset(req.query.assetversionid, (result) => {
-                        if (result.length < 56) { if (Buffer.from(result, "utf8") == "{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}") { res.removeHeader("Content-disposition"); } }
+                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
                     })
@@ -2970,23 +3175,50 @@ app.get("/v1/places/:id/symbolic-links", (req, res) => {
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}")
 })
 
-app.post("/Data/Upload.ashx", (req, res) => {
+app.post("/Data/Upload.ashx", trueRaw, async (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (isNumeric(req.query.assetid)) {
         if (allowUploadFiles) {
             if (req.body != undefined) {
-                if (filesystem.existsSync("./uploads")) {
-                    if (filesystem.existsSync("./uploads/" + req.query.assetid)) {
-                        filesystem.unlinkSync("./uploads/" + req.query.assetid)
-                        filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+                if (req.headers["content-type"] == "*/*") {
+                    var data = Buffer.from([0x00])
+                    if (req.headers["content-encoding"] == "gzip") {
+                        data = zlib.gunzipSync(await req.body)
+                    }
+                    else if (req.headers["content-encoding"] == "inflate") {
+                        data = zlib.deflateSync(await req.body)
                     }
                     else {
-                        filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+                        data = await req.body
+                    }
+                    if (filesystem.existsSync("./uploads")) {
+                        if (filesystem.existsSync("./uploads/" + req.query.assetid)) {
+                            filesystem.unlinkSync("./uploads/" + req.query.assetid)
+                            filesystem.writeFileSync("./uploads/" + req.query.assetid, data)
+                        }
+                        else {
+                            filesystem.writeFileSync("./uploads/" + req.query.assetid, data)
+                        }
+                    }
+                    else {
+                        filesystem.mkdirSync("./uploads")
+                        filesystem.writeFileSync("./uploads/" + req.query.assetid, data)
                     }
                 }
                 else {
-                    filesystem.mkdirSync("./uploads")
-                    filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+                    if (filesystem.existsSync("./uploads")) {
+                        if (filesystem.existsSync("./uploads/" + req.query.assetid)) {
+                            filesystem.unlinkSync("./uploads/" + req.query.assetid)
+                            filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+                        }
+                        else {
+                            filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+                        }
+                    }
+                    else {
+                        filesystem.mkdirSync("./uploads")
+                        filesystem.writeFileSync("./uploads/" + req.query.assetid, req.body)
+                    }
                 }
             }
             else {
@@ -3638,7 +3870,7 @@ app.get("/v1/universes/:id/configuration", (req, res) => {
             gamesjson.forEach((game) => {
                 if (game["id"] == req.params.id) {
                     found = true
-                    res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": " + game["isArchived"] + ", \"isFriendsOnly\": " + game["isFriendsOnly"] + ", \"genre\": \"" + game["genre"] + "\", \"playableDevices\": " + JSON.stringify(game["playableDevices"]) + ", \"isForSale\": false, \"price\": 0, \"studioAccessToApisAllowed\": " + game["studioAccessToApisAllowed"] + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"" + game["privacyType"] + "\", \"fiatModerationStatus\": \"NotModerated\"}")
+                    res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": " + game["isArchived"] + ", \"isFriendsOnly\": " + game["isFriendsOnly"] + ", \"genre\": \"" + game["genre"] + "\", \"playableDevices\": " + JSON.stringify(game["playableDevices"]) + ", \"isForSale\": false, \"price\": 0, \"studioAccessToApisAllowed\": " + game["studioAccessToApisAllowed"] + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"" + game["privacyType"] + "\", \"fiatModerationStatus\": \"NotModerated\"}")
                     return
                 }
             })
@@ -3662,7 +3894,7 @@ app.get("/v2/universes/:id/configuration", (req, res) => {
             gamesjson.forEach((game) => {
                 if (game["id"] == req.params.id) {
                     found = true
-                    res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": " + game["isArchived"] + ", \"isFriendsOnly\": " + game["isFriendsOnly"] + ", \"genre\": \"" + game["genre"] + "\", \"playableDevices\": " + JSON.stringify(game["playableDevices"]) + ", \"isForSale\": false, \"price\": 0, \"studioAccessToApisAllowed\": " + game["studioAccessToApisAllowed"] + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"" + game["privacyType"] + "\", \"fiatModerationStatus\": \"NotModerated\"}")
+                    res.status(200).send("{\"id\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"universeAvatarType\": \"PlayerChoice\", \"universeScaleType\": \"AllScales\",\"universeAnimationType\": \"PlayerChoice\", \"universeCollisionType\": \"OuterBox\", \"universeBodyType\": \"Standard\", \"universeJointPositioningType\": \"ArtistIntent\", \"isArchived\": " + game["isArchived"] + ", \"isFriendsOnly\": " + game["isFriendsOnly"] + ", \"genre\": \"" + game["genre"] + "\", \"playableDevices\": " + JSON.stringify(game["playableDevices"]) + ", \"isForSale\": false, \"price\": 0, \"studioAccessToApisAllowed\": " + game["studioAccessToApisAllowed"] + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"privacyType\": \"" + game["privacyType"] + "\", \"fiatModerationStatus\": \"NotModerated\"}")
                     return
                 }
             })
@@ -4457,8 +4689,8 @@ app.get("/v1/search/universes", (req, res) => {
 
                 if (json.length > 0) {
                     json.forEach((game) => {
-                        if (game["name"].toLowerCase().includes(ogwithoutcreator.toLowerCase()) || ((splitted[1].split(':')[1] != undefined ? splitted[1].split(':')[1].toLowerCase() : "") == game["isArchived"].toString() && splitted.length == 2)) {
-                            data.push(JSON.parse("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}"))
+                        if ((game["name"].toLowerCase().includes(ogwithoutcreator.toLowerCase()) || ((splitted[1].split(':')[1] != undefined ? splitted[1].split(':')[1].toLowerCase() : "") == game["isArchived"].toString() && splitted.length == 2)) && game["creatorTargetId"] == userId) {
+                            data.push(JSON.parse("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}"))
                         }
                     })
                     res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":" + JSON.stringify(data) + "}")
@@ -4499,7 +4731,9 @@ app.get("/v1/search/universes", (req, res) => {
 
                 if (json.length > 0) {
                     json.forEach((game) => {
-                        data.push(JSON.parse("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}"))
+                        if (game["creatorTargetId"] == userId) {
+                            data.push(JSON.parse("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}"))
+                        }
                     })
                     res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":" + JSON.stringify(data) + "}")
                 }
@@ -4569,7 +4803,7 @@ app.get("/v1/universes/:id/places", (req, res) => {
             }
         }
     }
-    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[{\"id\": 1818, \"universeId\": " + req.params.id + ", \"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\"}]}")
+    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[{}]}")
 })
 
 app.get("/places/icons/json", (req, res) => {
@@ -4578,35 +4812,84 @@ app.get("/places/icons/json", (req, res) => {
 
 app.get("/v1/games/multiget-place-details", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
     var splitted = req.query.placeIds.split(',')
     var edited = ""
 
-    var templatesjson = {}
-    if (filesystem.existsSync("gametemplates.json")) templatesjson = JSON.parse("{\"data\":[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}")
-    splitted.forEach((id) => {
-        if (templatesjson.length > 0) {
-            if (templatesjson["data"].length > 0) {
-                templatesjson.forEach((template) => {
-                    if (template["universe"]["rootPlaceId"] == id) {
-                        if (id == splitted[splitted.length - 1]) {
-                            edited += "{\"placeId\": " + id + ",\"name\": \"" + template["universe"]["name"] + "\", \"description\": \"" + template["universe"]["description"] + "\", \"sourceName\": \"" + template["universe"]["name"] + "\", \"sourceDescription\": \"" + template["universe"]["description"] + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["universe"]["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["universe"]["creatorName"] + "\", \"builderId\": " + template["universe"]["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["universe"]["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+    var templatesjson = []
+    var gamesjson = []
+    if (filesystem.existsSync("./gametemplates.json")) templatesjson = JSON.parse("{\"data\":[" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}");
+    if (filesystem.existsSync("./games.json")) gamesjson = JSON.parse(filesystem.readFileSync("./games.json", "utf8"));
+    if (typeof (req.query.placeIds) == "string") {
+        splitted.forEach((id) => {
+            var found = false
+            var found1 = false
+            if (templatesjson.length > 0) {
+                if (templatesjson["data"].length > 0) {
+                    templatesjson.forEach((template) => {
+                        if (template["universe"]["rootPlaceId"] == id) {
+                            found = true
+                            if (id == splitted[splitted.length - 1]) {
+                                edited += "{\"placeId\": " + id + ",\"name\": \"" + template["universe"]["name"] + "\", \"description\": \"" + template["universe"]["description"] + "\", \"sourceName\": \"" + template["universe"]["name"] + "\", \"sourceDescription\": \"" + template["universe"]["description"] + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["universe"]["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["universe"]["creatorName"] + "\", \"builderId\": " + template["universe"]["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["universe"]["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+                            }
+                            else {
+                                edited += "{\"placeId\": " + id + ",\"name\": \"" + template["universe"]["name"] + "\", \"description\": \"" + template["universe"]["description"] + "\", \"sourceName\": \"" + template["universe"]["name"] + "\", \"sourceDescription\": \"" + template["universe"]["description"] + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["universe"]["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["universe"]["creatorName"] + "\", \"builderId\": " + template["universe"]["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["universe"]["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+                            }
+                            return
                         }
-                        else {
-                            edited += "{\"placeId\": " + id + ",\"name\": \"" + template["universe"]["name"] + "\", \"description\": \"" + template["universe"]["description"] + "\", \"sourceName\": \"" + template["universe"]["name"] + "\", \"sourceDescription\": \"" + template["universe"]["description"] + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["universe"]["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["universe"]["creatorName"] + "\", \"builderId\": " + template["universe"]["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["universe"]["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+                    })
+                    if (found == false) {
+                        if (gamesjson.length > 0) {
+                            gamesjson.forEach((template) => {
+                                if (template["rootPlaceId"] == id) {
+                                    found1 = true
+                                    if (id == splitted[splitted.length - 1]) {
+                                        edited += "{\"placeId\": " + id + ",\"name\": \"" + template["name"] + "\", \"description\": \"" + template["description"].replace(new RegExp("\r\n"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"sourceName\": \"" + template["name"] + "\", \"sourceDescription\": \"" + template["description"].replace(new RegExp("\r\n"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\\\"", "g"), "\\\\\\\"") + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["creatorName"] + "\", \"builderId\": " + template["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+                                    }
+                                    else {
+                                        edited += "{\"placeId\": " + id + ",\"name\": \"" + template["name"] + "\", \"description\": \"" + template["description"].replace(new RegExp("\r\n"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"sourceName\": \"" + template["name"] + "\", \"sourceDescription\": \"" + template["description"].replace(new RegExp("\r\n"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["creatorName"] + "\", \"builderId\": " + template["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+                                    }
+                                    return
+                                }
+                            })
+                            if (found1 == false) {
+                                if (id == splitted[splitted.length - 1]) {
+                                    edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"ReBlox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+                                }
+                                else {
+                                    edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"ReBlox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+                                }
+                            }
                         }
                     }
-                })
-            }
-        }
-        else {
-            if (id == splitted[splitted.length - 1]) {
-                edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"ReBlox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+                }
             }
             else {
-                edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"ReBlox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+                if (gamesjson.length > 0) {
+                    gamesjson.forEach((template) => {
+                        if (template["rootPlaceId"] == id) {
+                            found1 = true
+                            if (id == splitted[splitted.length - 1]) {
+                                edited += "{\"placeId\": " + id + ",\"name\": \"" + template["name"] + "\", \"description\": \"" + template["description"].replace(new RegExp("\r\n"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"sourceName\": \"" + template["name"] + "\", \"sourceDescription\": \"" + template["description"].replace(new RegExp("\r\n"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["creatorName"] + "\", \"builderId\": " + template["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+                            }
+                            else {
+                                edited += "{\"placeId\": " + id + ",\"name\": \"" + template["name"] + "\", \"description\": \"" + template["description"].replace(new RegExp("\r\n"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"sourceName\": \"" + template["name"] + "\", \"sourceDescription\": \"" + template["description"].replace(new RegExp("\r\n"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"url\": \"http://www.reblox.zip/games/" + id + "/" + template["name"].replace(new RegExp(" ", "g"), "-") + "\", \"builder\": \"" + template["creatorName"] + "\", \"builderId\": " + template["creatorTargetId"] + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": " + template["id"] + ", \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+                            }
+                            return
+                        }
+                    })
+                    if (found1 == false) {
+                        if (id == splitted[splitted.length - 1]) {
+                            edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"ReBlox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"}"
+                        }
+                        else {
+                            edited += "{\"placeId\": " + id + ",\"name\": \"ReBlox Place\", \"description\": \"A place that's on ReBlox.\", \"sourceName\": \"ReBlox Place\", \"sourceDescription\": \"A place that's on ReBlox\", \"url\": \"http://www.reblox.zip/games/" + id + "/ReBlox-Place\", \"builder\": \"" + username + "\", \"builderId\": " + userId + ", \"hasVerifiedBadge\": false, \"isPlayable\": true, \"reasonProhibited\": \"None\", \"universeId\": 2, \"universeRootPlaceId\": " + id + ", \"price\": 0, \"imageToken\": \"T_" + id + "_fb22\"},"
+                        }
+                    }
+                }
             }
-        }
-    })
+        })
+    }
 
     res.status(200).send("[" + edited + "]")
 })
@@ -4704,7 +4987,7 @@ app.get("/v2/universes/:id/places", (req, res) => {
         gamesjson.forEach((game) => {
             if (game["id"] == req.params.id) {
                 found = true
-                res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"maxPlayerCount\": 50, \"socialSlotType\": \"Automatic\", \"customSocialSlotsCount\": 15, \"allowCopying\": false, \"currentSavedVersion\":1,\"isAllGenresAllowed\": null, \"allowedGearTypes\": null, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"id\": " + game["rootPlaceId"] + ", \"universeId\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"isRootPlace\": true}]}")
+                res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": [{\"maxPlayerCount\": 50, \"socialSlotType\": \"Automatic\", \"customSocialSlotsCount\": 15, \"allowCopying\": false, \"currentSavedVersion\":1,\"isAllGenresAllowed\": null, \"allowedGearTypes\": null, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"id\": " + game["rootPlaceId"] + ", \"universeId\": " + req.params.id + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"isRootPlace\": true}]}")
                 return
             }
         })
@@ -4784,14 +5067,22 @@ app.get("/v1/universes/:id/badges", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}")
 })
+
 app.get("/v1/users/:id/currency", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"robux\": " + robux + "}")
 })
+
 app.get("/v1/universes/:id/symbolic-links", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
 })
+
+app.post("/v1/places/:id/symbolic-links", (_, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+})
+
 app.get("/universes/get-aliases", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"FinalPage\": true, \"Aliases\": [], \"PageSize\": 50}")
@@ -4847,7 +5138,7 @@ app.get("/universes/get-info", (req, res) => {
         if (json.length > 0) {
             for (var i = 0; i < json.length; i++) {
                 if (json[i]["rootPlaceId"] == req.query.placeId) {
-                    res.status(200).send("{\"Name\":\"" + json[i]["name"] + "\", \"Description\":\"" + json[i]["description"] + "\", \"RootPlace\":" + json[i]["rootPlaceId"] + ", \"StudioAccessToApisAllowed\":" + json[i]["studioAccessToApisAllowed"] + ", \"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
+                    res.status(200).send("{\"Name\":\"" + json[i]["name"] + "\", \"Description\":\"" + json[i]["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"RootPlace\":" + json[i]["rootPlaceId"] + ", \"StudioAccessToApisAllowed\":" + json[i]["studioAccessToApisAllowed"] + ", \"CurrentUserHasEditPermissions\":true,\"UniverseAvatarType\":\"PlayerChoice\"}")
                     return
                 }
             }
@@ -5260,7 +5551,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
                         return
                     }
                     else {
-                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.now()).toISOString() + "\">\r\n")
+                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.UTC()).toISOString() + "\">\r\n")
                     }
 
                 }
@@ -5270,7 +5561,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
             }
             else {
                 filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
-                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.now()).toISOString() + "\">\r\n")
+                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.UTC()).toISOString() + "\">\r\n")
             }
         }
         if (isNumeric(req.query.BadgeID)) {
@@ -5278,7 +5569,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
             var jsonresult = JSON.parse(file)
             if (jsonresult[req.query.BadgeID.toString()] != undefined) {
                 getUsernameFromMemory(req.query.UserID).then((usernameresult) => {
-                    res.send(usernameresult + " won " + username + "'s " + jsonresult[req.query.BadgeID.toString()])
+                    res.send(usernameresult + " won " + username + "'s \"" + jsonresult[req.query.BadgeID.toString()] + "\" award!")
                 })
                 sent = true
                 return
@@ -5305,7 +5596,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
                                     sent = true
                                 }
                                 else {
-                                    if (sent == false) res.send(usernameresult + " won " + username + "'s Stub Badge Name")
+                                    if (sent == false) res.send(usernameresult + " won " + username + "'s \"Stub Badge Name\" award!")
                                 }
                             })
                         })
@@ -5313,7 +5604,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
                 }
                 else {
                     getUsernameFromMemory(req.query.userId).then((usernameresult) => {
-                        if (sent == false) res.send(usernameresult + " won " + username + "'s Stub Badge Name")
+                        if (sent == false) res.send(usernameresult + " won " + username + "'s \"Stub Badge Name\" award!")
                         sent = true
                     })
                 }
@@ -5437,11 +5728,11 @@ app.post("/assets/award-badge", async (req, res) => {
                             var jsoninfo1 = JSON.parse(infoiresult)
                             getUsernameFromMemory(req.query.userId).then((usernameresult) => {
                                 if (jsoninfo1["name"] != undefined) {
-                                    res.send(usernameresult + " won " + username + "'s " + jsoninfo1["name"])
+                                    res.send(usernameresult + " won " + username + "'s \"" + jsoninfo1["name"] + "\" award!")
                                     sent = true
                                 }
                                 else {
-                                    if (sent == false) res.send(usernameresult + " won " + username + "'s Stub Badge Name")
+                                    if (sent == false) res.send(usernameresult + " won " + username + "'s \"Stub Badge Name\" award!")
                                 }
                             })
                         })
@@ -5450,7 +5741,7 @@ app.post("/assets/award-badge", async (req, res) => {
             }
             else {
                 getUsernameFromMemory(req.query.userId).then((usernameresult) => {
-                    if (sent == false) res.send(usernameresult + " won " + username + "'s Stub Badge Name")
+                    if (sent == false) res.send(usernameresult + " won " + username + "'s \"Stub Badge Name\" award!")
                     sent = true
                 })
             }
@@ -5635,6 +5926,11 @@ app.patch("/v1/places/:placeId", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var found = false
     var found1 = false
+    var oldname = ""
+    var olddescription = ""
+    var oldApiAccess = false
+
+
     if (filesystem.existsSync("./gametemplates.json")) {
         var jsondata = JSON.parse("{\"data\": [" + filesystem.readFileSync("./gametemplates.json", "utf8") + "]}")
 
@@ -5655,12 +5951,48 @@ app.patch("/v1/places/:placeId", (req, res) => {
     if (found1 == false) {
         if (filesystem.existsSync("./games.json")) {
             var jsondata = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+            var marketplacejson = JSON.parse(filesystem.readFileSync("./marketplace.json", "utf8"))
 
             if (jsondata.length > 0) {
-                jsondata.forEach((game) => {
-                    if (game["rootPlaceId"] == req.query.placeId) {
+                for (var i = 0; i < jsondata.length; i++) {
+                    if (jsondata[i]["rootPlaceId"] == req.params.placeId) {
                         found = true
-                        res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": " + game["id"] + ", \"name\": \"" + req.body.name + "\", \"description\": \"" + req.body.description + "\"}")
+                        oldname = jsondata[i]["name"]
+                        olddescription = jsondata[i]["description"]
+                        oldApiAccess = jsondata[i]["studioAccessToApisAllowed"]
+                        jsondata[i]["updated"] = new Date(Date.now()).toISOString()
+                        var keys = Object.keys(req.body)
+
+                        for (var x = 0; x < keys.length; x++) {
+                            if (jsondata[i][keys[x]] != undefined) {
+                                jsondata[i][keys[x]] = req.body[keys[x]]
+
+                            }
+                        }
+                        break
+                    }
+                }
+                for (var i = 0; i < marketplacejson.length; i++) {
+                    if (marketplacejson[i]["id"] == req.params.placeId) {
+                        if (req.body.name != undefined) marketplacejson[i]["name"] = (req.body.name != undefined ? req.body.name : oldname)
+                        if (req.body.description != undefined) marketplacejson[i]["description"] = (req.body.description != undefined ? req.body.description : olddescription)
+                        break
+                    }
+                }
+
+                var jsondatarecompiled = JSON.stringify(jsondata, null, 4)
+                var marketplacerecompiled = JSON.stringify(marketplacejson, null, 4)
+
+                filesystem.unlinkSync("./games.json")
+                filesystem.unlinkSync("./marketplace.json")
+
+                filesystem.writeFileSync("./games.json", jsondatarecompiled)
+                filesystem.writeFileSync("./marketplace.json", marketplacerecompiled)
+
+                jsondata.forEach((game) => {
+                    if (game["rootPlaceId"] == req.params.placeId) {
+                        found = true
+                        res.status(200).send("{\"id\": " + req.params.placeId + ", \"universeId\": " + game["id"] + ", \"name\": \"" + (req.body.name != undefined ? req.body.name : oldname) + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : olddescription).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\"}")
                         return
                     }
                 })
@@ -5681,6 +6013,7 @@ app.patch("/v1/universes/:id/configuration", (req, res) => {
         var placeid = 1818
         var oldname = ""
         var olddescription = ""
+        var oldApiAccess = false
 
         if (jsondata.length > 0) {
             for (var i = 0; i < jsondata.length; i++) {
@@ -5689,6 +6022,7 @@ app.patch("/v1/universes/:id/configuration", (req, res) => {
                     placeid = jsondata[i]["rootPlaceId"]
                     oldname = jsondata[i]["name"]
                     olddescription = jsondata[i]["description"]
+                    oldApiAccess = jsondata[i]["studioAccessToApisAllowed"]
                     jsondata[i]["updated"] = new Date(Date.now()).toISOString()
                     var keys = Object.keys(req.body)
 
@@ -5717,13 +6051,13 @@ app.patch("/v1/universes/:id/configuration", (req, res) => {
 
             filesystem.writeFileSync("./games.json", jsondatarecompiled)
             filesystem.writeFileSync("./marketplace.json", marketplacerecompiled)
-            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": " + placeid + ", \"name\": \"" + (req.body.name != undefined ? req.body.name : oldname) + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") : olddescription.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n")) + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": " + placeid + ", \"name\": \"" + (req.body.name != undefined ? req.body.name : oldname) + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : olddescription) + "\", \"studioAccessToApisAllowed\": " + (req.body.studioAccessToApisAllowed != undefined ? req.body.studioAccessToApisAllowed : oldApiAccess) + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
         }
         else {
-            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : "") + "\", \"studioAccessToApisAllowed\": " + (req.body.studioAccessToApisAllowed != undefined ? req.body.studioAccessToApisAllowed : "true") + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
         }
     }
-    if (found == false) res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+    if (found == false) res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description : "") + "\", \"studioAccessToApisAllowed\": " + (req.body.studioAccessToApisAllowed != undefined ? req.body.studioAccessToApisAllowed : "true") + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
 })
 
 app.patch("/v2/universes/:id/configuration", (req, res) => {
@@ -5734,6 +6068,7 @@ app.patch("/v2/universes/:id/configuration", (req, res) => {
         var placeid = 1818
         var oldname = ""
         var olddescription = ""
+        var oldApiAccess = false
 
         if (jsondata.length > 0) {
             for (var i = 0; i < jsondata.length; i++) {
@@ -5742,6 +6077,7 @@ app.patch("/v2/universes/:id/configuration", (req, res) => {
                     placeid = jsondata[i]["rootPlaceId"]
                     oldname = jsondata[i]["name"]
                     olddescription = jsondata[i]["description"]
+                    oldApiAccess = jsondata[i]["studioAccessToApisAllowed"]
                     jsondata[i]["updated"] = new Date(Date.now()).toISOString()
                     var keys = Object.keys(req.body)
 
@@ -5770,13 +6106,13 @@ app.patch("/v2/universes/:id/configuration", (req, res) => {
 
             filesystem.writeFileSync("./games.json", jsondatarecompiled)
             filesystem.writeFileSync("./marketplace.json", marketplacerecompiled)
-            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": " + placeid + ", \"name\": \"" + (req.body.name != undefined ? req.body.name : oldname) + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") : olddescription.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n")) + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": " + placeid + ", \"name\": \"" + (req.body.name != undefined ? req.body.name : oldname) + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") : olddescription.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")) + "\", \"studioAccessToApisAllowed\": " + (req.body.studioAccessToApisAllowed != undefined ? req.body.studioAccessToApisAllowed : oldApiAccess) + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
         }
         else {
-            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+            res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"studioAccessToApisAllowed\": " + (req.body.studioAccessToApisAllowed != undefined ? req.body.studioAccessToApisAllowed : "true") + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
         }
     }
-    if (found == false) res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") : "") + "\", \"studioAccessToApisAllowed\": true, \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
+    if (found == false) res.status(200).send("{\"allowPrivateServers\": true, \"privateServerPrice\": 0, \"id\": 1818, \"name\": \"" + (req.body.name != undefined ? req.body.name : "") + "\", \"description\": \"" + (req.body.description != undefined ? req.body.description.replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") : "") + "\", \"studioAccessToApisAllowed\": " + (req.body.studioAccessToApisAllowed != undefined ? req.body.studioAccessToApisAllowed : "true") + ", \"permissions\": { \"IsThirdPartyTeleportAllowed\": true, \"IsThirdPartyAssetAllowed\": true, \"IsThirdPartyPurchaseAllowed\": true, \"IsClientTeleportAllowed\": true }, \"universeAvatarMinScales\": {\"height\": 0.9, \"width\": 0.7, \"head\": 0.95, \"depth\": 0, \"proportion\": 0, \"bodyType\": 0}, \"universeAvatarMaxScales\": {\"height\": 1.05, \"width\": 1, \"head\": 1, \"depth\": 1, \"proportion\": 1, \"bodyType\": 1}, \"isArchived\": false}")
 })
 
 app.post("/v1/autolocalization/games/:id/autolocalizationtable", (req, res) => {
@@ -6003,7 +6339,7 @@ app.get("/marketplace/productdetails", (req, res) => {
             if (asset["id"] != undefined) {
                 if (asset["id"] == req.query.productId) {
                     if (isNumeric(req.query.productId)) {
-                        res.status(200).send("{\"TargetId\":" + req.query.productId + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.query.productId + ", \"ProductId\":" + req.query.productId + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "").replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+                        res.status(200).send("{\"TargetId\":" + req.query.productId + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.query.productId + ", \"ProductId\":" + req.query.productId + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"").replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
                         sent = true
                         return
                     }
@@ -6042,7 +6378,7 @@ app.get("/v2/assets/:id/details", (req, res) => {
             if (asset["id"] != undefined) {
                 if (asset["id"] == req.params.id) {
                     if (isNumeric(req.params.id)) {
-                        res.status(200).send("{\"TargetId\":" + req.params.id + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.params.id + ", \"ProductId\":" + req.params.id + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "").replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+                        res.status(200).send("{\"TargetId\":" + req.params.id + ", \"ProductType\":\"User Product\", \"AssetId\":" + req.params.id + ", \"ProductId\":" + req.params.id + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"").replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
                         sent = true
                         return
                     }
@@ -6269,7 +6605,7 @@ app.get("/v1/name-description/games/:id", (req, res) => {
                     jsondata.forEach((game) => {
                         if (game["id"] == req.params.id) {
                             found = true
-                            res.status(200).send("{\"data\": [{\"name\":\"" + game["name"] + "\", \"description\":\"" + game + "\", \"updateType\": null, \"languageCode\": \"en\"}]}")
+                            res.status(200).send("{\"data\": [{\"name\":\"" + game["name"] + "\", \"description\":\"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"updateType\": null, \"languageCode\": \"en\"}]}")
                             return
                         }
                     })
@@ -6477,7 +6813,7 @@ app.get("/marketplace/game-pass-product-info", (req, res) => {
             if (asset["id"] != undefined) {
                 if (asset["id"] == req.query.gamePassId) {
                     if (isNumeric(req.query.gamePassId)) {
-                        res.status(200).send("{\"TargetId\":" + req.query.gamePassId + ", \"ProductType\":\"Game Pass\", \"AssetId\":" + req.query.gamePassId + ", \"ProductId\":" + req.query.gamePassId + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g"), "\\\"") : "").replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
+                        res.status(200).send("{\"TargetId\":" + req.query.gamePassId + ", \"ProductType\":\"Game Pass\", \"AssetId\":" + req.query.gamePassId + ", \"ProductId\":" + req.query.gamePassId + ",\"Name\":\"" + ((asset["name"] != undefined) ? asset["name"] : "Stub Place/Product Name") + "\",\"Description\":\"" + ((asset["description"] != undefined) ? asset["description"].replace(new RegExp("\"", "g").replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\""), "\\\"") : "") + "\", \"AssetTypeId\":" + ((asset["assetType"] != undefined && typeof (asset["assetType"]) == "number") ? asset["assetType"] : "34") + ", \"Creator\": {\"Id\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + ", \"Name\":\"" + (asset["creatorName"] != undefined ? asset["creatorName"] : username) + "\", \"CreatorType\":\"User\",\"CreatorTargetId\":" + (asset["creatorTargetId"] != undefined ? asset["creatorTargetId"] : userId) + "}, \"IconImageAssetId\":" + ((asset["imageId"] != undefined && typeof (asset["imageId"]) == "number") ? asset["imageId"] : "133293265") + ",\"Created\":\"2013-10-31T18:39:46.763Z\",\"Updated\":\"2016-10-02T01:06:11.017Z\",\"PriceInRobux\":" + ((asset["robux"] != undefined && asset["robux"] > -1) ? asset["robux"] : "0") + ",\"PriceInTickets\":null, \"Sales\":2763, \"IsNew\":false,\"IsForSale\":true,\"IsPublicDomain\":false,\"IsLimited\":false,\"IsLimitedUnique\":false, \"Remaining\":null, \"MinimumMembershipLevel\":0, \"ContentRatingTypeId\":0}")
                         sent = true
                     }
                     else {
@@ -6641,7 +6977,7 @@ app.get("/v1/universes/multiget", (req, res) => {
         var result = ""
         gamesjson.forEach((game) => {
             if (ids.includes(game["id"].toString())) {
-                result += "{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"},"
+                result += "{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"},"
                 found = true
             }
         })
@@ -6656,20 +6992,49 @@ app.get("/v1/universes/:id", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     var games = (filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json") : "[]")
     var gamesjson = JSON.parse(games)
-
+    var templates = (filesystem.existsSync("./gametemplates.json") ? filesystem.readFileSync("./gametemplates.json") : "[]")
+    var templatesjson = JSON.parse("[" + templates + "]")
+    var found = false
+    var found1 = false
     if (gamesjson.length > 0) {
-        var found = false
+
         gamesjson.forEach((game) => {
             if (req.params.id == game["id"]) {
-                res.status(200).send("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}")
+                res.status(200).send("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}")
                 found = true
                 return
             }
         })
-        if (found == false) res.status(200).send("{\"id\":" + req.params.id + ",\"name\":\"ReBlox Place\",\"description\": \"A ReBlox place launched from the launcher\",\"isArchived\":false,\"rootPlaceId\":1818,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":" + userId + ",\"creatorName\":\"" + username + "\",\"created\":\"2013-10-31T17:46:37.747Z\",\"updated\":\"2019-04-03T00:04:34.373Z\"}")
+        if (found == false) {
+            if (templatesjson.length > 0) {
+                templatesjson.forEach((game) => {
+                    if (req.params.id == game["universe"]["id"]) {
+                        res.status(200).send("{\"id\": " + game["universe"]["id"] + ", \"name\": \"" + game["universe"]["name"] + "\", \"description\": \"" + game["universe"]["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"isArchived\": " + game["universe"]["isArchived"] + ", \"rootPlaceId\": " + game["universe"]["rootPlaceId"] + ", \"isActive\": " + game["universe"]["isActive"] + ", \"privacyType\": \"" + game["universe"]["privacyType"] + "\", \"creatorType\": \"" + game["universe"]["creatorType"] + "\", \"creatorTargetId\": " + game["universe"]["creatorTargetId"] + ", \"creatorName\": \"" + game["universe"]["creatorName"] + "\", \"created\": \"" + game["universe"]["created"] + "\", \"updated\": \"" + game["universe"]["updated"] + "\"}")
+                        found1 = true
+                        return
+                    }
+                })
+                if (found1 == false) res.status(400).send("{\"errors\": [{\"code\": 1, \"message\": \"The universe does not exist.\", \"field\": \"universeId\"}]}");
+            }
+            else {
+                res.status(400).send("{\"errors\": [{\"code\": 1, \"message\": \"The universe does not exist.\", \"field\": \"universeId\"}]}")
+            }
+        }
     }
     else {
-        res.status(200).send("{\"id\":" + req.params.id + ",\"name\":\"ReBlox Place\",\"description\": \"A ReBlox place launched from the launcher\",\"isArchived\":false,\"rootPlaceId\":1818,\"isActive\":true,\"privacyType\":\"Public\",\"creatorType\":\"User\",\"creatorTargetId\":" + userId + ",\"creatorName\":\"" + username + "\",\"created\":\"2013-10-31T17:46:37.747Z\",\"updated\":\"2019-04-03T00:04:34.373Z\"}")
+        if (templatesjson.length > 0) {
+            templatesjson.forEach((game) => {
+                if (req.params.id == game["universe"]["id"]) {
+                    res.status(200).send("{\"id\": " + game["universe"]["id"] + ", \"name\": \"" + game["universe"]["name"] + "\", \"description\": \"" + game["universe"]["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"isArchived\": " + game["universe"]["isArchived"] + ", \"rootPlaceId\": " + game["universe"]["rootPlaceId"] + ", \"isActive\": " + game["universe"]["isActive"] + ", \"privacyType\": \"" + game["universe"]["privacyType"] + "\", \"creatorType\": \"" + game["universe"]["creatorType"] + "\", \"creatorTargetId\": " + game["universe"]["creatorTargetId"] + ", \"creatorName\": \"" + game["universe"]["creatorName"] + "\", \"created\": \"" + game["universe"]["created"] + "\", \"updated\": \"" + game["universe"]["updated"] + "\"}")
+                    found1 = true
+                    return
+                }
+            })
+            if (found1 == false) res.status(400).send("{\"errors\": [{\"code\": 1, \"message\": \"The universe does not exist.\", \"field\": \"universeId\"}]}");
+        }
+        else {
+            res.status(400).send("{\"errors\": [{\"code\": 1, \"message\": \"The universe does not exist.\", \"field\": \"universeId\"}]}")
+        }
     }
 
 })
@@ -7116,7 +7481,7 @@ app.get("/v1/games", (req, res) => {
                 if (gamesjson.length > 0 && valid == true) {
                     gamesjson.forEach((game) => {
                         if (game["id"] == splitorstring) {
-                            result += "{\"id\": " + splitorstring + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"sourceName\": null, \"sourceDescription\": null, \"creator\": {\"id\": " + game["creatorTargetId"] + ", \"name\": \"" + game["creatorName"] + "\", \"Type\": \"User\", \"isRNVAccount\": false, \"hasVerifiedBadge\": false}, \"price\": null, \"allowedGearGenres\": [], \"allowedGearCategories\": [], \"isGenreEnforced\": false, \"copyingAllowed\": false, \"playing\": 0, \"visits\": 0, \"maxPlayers\": 29, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"studioAccessToApisAllowed\": true, \"createVipServerAllowed\": true, \"universeAvatarType\": \"PlayerChoice\", \"genre\": \"\", \"isAllGenre\": true, \"isFavoritedByUser\": false, \"canonicalUrlPath\": \"/games/" + game["rootPlaceId"] + "/" + game["name"].replace(new RegExp(" ", "g"), "-") + "\"},"
+                            result += "{\"id\": " + splitorstring + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"sourceName\": null, \"sourceDescription\": null, \"creator\": {\"id\": " + game["creatorTargetId"] + ", \"name\": \"" + game["creatorName"] + "\", \"Type\": \"User\", \"isRNVAccount\": false, \"hasVerifiedBadge\": false}, \"price\": null, \"allowedGearGenres\": [], \"allowedGearCategories\": [], \"isGenreEnforced\": false, \"copyingAllowed\": false, \"playing\": 0, \"visits\": 0, \"maxPlayers\": 29, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"studioAccessToApisAllowed\": " + game["studioAccessToApisAllowed"] + ", \"createVipServerAllowed\": true, \"universeAvatarType\": \"PlayerChoice\", \"genre\": \"\", \"isAllGenre\": true, \"isFavoritedByUser\": false, \"canonicalUrlPath\": \"/games/" + game["rootPlaceId"] + "/" + game["name"].replace(new RegExp(" ", "g"), "-") + "\"},"
                             return
                         }
                     })
@@ -7136,7 +7501,7 @@ app.get("/v1/games", (req, res) => {
                 if (gamesjson.length > 0 && valid == true) {
                     gamesjson.forEach((game) => {
                         if (game["id"] == id) {
-                            result += "{\"id\": " + id + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"sourceName\": null, \"sourceDescription\": null, \"creator\": {\"id\": " + game["creatorTargetId"] + ", \"name\": \"" + game["creatorName"] + "\", \"Type\": \"User\", \"isRNVAccount\": false, \"hasVerifiedBadge\": false}, \"price\": null, \"allowedGearGenres\": [], \"allowedGearCategories\": [], \"isGenreEnforced\": false, \"copyingAllowed\": false, \"playing\": 0, \"visits\": 0, \"maxPlayers\": 29, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"studioAccessToApisAllowed\": true, \"createVipServerAllowed\": true, \"universeAvatarType\": \"PlayerChoice\", \"genre\": \"\", \"isAllGenre\": true, \"isFavoritedByUser\": false, \"canonicalUrlPath\": \"/games/" + game["rootPlaceId"] + "/" + game["name"].replace(new RegExp(" ", "g"), "-") + "\"},"
+                            result += "{\"id\": " + id + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"sourceName\": null, \"sourceDescription\": null, \"creator\": {\"id\": " + game["creatorTargetId"] + ", \"name\": \"" + game["creatorName"] + "\", \"Type\": \"User\", \"isRNVAccount\": false, \"hasVerifiedBadge\": false}, \"price\": null, \"allowedGearGenres\": [], \"allowedGearCategories\": [], \"isGenreEnforced\": false, \"copyingAllowed\": false, \"playing\": 0, \"visits\": 0, \"maxPlayers\": 29, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"studioAccessToApisAllowed\": " + game["studioAccessToApisAllowed"] + ", \"createVipServerAllowed\": true, \"universeAvatarType\": \"PlayerChoice\", \"genre\": \"\", \"isAllGenre\": true, \"isFavoritedByUser\": false, \"canonicalUrlPath\": \"/games/" + game["rootPlaceId"] + "/" + game["name"].replace(new RegExp(" ", "g"), "-") + "\"},"
                             return
                         }
                     })
@@ -7168,7 +7533,7 @@ app.get("/v1/games", (req, res) => {
                 if (gamesjson.length > 0 && valid == true) {
                     gamesjson.forEach((game) => {
                         if (game["id"] == id) {
-                            result += "{\"id\": " + id + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n") + "\", \"sourceName\": null, \"sourceDescription\": null, \"creator\": {\"id\": " + game["creatorTargetId"] + ", \"name\": \"" + game["creatorName"] + "\", \"Type\": \"User\", \"isRNVAccount\": false, \"hasVerifiedBadge\": false}, \"price\": null, \"allowedGearGenres\": [], \"allowedGearCategories\": [], \"isGenreEnforced\": false, \"copyingAllowed\": false, \"playing\": 0, \"visits\": 0, \"maxPlayers\": 29, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"studioAccessToApisAllowed\": true, \"createVipServerAllowed\": true, \"universeAvatarType\": \"PlayerChoice\", \"genre\": \"\", \"isAllGenre\": true, \"isFavoritedByUser\": false, \"canonicalUrlPath\": \"/games/" + game["rootPlaceId"] + "/" + game["name"].replace(new RegExp(" ", "g"), "-") + "\"},"
+                            result += "{\"id\": " + id + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"sourceName\": null, \"sourceDescription\": null, \"creator\": {\"id\": " + game["creatorTargetId"] + ", \"name\": \"" + game["creatorName"] + "\", \"Type\": \"User\", \"isRNVAccount\": false, \"hasVerifiedBadge\": false}, \"price\": null, \"allowedGearGenres\": [], \"allowedGearCategories\": [], \"isGenreEnforced\": false, \"copyingAllowed\": false, \"playing\": 0, \"visits\": 0, \"maxPlayers\": 29, \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\", \"studioAccessToApisAllowed\": " + game["studioAccessToApisAllowed"] + ", \"createVipServerAllowed\": true, \"universeAvatarType\": \"PlayerChoice\", \"genre\": \"\", \"isAllGenre\": true, \"isFavoritedByUser\": false, \"canonicalUrlPath\": \"/games/" + game["rootPlaceId"] + "/" + game["name"].replace(new RegExp(" ", "g"), "-") + "\"},"
                             return
                         }
                     })
@@ -8145,13 +8510,13 @@ app.post("/persistence/setblob.ashx", trueRaw, async (req, res) => {
     var verified = false
     var replacementtext = ""
     if (req.headers["content-encoding"] == "gzip") {
-        data = zlib.unzipSync(req.body)
+        data = zlib.unzipSync(await req.body)
     }
     else if (req.headers["content-encoding"] == "deflate") {
-        data = zlib.inflateSync(req.body)
+        data = zlib.inflateSync(await req.body)
     }
     else {
-        data = req.body
+        data = await req.body
     }
 
     if (enableDataPersistence == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
@@ -8763,7 +9128,7 @@ app.get("/v1/game-localization-roles/games/:id/current-user/roles", (req, res) =
 
         var found = false
         json.forEach((game) => {
-            if (game["id"] == req.params.id) {
+            if (game["id"] == req.params.id && game["creatorTargetId"] == userId) {
                 found = true
                 res.status(200).send("{\"data\": [ \"owner\" ]}")
             }
