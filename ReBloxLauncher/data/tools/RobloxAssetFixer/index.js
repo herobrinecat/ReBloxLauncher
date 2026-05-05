@@ -538,19 +538,19 @@ function getAsset(id, callback) {
                                 var data = [], output
 
                                 if (res1.headers["content-encoding"] == "gzip") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const gzip = zlib.createGunzip()
                                     res1.pipe(gzip)
                                     output = gzip
                                 }
                                 else if (res.headers["content-encoding"] == "deflate") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const deflate = zlib.createDeflate()
                                     res1.pipe(deflate)
                                     output = deflate
                                 }
                                 else {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     output = res1
                                 }
 
@@ -635,19 +635,19 @@ function getAsset(id, callback) {
                                                             var data = [], output
 
                                                             if (res3.headers["content-encoding"] == "gzip") {
-                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (gzip compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (gzip compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                                                 const gzip = zlib.createGunzip()
                                                                 res3.pipe(gzip)
                                                                 output = gzip
                                                             }
                                                             else if (res3.headers["content-encoding"] == "deflate") {
-                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (deflate compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (deflate compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                                                 const deflate = zlib.createDeflate()
                                                                 res3.pipe(deflate)
                                                                 output = deflate
                                                             }
                                                             else {
-                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                                                 output = res3
                                                             }
 
@@ -729,19 +729,19 @@ function getAsset(id, callback) {
                                 var data = [], output
 
                                 if (res1.headers["content-encoding"] == "gzip") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const gzip = zlib.createGunzip()
                                     res1.pipe(gzip)
                                     output = gzip
                                 }
                                 else if (res.headers["content-encoding"] == "deflate") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const deflate = zlib.createDeflate()
                                     res1.pipe(deflate)
                                     output = deflate
                                 }
                                 else {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     output = res1
                                 }
 
