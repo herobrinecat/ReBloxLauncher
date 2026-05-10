@@ -10,7 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "dotenv": "^17.2.2",
+    "dotenv": "^17.4.2",
     "express": "^5.1.0",
     "follow-redirects": "^1.16.0",
     "jsonwebtoken": "^9.0.3",
