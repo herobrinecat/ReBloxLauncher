@@ -7157,21 +7157,21 @@ app.get("/asset-gameicon/multiget", (req, res) => {
                 if (game["id"] == req.query.universeId) {
                     found = true
                     if (filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".png")) {
-                        res.status(200).send("[{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}]")
+                        res.status(200).send("[{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"Final\": true}]")
                     }
                     else {
-                        res.status(200).send("[{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}]")
+                        res.status(200).send("[{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}]")
                     }
                     return
                 }
             })
 
             if (found == false) {
-                res.status(200).send("[{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}]")
+                res.status(200).send("[{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}]")
             }
         }
         else {
-            res.status(200).send("[{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}]")
+            res.status(200).send("[{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}]")
         }
     }
     else {
@@ -7186,7 +7186,7 @@ app.get("/asset-gameicon/multiget", (req, res) => {
                             if (game["id"] == req.query.universeId[i]) {
                                 if (filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".png")) {
                                     found = true
-                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}"
+                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"Final\": true}"
                                 }
                                 return
                             }
@@ -7199,17 +7199,17 @@ app.get("/asset-gameicon/multiget", (req, res) => {
                                 json1.forEach((game) => {
                                     if (game["universe"]["id"] == req.query.universeId[i]) {
                                         found1 = true
-                                        complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}"
+                                        complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"Final\": true}"
                                         return
                                     }
                                 })
 
                                 if (found1 == false) {
-                                    complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}"
+                                    complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}"
                                 }
                             }
                             else {
-                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}"
+                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}"
                             }
                         }
                     }
@@ -7220,17 +7220,17 @@ app.get("/asset-gameicon/multiget", (req, res) => {
                             json1.forEach((game) => {
                                 if (game["universe"]["id"] == req.query.universeId[i]) {
                                     found1 = true
-                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}"
+                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"Final\": true}"
                                     return
                                 }
                             })
 
                             if (found1 == false) {
-                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}"
+                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}"
                             }
                         }
                         else {
-                            complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}"
+                            complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}"
                         }
                     }
                 }
@@ -7241,7 +7241,7 @@ app.get("/asset-gameicon/multiget", (req, res) => {
                             if (game["id"] == req.query.universeId[i]) {
                                 if (filesystem.existsSync("./icons/" + game["rootPlaceId"] + ".png")) {
                                     found = true
-                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}, "
+                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"Final\": true}, "
                                 }
                                 return
                             }
@@ -7254,17 +7254,17 @@ app.get("/asset-gameicon/multiget", (req, res) => {
                                 json1.forEach((game) => {
                                     if (game["universe"]["id"] == req.query.universeId[i]) {
                                         found1 = true
-                                        complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}, "
+                                        complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"Final\": true}, "
                                         return
                                     }
                                 })
 
                                 if (found1 == false) {
-                                    complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}, "
+                                    complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}, "
                                 }
                             }
                             else {
-                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}, "
+                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}, "
                             }
                         }
                     }
@@ -7275,17 +7275,17 @@ app.get("/asset-gameicon/multiget", (req, res) => {
                             json1.forEach((game) => {
                                 if (game["universe"]["id"] == req.query.universeId[i]) {
                                     found1 = true
-                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\"}, "
+                                    complete += "{\"Url\": \"http://www.reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + game["universe"]["rootPlaceId"] + "&wd=700&ht=700&fmt=png\", \"Final\": true}, "
                                     return
                                 }
                             })
 
                             if (found1 == false) {
-                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}, "
+                                complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}, "
                             }
                         }
                         else {
-                            complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\"}, "
+                            complete += "{\"Url\": \"http://reblox.zip/v1/asset/?id=133293265\", \"Final\": true}, "
                         }
                     }
                 }
