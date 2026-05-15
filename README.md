@@ -15,7 +15,7 @@ Building this application requires:
 
 
 ## Downloads
-You can download the latest stable release in the [Discord server](https://discord.gg/74s7U4Sbef), however you can also download the beta version patches by signing up to be a Beta Tester in the Discord server. Even though this repo will be used for the launcher, it will **NOT** contain the clients, asset packs, maps, and node included in the downloads.
+You can download the latest stable release in the [download server](http://rebloxfileserver.servehttp.com:81), however you can also download the beta version patches by signing up to be a Beta Tester in the [Discord server](https://discord.gg/74s7U4Sbef). Even though this repo will be used for the launcher, it will **NOT** contain the clients, asset packs, maps, and node included in the downloads.
 
 ## System Requirements
 The application supports Windows 7 and above since it's made with .NET Framework 4.8, even though Windows 7 is supported, older version of the server dependencies and Node.js are required in order to run on Windows 7 properly.
