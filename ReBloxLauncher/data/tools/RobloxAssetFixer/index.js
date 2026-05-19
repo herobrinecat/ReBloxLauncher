@@ -4647,8 +4647,14 @@ app.post("//moderation/filtertext/", async (req, res) => {
                 }
                 else if (line == "*") {
                     var filteredword = ""
-                    for (var i = 0; i < req.body["text"].length; i++) {
-                        filteredword += "#"
+                    if (typeof(req.body["text"]) == "string") {
+                        for (var i = 0; i < req.body["text"].length; i++) {
+                            filteredword += "#"
+                        }
+                    }
+                    else {
+                        res.status(400).end()
+                        return
                     }
 
                     filteredtext = filteredword
@@ -4747,8 +4753,14 @@ app.post("/moderation/filtertext/", async (req, res) => {
                 }
                 else if (line == "*") {
                     var filteredword = ""
-                    for (var i = 0; i < req.body["text"].length; i++) {
-                        filteredword += "#"
+                    if (typeof(req.body["text"]) == "string") {
+                        for (var i = 0; i < req.body["text"].length; i++) {
+                            filteredword += "#"
+                        }
+                    }
+                    else {
+                        res.status(400).end()
+                        return
                     }
 
                     filteredtext = filteredword
