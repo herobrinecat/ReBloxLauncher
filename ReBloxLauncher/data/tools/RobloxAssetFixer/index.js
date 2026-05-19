@@ -3,7 +3,7 @@ process.stdout.write(
 )
 process.stdout.write("\x1Bc")
 console.log("\x1b[32m%s\x1b[0m", "<INFO> Starting server...")
-//If the assetdeilvery/thumbnail server of Roblox decides to fail, the asset part will fail also.
+
 const express = require("express");
 const https = require("https");
 const http = require("http")
@@ -44,7 +44,7 @@ var robux = 5000 //Total amount of ROBUX
 
 //Server variables
 var assetfolder = "./assets" //A directory path where the server will look if there's any assets to use locally
-var verbose = true //Gives out more info like what the server is doing
+var verbose = false //Gives out more info like what the server is doing
 var useAuth = false //ROBLOSECURITY is needed to be filled out to use this, can get other assets apart from Decals (can be set with -useAuth)
 var ROBLOSECURITY = "" //This is required to tell the difference between Decal and Image due to assetdelivery update (if useAuth is enabled) (can be set with -ROBLOSECURITY [please put this before -useAuth])
 var saveFile = false //Saves the file that's not part of the file assets to the saved folder
@@ -67,6 +67,7 @@ var RBDFTextFormat = false //Use an older format for RBDF (Not secured for sensi
 var allowTCPLauncher = true //Allows communication between the server and the launcher via TCP, if you're not using the launcher or don't have the launcher, use --disableTCP
 var allowUploadFiles = false //Allows uploading of files to your computer (This could pose security risks to your computer, so it's disabled by default)
 var forceCanManageTrue = false //Forces the canmanage value to be true (Pre-0.0.1320 behavior)
+var enableTextFilter = true //Experimental text filter
 var checkROBLOSECURITY = false //A mark for checking ROBLOSECURITY from launcher
 var enableHTTPS = true //Enable support for HTTPS (Recommended!)
 
@@ -3102,7 +3103,7 @@ app.get("/my/settings/json", (req, res) => {
 })
 
 app.post("/AbuseReport/InGameChatHandler.ashx", (_, res) => {
-    res.status(200).end() //STUB
+    res.status(200).end()
 })
 
 app.post("/game/join.ashx", (req, res) => {
@@ -3237,11 +3238,11 @@ app.post("/Data/Upload.ashx", trueRaw, async (req, res) => {
 })
 
 app.post("/Analytics/Measurement.ashx", (_, res) => {
-    res.status(200).end() //STUB
+    res.status(200).end()
 })
 
 app.get("/Analytics/ContentProvider.ashx", (_, res) => {
-    res.status(200).end() //STUB
+    res.status(200).end()
 })
 
 app.get("/game/gameserver.ashx", (req, res) => {
@@ -3346,6 +3347,17 @@ app.get("/Game/LoadPlaceInfo.ashx", (req, res) => {
     }
 })
 
+app.get("//Game/LoadPlaceInfo.ashx", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2017 or earlier detected, using LoadPlaceInfo.ashx")
+    if (filesystem.existsSync(privateKey)) {
+        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from([0x0D, 0x0A]) + Buffer.from(filesystem.readFileSync("./game/LoadPlaceInfo.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId), "utf8"), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/LoadPlaceInfo.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId))
+    }
+    else {
+        res.status(200).send(filesystem.readFileSync("./game/LoadPlaceInfo.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId))
+    }
+})
+
 app.get("/game/studio.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Early-2015 or earlier detected, using Studio.ashx")
@@ -3361,6 +3373,19 @@ app.get("/game/studio.ashx", (req, res) => {
 })
 
 app.get("/Game/PlaceSpecificScript.ashx", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2016 or earlier detected, using PlaceSpecificScript.ashx")
+    if (filesystem.existsSync("./game/placespecificscript.ashx")) {
+        if (filesystem.existsSync(privateKey)) {
+            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from([0x0D, 0x0A]) + filesystem.readFileSync("./game/placespecificscript.ashx"), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/placespecificscript.ashx", "utf8"))
+        }
+        else {
+            res.status(200).send(filesystem.readFileSync("./game/placespecificscript.ashx", "utf8"))
+        }
+    }
+})
+
+app.get("//Game/PlaceSpecificScript.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2016 or earlier detected, using PlaceSpecificScript.ashx")
     if (filesystem.existsSync("./game/placespecificscript.ashx")) {
@@ -4553,25 +4578,215 @@ app.get("/users/:userid/canmanage/:placeid", (req, res) => {
     }
 })
 
-app.post("//moderation/filtertext/", (req, res) => {
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+app.post("//moderation/filtertext/", async (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
 
-    res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + req.body["text"] + "\", \"black\": \"\"}}")
+    if (filesystem.existsSync("./filter.txt") && enableTextFilter == true) {
+        var filteredtext = ""
+        const stream = filesystem.createReadStream("./filter.txt")
+
+        const rl = readline.createInterface({
+            input: stream,
+            crlfDelay: Infinity
+        })
+
+        for await (const line of rl) {
+            if (line.startsWith("--") == false && line != "") {
+                if (line.startsWith("*") && line.endsWith("*") && line.length > 1) {
+                    if (req.body["text"].includes(line.slice(1, line.length - 1))) {
+                        var filteredword = ""
+                        for (var i = 1; i < line.length - 1; i++) {
+                            filteredword += "#"
+                        }
+
+                        if (filteredtext != "") {
+                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                        }
+                        else {
+                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                        }
+                        continue
+                    }
+                }
+                else if (line.startsWith("*") && line.endsWith("*") == false && line.length > 1) {
+                    if (req.body["text"].endsWith(line.slice(1, line.length - 1))) {
+                        var filteredword = ""
+                        for (var i = 1; i < line.length; i++) {
+                            filteredword += "#"
+                        }
+
+                        if (filteredtext != "") {
+                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                        }
+                        else {
+                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                        }
+                        continue
+                    }
+                }
+                else if (line.startsWith("*") == false && line.endsWith("*") && line.length > 1) {
+                    if (req.body["text"].startsWith(line.slice(1, line.length - 1))) {
+                        var filteredword = ""
+                        for (var i = 0; i < line.length - 1; i++) {
+                            filteredword += "#"
+                        }
+
+                        if (filteredtext != "") {
+                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                        }
+                        else {
+                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                        }
+                        continue
+                    }
+                }
+                else if (line == "*") {
+                    var filteredword = ""
+                    for (var i = 0; i < req.body["text"].length; i++) {
+                        filteredword += "#"
+                    }
+
+                    filteredtext = filteredword
+                    break
+                }
+                else {
+                    if (req.body["text"] == line) {
+                        var filteredword = ""
+                        for (var i = 0; i < line.length; i++) {
+                            filteredword += "#"
+                        }
+
+                        filteredtext = filteredword
+                        break
+                    }
+                }
+            }
+        }
+        stream.destroy()
+        rl.close()
+
+        if (filteredtext != "") {
+            res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + filteredtext + "\", \"black\": \"" + filteredtext + "\"}}")
+        }
+        else {
+            res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + req.body["text"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"black\": \"" + req.body["text"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\"}}")
+        }
+    }
+    else {
+        res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + req.body["text"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"black\": \"" + req.body["text"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\"}}")
+    }
 })
 
-app.post("/moderation/filtertext/", (req, res) => {
+app.post("/moderation/filtertext/", async (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
 
-    res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + req.body["text"] + "\", \"black\": \"\"}}")
+    if (filesystem.existsSync("./filter.txt") && enableTextFilter == true) {
+        var filteredtext = ""
+        const stream = filesystem.createReadStream("./filter.txt")
+
+        const rl = readline.createInterface({
+            input: stream,
+            crlfDelay: Infinity
+        })
+
+        for await (const line of rl) {
+            if (line.startsWith("--") == false && line != "") {
+                if (line.startsWith("*") && line.endsWith("*") && line.length > 1) {
+                    if (req.body["text"].includes(line.slice(1, line.length - 1))) {
+                        var filteredword = ""
+                        for (var i = 1; i < line.length - 1; i++) {
+                            filteredword += "#"
+                        }
+
+                        if (filteredtext != "") {
+                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                        }
+                        else {
+                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                        }
+                        continue
+                    }
+                }
+                else if (line.startsWith("*") && line.endsWith("*") == false && line.length > 1) {
+                    if (req.body["text"].endsWith(line.slice(1, line.length - 1))) {
+                        var filteredword = ""
+                        for (var i = 1; i < line.length; i++) {
+                            filteredword += "#"
+                        }
+
+                        if (filteredtext != "") {
+                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                        }
+                        else {
+                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                        }
+                        continue
+                    }
+                }
+                else if (line.startsWith("*") == false && line.endsWith("*") && line.length > 1) {
+                    if (req.body["text"].startsWith(line.slice(1, line.length - 1))) {
+                        var filteredword = ""
+                        for (var i = 0; i < line.length - 1; i++) {
+                            filteredword += "#"
+                        }
+
+                        if (filteredtext != "") {
+                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                        }
+                        else {
+                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                        }
+                        continue
+                    }
+                }
+                else if (line == "*") {
+                    var filteredword = ""
+                    for (var i = 0; i < req.body["text"].length; i++) {
+                        filteredword += "#"
+                    }
+
+                    filteredtext = filteredword
+                    break
+                }
+                else {
+                    if (req.body["text"] == line) {
+                        var filteredword = ""
+                        for (var i = 0; i < line.length; i++) {
+                            filteredword += "#"
+                        }
+
+                        filteredtext = filteredword
+                        break
+                    }
+                }
+            }
+        }
+        stream.destroy()
+        rl.close()
+
+        if (filteredtext != "") {
+            res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + filteredtext + "\", \"black\": \"" + filteredtext + "\"}}")
+        }
+        else {
+            res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + req.body["text"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"black\": \"" + req.body["text"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\"}}")
+        }
+    }
+    else {
+        res.status(200).send("{\"success\": true, \"data\": {\"white\": \"" + req.body["text"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"black\": \"" + req.body["text"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\"}}")
+    }
 })
 
 app.get("//game/players/:id", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
 
-    res.status(200).send("{ \"ChatFilter\": \"whitelist\" }")
+    res.status(200).send("{ \"ChatFilter\": \"blacklist\" }")
 })
 
 app.get("/users/:id", (req, res) => {
@@ -4746,6 +4961,43 @@ app.get("/v1/search/universes", (req, res) => {
             }
         }
     }
+})
+
+app.get("/v1/user/universes", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    if (filesystem.existsSync("./games.json")) {
+        var data = []
+
+        var json = JSON.parse(filesystem.readFileSync("./games.json", "utf8"))
+
+        if (req.query.sortOrder == "Desc") {
+            json.sort(dateSort)
+        }
+        else if (req.query.sort == "Asce") {
+            json.sort(reverseDateSort)
+        }
+
+        if (json.length > 0) {
+            json.forEach((game) => {
+                if (game["creatorTargetId"] == userId) {
+                    data.push(JSON.parse("{\"id\": " + game["id"] + ", \"name\": \"" + game["name"] + "\", \"description\": \"" + game["description"].replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"") + "\", \"isArchived\": " + game["isArchived"] + ", \"rootPlaceId\": " + game["rootPlaceId"] + ", \"isActive\": " + game["isActive"] + ", \"privacyType\": \"" + game["privacyType"] + "\", \"creatorType\": \"" + game["creatorType"] + "\", \"creatorTargetId\": " + game["creatorTargetId"] + ", \"creatorName\": \"" + game["creatorName"] + "\", \"created\": \"" + game["created"] + "\", \"updated\": \"" + game["updated"] + "\"}"))
+                }
+            })
+            res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":" + JSON.stringify(data) + "}")
+        }
+        else {
+            res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+        }
+    }
+    else {
+        res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}")
+    }
+})
+
+app.get("/v1/user/teamcreate/memberships", (_, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\":[]}") //STUB
 })
 app.get("/v2/auth/metadata", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
@@ -7120,21 +7372,17 @@ app.get("/game/logout.aspx", (_, res) => {
     res.status(200).end()
 })
 app.get("/Game/JoinRate.ashx", (_, res) => {
-    //STUB
     res.status(200).end()
 })
 
 app.get("/Game/ClientPresence.ashx", (_, res) => {
-    //STUB
     res.status(200).end()
 })
 
 app.post("/Game/ClientPresence.ashx", (_, res) => {
-    //STUB
     res.status(200).end()
 })
 app.post("/game/report-stats", (_, res) => {
-    //STUB
     res.status(200).end()
 })
 
@@ -7865,7 +8113,7 @@ app.post("/Game/BreakFriend", async (req, res) => {
                 rl.close()
                 if (verified == true) {
                     if (replacementtext != "") {
-                        filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(new RegExp(replacementtext + "\r\n", "g"), ""))
+                        filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(new RegExp(escapeRegExp(replacementtext + "\r\n"), "g"), ""))
                     }
                     else {
                         res.status(200).end()
@@ -7941,7 +8189,7 @@ app.post("/Friend/BreakFriend", async (req, res) => {
                 rl.close()
                 if (verified == true) {
                     if (replacementtext != "") {
-                        filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(new RegExp(replacementtext + "\r\n", "g"), ""))
+                        filesystem.writeFileSync(RBDFpath, filesystem.readFileSync(RBDFpath, "utf-8").replace(new RegExp(escapeRegExp(replacementtext + "\r\n"), "g"), ""))
                     }
                     else {
                         res.status(200).end()
@@ -8330,10 +8578,10 @@ app.post("/v1/persistence/:type/remove", async (req, res) => {
                     return
                 }
             }
-            res.status(200).end() //STUB
+            res.status(200).end()
         }
         else {
-            res.status(200).end() //STUB
+            res.status(200).end()
         }
     }
 })

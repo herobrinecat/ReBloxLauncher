@@ -182,5 +182,15 @@
         "robux": 5,
         "creatorTargetId": 610948,
         "creatorName": "armitroner"
+    },
+    {
+        "id": 1048037,
+        "name": "Bighead",
+        "description": ":)",
+        "assetType": 8,
+        "imageId": 1048037,
+        "robux": 70,
+        "creatorTargetId": 1,
+        "creatorName": "ROBLOX"
     }
 ]

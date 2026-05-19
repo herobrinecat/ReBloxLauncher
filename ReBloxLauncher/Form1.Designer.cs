@@ -151,6 +151,7 @@
             this.tabPage5 = new System.Windows.Forms.TabPage();
             this.tabPage6 = new System.Windows.Forms.TabPage();
             this.panel6 = new System.Windows.Forms.Panel();
+            this.label43 = new System.Windows.Forms.Label();
             this.button24 = new System.Windows.Forms.Button();
             this.button23 = new System.Windows.Forms.Button();
             this.checkBox17 = new System.Windows.Forms.CheckBox();
@@ -171,6 +172,7 @@
             this.label9 = new System.Windows.Forms.Label();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.fadeImageTimer = new System.Windows.Forms.Timer(this.components);
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -1253,6 +1255,7 @@
             // HeadPanel
             // 
             this.HeadPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(163)))), ((int)(((byte)(162)))), ((int)(((byte)(165)))));
+            this.HeadPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.HeadPanel.Location = new System.Drawing.Point(227, 144);
             this.HeadPanel.Name = "HeadPanel";
             this.HeadPanel.Size = new System.Drawing.Size(40, 40);
@@ -1739,6 +1742,7 @@
             // panel6
             // 
             this.panel6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.panel6.Controls.Add(this.label43);
             this.panel6.Controls.Add(this.button24);
             this.panel6.Controls.Add(this.button23);
             this.panel6.Controls.Add(this.checkBox17);
@@ -1753,6 +1757,17 @@
             this.panel6.Name = "panel6";
             this.panel6.Size = new System.Drawing.Size(511, 300);
             this.panel6.TabIndex = 0;
+            // 
+            // label43
+            // 
+            this.label43.AutoSize = true;
+            this.label43.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.label43.Location = new System.Drawing.Point(418, 194);
+            this.label43.Name = "label43";
+            this.label43.Size = new System.Drawing.Size(80, 17);
+            this.label43.TabIndex = 11;
+            this.label43.Text = "default.rbdf";
+            this.label43.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // button24
             // 
@@ -1956,12 +1971,21 @@
             this.fadeImageTimer.Interval = 10000;
             this.fadeImageTimer.Tick += new System.EventHandler(this.fadeImageTimer_Tick);
             // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(95, 535);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(108, 11);
+            this.progressBar1.TabIndex = 38;
+            this.progressBar1.Visible = false;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
             this.ClientSize = new System.Drawing.Size(550, 552);
+            this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.pictureBox2);
             this.Controls.Add(this.label33);
             this.Controls.Add(this.comboBox3);
@@ -2184,6 +2208,8 @@
         private System.Windows.Forms.CheckBox checkBox17;
         private System.Windows.Forms.Button button24;
         private System.Windows.Forms.CheckBox checkBox18;
+        private System.Windows.Forms.Label label43;
+        private System.Windows.Forms.ProgressBar progressBar1;
     }
 }
 

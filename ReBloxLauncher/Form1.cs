@@ -21,7 +21,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using System.Runtime.InteropServices;
 namespace ReBloxLauncher
 {
     public partial class Form1 : Form
@@ -31,6 +31,7 @@ namespace ReBloxLauncher
         {
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
             InitializeComponent();
+            HeadPanel.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, HeadPanel.Width, HeadPanel.Height, 15, 15));
         }
         //Variables
         bool starting = true;
@@ -78,11 +79,23 @@ namespace ReBloxLauncher
         string versionForRCCService = String.Empty;
         int fadeImageNumber = 0;
         int currentImage = 0;
+        bool dirtyImage = false;
+        bool dirtyImageMain = false;
         float opacity = 0.0F;
+        bool linuxAsWindows = false;
         Image imageFromFade;
         Image imageToFade;
         SplashScreen splashscreen;
         //Functions
+        [DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
+        private static extern IntPtr CreateRoundRectRgn(
+            int nLeftRect,
+            int nTopRect,
+            int nRightRect,
+            int nBottomRect,
+            int nWidthEllipse,
+            int nHeightEllipse
+            );
 
         System.Reflection.Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs e)
         {
@@ -182,8 +195,163 @@ namespace ReBloxLauncher
 
         bool IsDigitsOnly(string str) { return str.All(c => c >= '0' && c <= '9'); }
 
+        private int CountAssets(string client)
+        {
+            string[] splited = Properties.Settings.Default.AssetPackEnabled.Split('|');
+            int count = 0;
+            foreach (string s in splited)
+            {
+                if (Directory.Exists(s))
+                {
+                    bool compatible = true;
+                    string[] config = File.ReadAllLines(s + @"\ReBlox.ini");
+                    for (int i = 0; i < config.Length; i++)
+                    {
+                        if (config[i].Trim().StartsWith("Clients="))
+                        {
+                            string[] splited1 = config[i].Trim().Split(new char[] { '=' }, 2);
+                            if (splited1[1] == "*")
+                            {
+                                compatible = true;
+                                break;
+                            }
+                            else if (splited1[1].Contains(","))
+                            {
+                                bool valuefound = false;
+                                string[] splitedtwo = splited1[1].Split(',');
+                                foreach (string version in splitedtwo)
+                                {
+                                    if (version == client)
+                                    {
+                                        valuefound = true;
+                                        compatible = true;
+                                        break;
+                                    }
+                                }
+                                if (valuefound == false) compatible = false; break;
+                            }
+                            else if (splited1[1] == client)
+                            {
+                                compatible = true; break;
+                            }
+                            else if (splited1[1].EndsWith("+"))
+                            {
+                                try
+                                {
+                                    string year = splited1[1].Substring(0, 4);
+                                    string daterange = splited1[1].Substring(4, 1);
+
+                                    if (int.TryParse(year + convertDateRangeToInt(daterange).ToString(), out _) == true)
+                                    {
+                                        int total = int.Parse(year + convertDateRangeToInt(daterange).ToString());
+                                        string year1 = client.Substring(0, 4);
+                                        string daterange1 = client.Substring(4, 1);
+                                        if (int.TryParse(year1 + convertDateRangeToInt(daterange1).ToString(), out _) == true)
+                                        {
+                                            int total1 = int.Parse(year1 + convertDateRangeToInt(daterange1).ToString());
+
+                                            if (total1 >= total)
+                                            {
+                                                compatible = true; break;
+                                            }
+                                            else
+                                            {
+                                                compatible = false; break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            compatible = false; break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("<WARN> Skipping asset pack \"" + Path.GetFileName(s) + "\" due to invalid clients");
+                                        compatible = false; break;
+                                    }
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("<WARN> Skipping asset pack \"" + Path.GetFileName(s) + "\" due to invalid clients");
+                                    compatible = false; break;
+                                }
+                            }
+                            else if (splited1[1].EndsWith("-"))
+                            {
+                                try
+                                {
+                                    string year = splited1[1].Substring(0, 4);
+                                    string daterange = splited1[1].Substring(4, 1);
+
+                                    if (int.TryParse(year + convertDateRangeToInt(daterange).ToString(), out _) == true)
+                                    {
+                                        int total = int.Parse(year + convertDateRangeToInt(daterange).ToString());
+                                        string year1 = client.Substring(0, 4);
+                                        string daterange1 = client.Substring(4, 1);
+                                        if (int.TryParse(year1 + convertDateRangeToInt(daterange1).ToString(), out _) == true)
+                                        {
+                                            int total1 = int.Parse(year1 + convertDateRangeToInt(daterange1).ToString());
+
+                                            if (total1 <= total)
+                                            {
+                                                compatible = true; break;
+                                            }
+                                            else
+                                            {
+                                                compatible = false; break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            compatible = false; break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("<WARN> Skipping asset pack \"" + Path.GetFileName(s) + "\" due to invalid clients");
+                                        compatible = false; break;
+                                    }
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("<WARN> Skipping asset pack \"" + Path.GetFileName(s) + "\" due to invalid clients");
+                                    compatible = false; break;
+                                }
+                            }
+                            else
+                            {
+                                compatible = false; break;
+                            }
+                        }
+                    }
+                    if (compatible)
+                    {
+                        string[] files = Directory.GetFiles(s);
+                        for (int i = 0; i < files.Count(); i++)
+                        {
+                            if (IsDigitsOnly(Path.GetFileNameWithoutExtension(files[i])) == false)
+                            {
+                                count = count - 1;
+                            }
+                        }
+                        count = count + files.Length;
+                    }
+                }
+            }
+            return count < 0 ? 0 : count;
+        }
+
         private void LoadAssets(string client = null)
         {
+            if (Properties.Settings.Default.AssetPackEnabled.Length > 0)
+            {
+                progressBar1.Invoke(new Action(() =>
+                {
+                    progressBar1.Maximum = CountAssets(client != null ? client : Properties.Settings.Default.lastselectedversion);
+                    progressBar1.Value = 0;
+                    progressBar1.Visible = true;
+                }));
+            }
             totalAssets = 0;
             statusText.Invoke(new Action(() => { statusText.Text = "Loading assets..."; }));
             string[] splited = Properties.Settings.Default.AssetPackEnabled.Split('|');
@@ -470,6 +638,7 @@ namespace ReBloxLauncher
                                             }
                                         }
                                         totalAssets++;
+                                        if (Properties.Settings.Default.AssetPackEnabled.Length > 0) progressBar1.Invoke(new Action(() => { progressBar1.Value++; }));
                                     }
                                 }
                                 else
@@ -563,6 +732,7 @@ namespace ReBloxLauncher
             {
                 File.Copy(datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem), datafolder + @"\tools\RobloxAssetFixer\assets\" + placeid + ".rbxl", true);
             }
+            progressBar1.Invoke(new Action(() => { progressBar1.Visible = false; }));
         }
 
         private string[] GetFileNamesWithoutExtension(string path)
@@ -767,7 +937,7 @@ namespace ReBloxLauncher
                 }
                 if (launchershortcut == false)
                 {
-                    if (WineDetector.IsRunningOnWine())
+                    if (WineDetector.IsRunningOnWine() && linuxAsWindows == false)
                     {
                         Console.WriteLine("<WARN> Wine detected, Wine version: " + WineDetector.getWineVersion());
                         button7.Visible = false;
@@ -831,7 +1001,8 @@ namespace ReBloxLauncher
                     RefreshAssetPacks();
                     Console.WriteLine("<INFO> Setting up UI...");
                     if (Properties.Settings.Default.ClothesArray.Split('|').Length > 0) listBox4.Items.AddRange(Properties.Settings.Default.ClothesArray.Split('|'));
-                    checkBox1.Checked = WineDetector.IsRunningOnWine() == false ? Properties.Settings.Default.useAuth : false;
+                    label43.Text = Path.GetFileName(Properties.Settings.Default.RBDFPath);
+                    checkBox1.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) ? Properties.Settings.Default.useAuth : false;
                     checkBox1.Enabled = !WineDetector.IsRunningOnWine();
                     textBox3.ReadOnly = !Properties.Settings.Default.useAuth && WineDetector.IsRunningOnWine();
                     textBox3.Text = Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY));
@@ -840,11 +1011,11 @@ namespace ReBloxLauncher
                     checkBox3.Checked = Properties.Settings.Default.ClearTemp;
                     checkBox5.Checked = Properties.Settings.Default.AccountOver13;
                     checkBox6.Checked = Properties.Settings.Default.EnableDataStore;
-                    checkBox7.Checked = WineDetector.IsRunningOnWine() == false ? Properties.Settings.Default.DiscordRPC : false;
+                    checkBox7.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) ? Properties.Settings.Default.DiscordRPC : false;
                     checkBox7.Enabled = !WineDetector.IsRunningOnWine();
                     checkBox8.Checked = Properties.Settings.Default.EnableBadges;
                     checkBox9.Checked = Properties.Settings.Default.EnableFollowing;
-                    checkBox10.Checked = WineDetector.IsRunningOnWine() == false ? Properties.Settings.Default.assetFromServer : false;
+                    checkBox10.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) ? Properties.Settings.Default.assetFromServer : false;
                     checkBox10.Enabled = !WineDetector.IsRunningOnWine();
                     checkBox11.Checked = Properties.Settings.Default.EnableFriendships;
                     checkBox12.Checked = Properties.Settings.Default.EnableOwnedAssets;
@@ -919,7 +1090,7 @@ namespace ReBloxLauncher
                             thread.Start();
                         }
                     }
-                    if (Properties.Settings.Default.DiscordRPC && WineDetector.IsRunningOnWine() == false)
+                    if (Properties.Settings.Default.DiscordRPC && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                     {
                         try
                         {
@@ -1919,9 +2090,9 @@ namespace ReBloxLauncher
                     {
                         try
                         {
-                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                             {
-                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                smartHostEdit();
                             }
                         }
                         catch (Exception err)
@@ -1932,7 +2103,7 @@ namespace ReBloxLauncher
                     }
                     else
                     {
-                        Console.WriteLine("<WARN> You don't have administrator permission to edit the hosts file!");
+                        Console.WriteLine("<WARN> You don't have administrator permission to edit the hosts file! Please run the launcher as administrator with this argument to edit the hosts file!");
                     }
                 }
                 else if (args[i] == "--aprilFools")
@@ -2053,9 +2224,13 @@ namespace ReBloxLauncher
                 {
                     logNodeServer = true;
                 }
+                else if (args[i] == "--mockLinuxAsWindows")
+                {
+                    linuxAsWindows = true;
+                }
                 else if (args[i] == "--help" || args[i] == "-h")
                 {
-                    if (MessageBox.Show("Command line options:\r\n -datafolder pathhere - Set the data folder path to the folder you choose\r\n--saveKeys - Save the public and private key for the clients\r\n--useSystemNode - Use node that is installed instead of the bundled version\r\n-launch versionhere - Launch a version like RobloxPlayerLauncher/RobloxStudioLauncher\r\n-updateUrl updateurlhere - Change the update url to your choosing\r\n--installCA - Installs the CA certificate if it's not already installed\r\n--editHosts - Edits the hosts file for best experience with ReBlox\r\n--aprilFools - Runs the launcher with April Fools enabled\r\n--experimentalFade - Enabled the experimental fade feature for client images.\r\n--logNodeServer - Makes the node server also be logged in the logs folder, use this if you wanna diagnose a problem with the server/launcher.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Information) == DialogResult.OK)
+                    if (MessageBox.Show("Command line options:\r\n -datafolder pathhere - Set the data folder path to the folder you choose\r\n--saveKeys - Save the public and private key for the clients\r\n--useSystemNode - Use node that is installed instead of the bundled version\r\n-launch versionhere - Launch a version like RobloxPlayerLauncher/RobloxStudioLauncher\r\n-updateUrl updateurlhere - Change the update url to your choosing\r\n--installCA - Installs the CA certificate if it's not already installed\r\n--editHosts - Edits the hosts file for best experience with ReBlox\r\n--aprilFools - Runs the launcher with April Fools enabled\r\n--experimentalFade - Enabled the experimental fade feature for client images. (deprecated, you can enable it on Experiments tab in Settings!)\r\n--logNodeServer - Makes the node server also be logged in the logs folder, use this if you wanna diagnose a problem with the server/launcher.\r\n--mockLinuxAsWindows - Ignore the wine detector and assumes it's running on native Windows.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Information) == DialogResult.OK)
                     {
                         this.Close();
                         Application.Exit();
@@ -2152,6 +2327,32 @@ namespace ReBloxLauncher
             if (launchershortcut == false) Initialize();
         }
 
+        public void smartHostEdit()
+        {
+            if (IsAdministrator())
+            {
+                string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip" };
+                string[] hosts = File.ReadAllLines(@"C:\Windows\System32\drivers\etc\hosts");
+
+                List<string> neededEdits = new List<string>();
+                neededEdits.AddRange(urls);
+                for (int i = 0; i < hosts.Length; i++)
+                {
+                    for (int x = 0; x < urls.Length; x++)
+                    {
+                        if (hosts[i] == "127.0.0.1 " + urls[x])
+                        {
+                            neededEdits.Remove(urls[x]);
+                        }
+                    }
+                }
+
+                string convertedString = "\r\n127.0.0.1 " + string.Join("\r\n127.0.0.1 ", neededEdits);
+
+                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", convertedString);
+            }
+        }
+
         public void SearchNetworks(bool limitServersByLauncherVersion = false)
         {
             UdpClient clientUdpClient = ServerUtils.GetClient(0);
@@ -2214,7 +2415,7 @@ namespace ReBloxLauncher
                 {
                     try
                     {
-                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
+                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                         {
                             if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                             {
@@ -2225,7 +2426,7 @@ namespace ReBloxLauncher
                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
 
-                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                    smartHostEdit();
                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                     if (Properties.Settings.Default.UsePatchInStudio)
                                     {
@@ -2769,10 +2970,30 @@ namespace ReBloxLauncher
                             {
                                 int randomchoose = RandomNumber(1, images.Length + 1);
                                 currentImage = randomchoose;
-                                pictureBox1.ImageLocation = images[randomchoose - 1];
-                                pictureBox1.Image = Image.FromFile(images[randomchoose - 1]);
+                                Size sizecheck = ImageSize.GetDimensions(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png");
+                                if (sizecheck.Width > 4000 && sizecheck.Height > 4000)
+                                {
+                                    dirtyImageMain = true;
+                                    do
+                                    {
+                                        Console.WriteLine("<INFO> Skipping " + currentImage + ".png, illegal size!");
+                                        currentImage++;
+                                        if (File.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png") == false) currentImage = 1;
+                                        sizecheck = ImageSize.GetDimensions(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png");
+                                        if (sizecheck.Width <= 4000 && sizecheck.Height <= 4000)
+                                        {
+                                            dirtyImageMain = false;
+                                        }
+                                    } while (dirtyImageMain);
+                                }
+                                if (useNewImageFadeForClients == false)
+                                {
+                                    pictureBox1.Visible = true;
+                                    pictureBox1.ImageLocation = images[randomchoose - 1];
+                                    pictureBox1.Image = Image.FromFile(images[randomchoose - 1]);
+                                }
                                 randomchoose = 0;
-                                if (useNewImageFadeForClients == false) pictureBox1.Visible = true;
+                                
                             }
                             else
                             {
@@ -2950,13 +3171,13 @@ namespace ReBloxLauncher
 
         private void button7_Click(object sender, EventArgs e)
         {
-            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip"))
+            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip"))
             {
                 if (IsAdministrator())
                 {
                     string content = File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts");
                     File.Delete(@"C:\Windows\System32\drivers\etc\hosts");
-                    File.WriteAllText(@"C:\Windows\System32\drivers\etc\hosts", content.Replace("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip", ""));
+                    File.WriteAllText(@"C:\Windows\System32\drivers\etc\hosts", content.Replace("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip", ""));
                     content = null;
                 }
                 else
@@ -3161,14 +3382,14 @@ namespace ReBloxLauncher
                     {
                         if ((Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player") && usedRCCService == false) || (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player") && RCCService == true))
                         {
-                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                             {
                                 if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                 {
                                     if (IsAdministrator())
                                     {
                                         launchingClient = true;
-                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                        smartHostEdit();
                                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -3469,14 +3690,14 @@ namespace ReBloxLauncher
                         }
                         else
                         {
-                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                             {
                                 if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                 {
                                     if (IsAdministrator())
                                     {
                                         launchingClient = true;
-                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                        smartHostEdit();
                                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -3832,14 +4053,14 @@ namespace ReBloxLauncher
                                 {
                                     if (openFileDialog1.ShowDialog() == DialogResult.OK)
                                     {
-                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                         {
                                             if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                             {
                                                 if (IsAdministrator())
                                                 {
                                                     launchingClient = true;
-                                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                                    smartHostEdit();
                                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -4066,14 +4287,14 @@ namespace ReBloxLauncher
                                 }
                                 else
                                 {
-                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                     {
                                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                         {
                                             if (IsAdministrator())
                                             {
                                                 launchingClient = false;
-                                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                                smartHostEdit();
                                                 statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -4313,7 +4534,7 @@ namespace ReBloxLauncher
                                 {
                                     if (openFileDialog1.ShowDialog() == DialogResult.OK)
                                     {
-                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                         {
                                             if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                             {
@@ -4321,7 +4542,7 @@ namespace ReBloxLauncher
                                                 {
                                                     launchingClient = true;
                                                     if (Directory.Exists((datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player"))) { if (File.Exists((datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\RobloxPlayerBeta.exe"))) { File.Copy(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\RobloxPlayerBeta.exe", datafolder + @"\tools\RobloxAssetFixer\RobloxPlayerBeta.exe", true); } }
-                                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                                    smartHostEdit();
                                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -4556,7 +4777,7 @@ namespace ReBloxLauncher
                                 }
                                 else
                                 {
-                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                     {
                                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                         {
@@ -4564,7 +4785,7 @@ namespace ReBloxLauncher
                                             {
                                                 launchingClient = true;
                                                 if (Directory.Exists((datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player"))) { if (File.Exists((datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\RobloxPlayerBeta.exe"))) { File.Copy(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\RobloxPlayerBeta.exe", datafolder + @"\tools\RobloxAssetFixer\RobloxPlayerBeta.exe", true); } }
-                                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                                smartHostEdit();
                                                 statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -4803,14 +5024,14 @@ namespace ReBloxLauncher
                                 {
                                     if (openFileDialog1.ShowDialog() == DialogResult.OK)
                                     {
-                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                        if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                         {
                                             if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                             {
                                                 if (IsAdministrator())
                                                 {
                                                     launchingClient = true;
-                                                    File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                                    smartHostEdit();
                                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -5047,14 +5268,14 @@ namespace ReBloxLauncher
                                 }
                                 else
                                 {
-                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                     {
                                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                         {
                                             if (IsAdministrator())
                                             {
                                                 launchingClient = true;
-                                                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                                smartHostEdit();
                                                 statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -6006,7 +6227,7 @@ namespace ReBloxLauncher
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
-            if (WineDetector.IsRunningOnWine() == false)
+            if (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true)
             {
                 tabControl1.Invalidate();
                 onetime = false;
@@ -6126,7 +6347,7 @@ namespace ReBloxLauncher
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (IsNodeFromAppRunning() && WineDetector.IsRunningOnWine() == false)
+            if (IsNodeFromAppRunning() && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
             {
                 var result = MessageBox.Show("Are you sure you wanna close the launcher while the server is running? If you proceed, you may need to kill the server via Task Manager. (Pressing No will kill the server before closing the launcher)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
 
@@ -6633,14 +6854,14 @@ namespace ReBloxLauncher
                         if (Directory.Exists(datafolder + @"\clients\" + listView1.SelectedItems[0].SubItems[1].Text)) loadConfigFromClient(listView1.SelectedItems[0].SubItems[1].Text);
                         if ((Directory.Exists(datafolder + @"\clients\" + listView1.SelectedItems[0].SubItems[1].Text + @"\Player") && usedRCCService == false) || (Directory.Exists(datafolder + @"\clients\" + listView1.SelectedItems[0].SubItems[1].Text + @"\Player") && RCCService == true))
                         {
-                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                             {
                                 if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                 {
                                     if (IsAdministrator())
                                     {
                                         launchingClient = true;
-                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                        smartHostEdit();
                                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -6948,14 +7169,14 @@ namespace ReBloxLauncher
                         }
                         else if (Directory.Exists(datafolder + @"\clients\" + listView1.SelectedItems[0].SubItems[1].Text + @"\Studio"))
                         {
-                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip") == false && WineDetector.IsRunningOnWine() == false)
+                            if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                             {
                                 if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                 {
                                     if (IsAdministrator())
                                     {
                                         launchingClient = true;
-                                        File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", "\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip");
+                                        smartHostEdit();
                                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
@@ -7537,6 +7758,22 @@ namespace ReBloxLauncher
                 fadeImage = true;
                 fadeImageNumber = currentImage + 1;
                 if (File.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + fadeImageNumber + ".png") == false) fadeImageNumber = 1;
+                Size sizecheck = ImageSize.GetDimensions(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + fadeImageNumber + ".png");
+                if (sizecheck.Width > 4000 && sizecheck.Height > 4000)
+                {
+                    dirtyImage = true;
+                    do
+                    {
+                        Console.WriteLine("<INFO> Skipping " + fadeImageNumber + ".png, illegal size!");
+                        fadeImageNumber++;
+                        if (File.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + fadeImageNumber + ".png") == false) fadeImageNumber = 1;
+                        sizecheck = ImageSize.GetDimensions(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + fadeImageNumber + ".png");
+                        if (sizecheck.Width <= 4000 && sizecheck.Height <= 4000)
+                        {
+                            dirtyImage = false;
+                        }
+                    } while (dirtyImage);
+                }
                 imageFromFade = Image.FromFile(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png");
                 imageToFade = Image.FromFile(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + fadeImageNumber + ".png");
                 panel7.Invalidate();
@@ -7555,7 +7792,7 @@ namespace ReBloxLauncher
                 ImageAttributes imageAtt = new ImageAttributes();
 
                 imageAtt.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
-
+ 
                 e.Graphics.DrawImage(imageFromFade, new Rectangle(0, 0, panel7.Width, panel7.Height));
 
                 e.Graphics.DrawImage(imageToFade, new Rectangle(0, 0, panel7.Width, panel7.Height), 0F, 0F, imageToFade.Width, imageToFade.Height, GraphicsUnit.Pixel, imageAtt);
@@ -7650,8 +7887,9 @@ namespace ReBloxLauncher
         {
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                Properties.Settings.Default.RBDFPath = (openFileDialog1.FileName.EndsWith(".rbdf") ? openFileDialog1.FileName : string.Concat(openFileDialog1.FileName, ".rbdf"));
+                Properties.Settings.Default.RBDFPath = openFileDialog1.FileName.EndsWith(".rbdf") ? openFileDialog1.FileName : string.Concat(openFileDialog1.FileName, ".rbdf");
                 Properties.Settings.Default.Save();
+                label43.Text = Path.GetFileName(openFileDialog1.FileName.EndsWith(".rbdf") ? openFileDialog1.FileName : string.Concat(openFileDialog1.FileName, ".rbdf"));
             }
         }
 
@@ -7659,6 +7897,7 @@ namespace ReBloxLauncher
         {
             Properties.Settings.Default.RBDFPath = "default.rbdf";
             Properties.Settings.Default.Save();
+            label43.Text = "default.rbdf";
         }
     }
 }

@@ -25,7 +25,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1320")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1323")]
         public string version {
             get {
                 return ((string)(this["version"]));
