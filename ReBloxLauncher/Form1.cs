@@ -891,7 +891,6 @@ namespace ReBloxLauncher
                     }
                     foreach (TabPage pages in tabControl1.TabPages)
                     {
-                        Console.WriteLine(pages.Name);
                         pages.BackColor = Color.FromArgb(30, 30, 30);
                         foreach (Control control in pages.Controls)
                         {
@@ -2172,7 +2171,6 @@ namespace ReBloxLauncher
                     }
                     foreach (TabPage pages in tabControl1.TabPages)
                     {
-                        Console.WriteLine(pages.Name);
                         pages.BackColor = Color.FromArgb(30, 30, 30);
                         foreach (Control control in pages.Controls)
                         {
