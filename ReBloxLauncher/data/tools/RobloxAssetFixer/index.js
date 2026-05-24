@@ -3090,7 +3090,7 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
 
 app.get("/game/GetCurrentUser.ashx", (req, res) => {
     if (AllowGetCurrentUser) {
-        res.status(200).send(userId)
+        res.status(200).send("" + userId)
     }
     else {
         res.status(200).send("null")
