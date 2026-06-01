@@ -4801,6 +4801,10 @@ app.get("//game/players/:id", (req, res) => {
     res.status(200).send("{ \"ChatFilter\": \"blacklist\" }")
 })
 
+app.get("/users/:userid/groups", (req, res) => {
+    res.status(200).send("[]") //STUB
+})
+
 app.get("/users/:id", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
