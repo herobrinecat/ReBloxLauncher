@@ -2678,7 +2678,7 @@ namespace ReBloxLauncher
 
         private void Roblox_Exited(object sender, EventArgs e)
         {
-            if (exitingClient == false)
+            if (exitingClient == false && launchingClient == false)
             {
                 Process[] processesr = Process.GetProcessesByName("RobloxStudioBeta");
                 Process[] processesr1 = Process.GetProcessesByName("RobloxPlayerBeta");
@@ -2686,7 +2686,7 @@ namespace ReBloxLauncher
                 if (processesr.Length <= 0 && processesr1.Length <= 0 && processesr2.Length <= 0)
                 {
                     //I know it's the second time, but a race condition could happen if we don't put an if here.
-                    if (exitingClient == false)
+                    if (exitingClient == false && launchingClient == false)
                     {
                         exitingClient = true;
                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
