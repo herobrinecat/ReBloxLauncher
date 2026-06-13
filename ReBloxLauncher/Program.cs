@@ -39,6 +39,7 @@ namespace ReBloxLauncher
                     }
                     ostrm = new FileStream("./logs/log.log", FileMode.OpenOrCreate, FileAccess.Write);
                     writer = new StreamWriter(ostrm);
+                    writer.AutoFlush = true;
                     success = true;
                 }
                 catch
