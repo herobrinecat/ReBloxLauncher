@@ -16,7 +16,7 @@ namespace ReBloxLauncher
     {
         static readonly UdpClient serverUdpClient = new UdpClient(50358);
         static readonly UdpClient clientUdpClient = new UdpClient();
-        static readonly TcpListener tcpListener = new TcpListener(IPAddress.Any, 50355);
+        static TcpListener tcpListener;
         static bool serverOn = false;
         static bool serverComOn = false;
 
@@ -54,10 +54,26 @@ namespace ReBloxLauncher
             return value.ToString("yyyyMMddHHmmss");
         }
 
+        private static bool checkPort(int port)
+        {
+            IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
+            IPEndPoint[] tcpComInfoArray = ipGlobalProperties.GetActiveTcpListeners();
+
+            return tcpComInfoArray.Any(endpoint => endpoint.Port == port);
+        }
         public static void StartServerCom()
         {
             Thread thread = new Thread(() =>
             {
+                if (checkPort(50355))
+                {
+                    MessageBox.Show("It appears that another program/launcher is using the port that ReBlox uses, please close the program that uses the port and relaunch the launcher.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;  
+                }
+                else
+                {
+                    tcpListener = new TcpListener(IPAddress.Any, 50355);
+                }
                 Console.WriteLine("<INFO> Starting TCP Server for RobloxAssetFixer integration with port 50355");
                 serverComOn = true;
                 tcpListener.Start();

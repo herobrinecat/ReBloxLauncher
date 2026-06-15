@@ -49,6 +49,7 @@ namespace ReBloxLauncher
                 if (success)
                 {
                     Console.SetOut(writer);
+                    Console.WriteLine("ReBlox Launcher Log (" + DateTime.Now.ToString("D") + ")\r\n");
                     Console.WriteLine("<INFO> Logging has started!");
                 }
             }

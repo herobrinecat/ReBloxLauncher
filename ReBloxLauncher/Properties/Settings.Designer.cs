@@ -25,7 +25,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1323")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1325")]
         public string version {
             get {
                 return ((string)(this["version"]));
@@ -154,7 +154,9 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("\\data\\assetpacks\\Basic Roblox Assets|.\\data\\assetpacks\\ReBlox Accessories (2016E-" +
+            ")|.\\data\\assetpacks\\ReBlox Accessories (2016M+)|.\\data\\assetpacks\\ReBlox Clothin" +
+            "g|.\\data\\assetpacks\\ReBlox Faces")]
         public string AssetPackEnabled {
             get {
                 return ((string)(this["AssetPackEnabled"]));
@@ -461,6 +463,66 @@ namespace ReBloxLauncher.Properties {
             }
             set {
                 this["RBDFPath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public ulong UserIdLong {
+            get {
+                return ((ulong)(this["UserIdLong"]));
+            }
+            set {
+                this["UserIdLong"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool LongUserIdExperiment {
+            get {
+                return ((bool)(this["LongUserIdExperiment"]));
+            }
+            set {
+                this["LongUserIdExperiment"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string FullBodyBase64 {
+            get {
+                return ((string)(this["FullBodyBase64"]));
+            }
+            set {
+                this["FullBodyBase64"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string HeadshotBase64 {
+            get {
+                return ((string)(this["HeadshotBase64"]));
+            }
+            set {
+                this["HeadshotBase64"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool RenderAvatarExperiment {
+            get {
+                return ((bool)(this["RenderAvatarExperiment"]));
+            }
+            set {
+                this["RenderAvatarExperiment"] = value;
             }
         }
     }

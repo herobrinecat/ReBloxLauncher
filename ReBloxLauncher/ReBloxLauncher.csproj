@@ -142,6 +142,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="rebloxicon.ico" />
+	<None Include="Resources\avatar.png" />
     <None Include="Resources\resources_logo.png" />
     <None Include="Resources\splashscreen.png" />
     <EmbeddedResource Include="Resources\DiscordRPC.dll" />

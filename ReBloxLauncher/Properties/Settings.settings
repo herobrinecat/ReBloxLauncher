@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="version" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">0.0.1323</Value>
+      <Value Profile="(Default)">0.0.1325</Value>
     </Setting>
     <Setting Name="lastselectedversion" Type="System.String" Scope="User">
       <Value Profile="(Default)">2017L</Value>
@@ -36,7 +36,7 @@
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="AssetPackEnabled" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">\data\assetpacks\Basic Roblox Assets|.\data\assetpacks\ReBlox Accessories (2016E-)|.\data\assetpacks\ReBlox Accessories (2016M+)|.\data\assetpacks\ReBlox Clothing|.\data\assetpacks\ReBlox Faces</Value>
     </Setting>
     <Setting Name="avatarR15" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -112,6 +112,21 @@
     </Setting>
     <Setting Name="RBDFPath" Type="System.String" Scope="User">
       <Value Profile="(Default)">default.rbdf</Value>
+    </Setting>
+    <Setting Name="UserIdLong" Type="System.UInt64" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="LongUserIdExperiment" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="FullBodyBase64" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="HeadshotBase64" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="RenderAvatarExperiment" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
   </Settings>
 </SettingsFile>

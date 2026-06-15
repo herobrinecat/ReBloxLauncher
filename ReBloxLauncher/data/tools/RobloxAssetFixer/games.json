@@ -1,1 +1,46 @@
-[]
+[
+    {
+        "id": 28220420,
+        "name": "Baseplate",
+        "description": "",
+        "isArchived": false,
+        "rootPlaceId": 95206881,
+        "isActive": true,
+        "genre": "All",
+        "isFriendsOnly": false,
+        "playableDevices": [
+            "Phone",
+            "Computer",
+            "Tablet"
+        ],
+        "studioAccessToApisAllowed": false,
+        "privacyType": "Public",
+        "creatorType": "User",
+        "creatorTargetId": 998796,
+        "creatorName": "Templates",
+        "created": "2012-10-15T22:38:48.407Z",
+        "updated": "2026-05-28T05:00:17.977Z"
+    },
+    {
+        "id": 2464612126,
+        "name": "Classic Baseplate",
+        "description": "",
+        "isArchived": false,
+        "rootPlaceId": 6560363541,
+        "isActive": true,
+        "genre": "All",
+        "isFriendsOnly": false,
+        "playableDevices": [
+            "Phone",
+            "Computer",
+            "Tablet"
+        ],
+        "studioAccessToApisAllowed": false,
+        "privacyType": "Public",
+        "creatorType": "User",
+        "creatorTargetId": 998796,
+        "creatorName": "Templates",
+        "created": "2012-10-15T22:38:48.407Z",
+        "updated": "2026-05-28T05:00:17.977Z"
+    }
+]

@@ -50,6 +50,8 @@
             this.label5 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
             this.ExperimentsPanel = new System.Windows.Forms.Panel();
+            this.checkBox20 = new System.Windows.Forms.CheckBox();
+            this.checkBox19 = new System.Windows.Forms.CheckBox();
             this.checkBox18 = new System.Windows.Forms.CheckBox();
             this.checkBox15 = new System.Windows.Forms.CheckBox();
             this.checkBox14 = new System.Windows.Forms.CheckBox();
@@ -103,6 +105,10 @@
             this.listBox3 = new System.Windows.Forms.ListBox();
             this.label12 = new System.Windows.Forms.Label();
             this.panel5 = new System.Windows.Forms.Panel();
+            this.button27 = new System.Windows.Forms.Button();
+            this.pictureBox3 = new System.Windows.Forms.PictureBox();
+            this.button26 = new System.Windows.Forms.Button();
+            this.button25 = new System.Windows.Forms.Button();
             this.label36 = new System.Windows.Forms.Label();
             this.numericUpDown7 = new System.Windows.Forms.NumericUpDown();
             this.label28 = new System.Windows.Forms.Label();
@@ -170,9 +176,10 @@
             this.comboBox3 = new System.Windows.Forms.ComboBox();
             this.label33 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
-            this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.fadeImageTimer = new System.Windows.Forms.Timer(this.components);
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.pictureBox2 = new System.Windows.Forms.PictureBox();
+            this.label44 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -183,6 +190,7 @@
             this.panel3.SuspendLayout();
             this.panel4.SuspendLayout();
             this.panel5.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown5)).BeginInit();
@@ -439,6 +447,8 @@
             // 
             this.ExperimentsPanel.AutoScroll = true;
             this.ExperimentsPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.ExperimentsPanel.Controls.Add(this.checkBox20);
+            this.ExperimentsPanel.Controls.Add(this.checkBox19);
             this.ExperimentsPanel.Controls.Add(this.checkBox18);
             this.ExperimentsPanel.Controls.Add(this.checkBox15);
             this.ExperimentsPanel.Controls.Add(this.checkBox14);
@@ -450,11 +460,37 @@
             this.ExperimentsPanel.TabIndex = 33;
             this.ExperimentsPanel.Visible = false;
             // 
+            // checkBox20
+            // 
+            this.checkBox20.AutoSize = true;
+            this.checkBox20.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.checkBox20.Location = new System.Drawing.Point(20, 208);
+            this.checkBox20.Name = "checkBox20";
+            this.checkBox20.Size = new System.Drawing.Size(234, 21);
+            this.checkBox20.TabIndex = 36;
+            this.checkBox20.Text = "Add support for rendering avatar";
+            this.toolTip1.SetToolTip(this.checkBox20, "Switches from text-based RBDF to binary-based RBDF");
+            this.checkBox20.UseVisualStyleBackColor = true;
+            this.checkBox20.CheckedChanged += new System.EventHandler(this.checkBox20_CheckedChanged);
+            // 
+            // checkBox19
+            // 
+            this.checkBox19.AutoSize = true;
+            this.checkBox19.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.checkBox19.Location = new System.Drawing.Point(20, 181);
+            this.checkBox19.Name = "checkBox19";
+            this.checkBox19.Size = new System.Drawing.Size(283, 21);
+            this.checkBox19.TabIndex = 35;
+            this.checkBox19.Text = "Change User ID limit from Int32 to UInt64";
+            this.toolTip1.SetToolTip(this.checkBox19, "Switches from text-based RBDF to binary-based RBDF");
+            this.checkBox19.UseVisualStyleBackColor = true;
+            this.checkBox19.CheckedChanged += new System.EventHandler(this.checkBox19_CheckedChanged);
+            // 
             // checkBox18
             // 
             this.checkBox18.AutoSize = true;
             this.checkBox18.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.checkBox18.Location = new System.Drawing.Point(20, 181);
+            this.checkBox18.Location = new System.Drawing.Point(20, 235);
             this.checkBox18.Name = "checkBox18";
             this.checkBox18.Size = new System.Drawing.Size(204, 21);
             this.checkBox18.TabIndex = 34;
@@ -1119,6 +1155,11 @@
             // panel5
             // 
             this.panel5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.panel5.Controls.Add(this.label44);
+            this.panel5.Controls.Add(this.button27);
+            this.panel5.Controls.Add(this.pictureBox3);
+            this.panel5.Controls.Add(this.button26);
+            this.panel5.Controls.Add(this.button25);
             this.panel5.Controls.Add(this.label36);
             this.panel5.Controls.Add(this.numericUpDown7);
             this.panel5.Controls.Add(this.label28);
@@ -1151,6 +1192,57 @@
             this.panel5.Name = "panel5";
             this.panel5.Size = new System.Drawing.Size(526, 372);
             this.panel5.TabIndex = 31;
+            // 
+            // button27
+            // 
+            this.button27.BackColor = System.Drawing.Color.White;
+            this.button27.ForeColor = System.Drawing.Color.Black;
+            this.button27.Location = new System.Drawing.Point(19, 322);
+            this.button27.Name = "button27";
+            this.button27.Size = new System.Drawing.Size(75, 23);
+            this.button27.TabIndex = 31;
+            this.button27.Text = "Render";
+            this.button27.UseVisualStyleBackColor = false;
+            this.button27.Visible = false;
+            this.button27.Click += new System.EventHandler(this.button27_Click);
+            // 
+            // pictureBox3
+            // 
+            this.pictureBox3.Image = global::ReBloxLauncher.Properties.Resources.avatar;
+            this.pictureBox3.Location = new System.Drawing.Point(19, 75);
+            this.pictureBox3.Name = "pictureBox3";
+            this.pictureBox3.Size = new System.Drawing.Size(226, 231);
+            this.pictureBox3.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox3.TabIndex = 30;
+            this.pictureBox3.TabStop = false;
+            this.toolTip1.SetToolTip(this.pictureBox3, resources.GetString("pictureBox3.ToolTip"));
+            this.pictureBox3.Visible = false;
+            // 
+            // button26
+            // 
+            this.button26.BackColor = System.Drawing.Color.White;
+            this.button26.ForeColor = System.Drawing.Color.Black;
+            this.button26.Location = new System.Drawing.Point(258, 20);
+            this.button26.Name = "button26";
+            this.button26.Size = new System.Drawing.Size(75, 23);
+            this.button26.TabIndex = 29;
+            this.button26.Text = "Render";
+            this.button26.UseVisualStyleBackColor = false;
+            this.button26.Visible = false;
+            this.button26.Click += new System.EventHandler(this.button26_Click);
+            // 
+            // button25
+            // 
+            this.button25.BackColor = System.Drawing.Color.White;
+            this.button25.ForeColor = System.Drawing.Color.Black;
+            this.button25.Location = new System.Drawing.Point(177, 20);
+            this.button25.Name = "button25";
+            this.button25.Size = new System.Drawing.Size(75, 23);
+            this.button25.TabIndex = 28;
+            this.button25.Text = "Edit";
+            this.button25.UseVisualStyleBackColor = false;
+            this.button25.Visible = false;
+            this.button25.Click += new System.EventHandler(this.button25_Click);
             // 
             // label36
             // 
@@ -1186,7 +1278,7 @@
             this.label28.AutoSize = true;
             this.label28.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.label28.ForeColor = System.Drawing.Color.White;
-            this.label28.Location = new System.Drawing.Point(334, 34);
+            this.label28.Location = new System.Drawing.Point(394, 36);
             this.label28.Name = "label28";
             this.label28.Size = new System.Drawing.Size(64, 17);
             this.label28.TabIndex = 25;
@@ -1760,14 +1852,13 @@
             // 
             // label43
             // 
-            this.label43.AutoSize = true;
             this.label43.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label43.Location = new System.Drawing.Point(418, 194);
+            this.label43.Location = new System.Drawing.Point(195, 194);
             this.label43.Name = "label43";
-            this.label43.Size = new System.Drawing.Size(80, 17);
+            this.label43.Size = new System.Drawing.Size(303, 21);
             this.label43.TabIndex = 11;
             this.label43.Text = "default.rbdf";
-            this.label43.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.label43.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // button24
             // 
@@ -1955,17 +2046,6 @@
             this.label9.TabIndex = 24;
             this.label9.Text = "UserId:";
             // 
-            // pictureBox2
-            // 
-            this.pictureBox2.BackColor = System.Drawing.Color.Transparent;
-            this.pictureBox2.Location = new System.Drawing.Point(206, 18);
-            this.pictureBox2.Name = "pictureBox2";
-            this.pictureBox2.Size = new System.Drawing.Size(127, 34);
-            this.pictureBox2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.pictureBox2.TabIndex = 37;
-            this.pictureBox2.TabStop = false;
-            this.pictureBox2.Visible = false;
-            // 
             // fadeImageTimer
             // 
             this.fadeImageTimer.Interval = 10000;
@@ -1978,6 +2058,30 @@
             this.progressBar1.Size = new System.Drawing.Size(108, 11);
             this.progressBar1.TabIndex = 38;
             this.progressBar1.Visible = false;
+            // 
+            // pictureBox2
+            // 
+            this.pictureBox2.BackColor = System.Drawing.Color.Transparent;
+            this.pictureBox2.Location = new System.Drawing.Point(206, 18);
+            this.pictureBox2.Name = "pictureBox2";
+            this.pictureBox2.Size = new System.Drawing.Size(127, 34);
+            this.pictureBox2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox2.TabIndex = 37;
+            this.pictureBox2.TabStop = false;
+            this.pictureBox2.Visible = false;
+            // 
+            // label44
+            // 
+            this.label44.AutoSize = true;
+            this.label44.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.label44.ForeColor = System.Drawing.Color.White;
+            this.label44.Location = new System.Drawing.Point(103, 324);
+            this.label44.Name = "label44";
+            this.label44.Size = new System.Drawing.Size(66, 17);
+            this.label44.TabIndex = 32;
+            this.label44.Text = "(R6 only)";
+            this.label44.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label44.Visible = false;
             // 
             // Form1
             // 
@@ -2040,6 +2144,7 @@
             this.panel4.PerformLayout();
             this.panel5.ResumeLayout(false);
             this.panel5.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown5)).EndInit();
@@ -2210,6 +2315,13 @@
         private System.Windows.Forms.CheckBox checkBox18;
         private System.Windows.Forms.Label label43;
         private System.Windows.Forms.ProgressBar progressBar1;
+        private System.Windows.Forms.CheckBox checkBox19;
+        private System.Windows.Forms.Button button25;
+        private System.Windows.Forms.Button button26;
+        private System.Windows.Forms.CheckBox checkBox20;
+        private System.Windows.Forms.Button button27;
+        private System.Windows.Forms.PictureBox pictureBox3;
+        private System.Windows.Forms.Label label44;
     }
 }
 

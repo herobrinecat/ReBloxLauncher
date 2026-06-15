@@ -45,6 +45,7 @@ var robux = 5000 //Total amount of ROBUX
 //Server variables
 var assetfolder = "./assets" //A directory path where the server will look if there's any assets to use locally
 var verbose = false //Gives out more info like what the server is doing
+var debuglevel = 1 // 1: Normal Verbose, 2: Extra Verbose
 var useAuth = false //ROBLOSECURITY is needed to be filled out to use this, can get other assets apart from Decals (can be set with -useAuth)
 var ROBLOSECURITY = "" //This is required to tell the difference between Decal and Image due to assetdelivery update (if useAuth is enabled) (can be set with -ROBLOSECURITY [please put this before -useAuth])
 var saveFile = false //Saves the file that's not part of the file assets to the saved folder
@@ -90,7 +91,7 @@ function getByteFromDataType(datatype) {
     }
 }
 
-function readBinaryRBDF(path, index) {
+async function readBinaryRBDF(path, index) {
     if (typeof (path) == "string" && typeof (index) == "number") {
         if (path.endsWith(".rbdf")) {
             if (filesystem.existsSync(path)) {
@@ -108,13 +109,27 @@ function readBinaryRBDF(path, index) {
                                         var realindex = 0
                                         for (var i = 0; i < itemcount; i++) {
                                             if (realindex != index) {
-                                                itemindex = itemindex + 17
+                                                itemindex += 17
                                                 const gzipsize = Buffer.from([data[itemindex], data[itemindex + 1], data[itemindex + 2], data[itemindex + 3]]).readInt32BE()
+                                                itemindex += (4 + gzipsize)
+                                                realindex += 1
                                             }
                                             else {
                                                 var md5hexcombined = []
                                                 for (var x = 0; x < 16; x++) {
                                                     md5hexcombined.push(data[itemindex + x])
+                                                }
+                                                itemindex += 17
+                                                const gzipsize = Buffer.from([data[itemindex], data[itemindex + 1], data[itemindex + 2], data[itemindex + 3]]).readInt32BE()
+                                                itemindex += 4
+                                                var dataTarget = Buffer.alloc(gzipsize)
+                                                data.copy(dataTarget, 0, itemindex, itemindex + gzipsize)
+                                                var hash = crypto.createHash("md5").update(zlib.gunzipSync(dataTarget)).digest("hex")
+                                                if (Buffer.from(md5hexcombined).toString("hex") == hash) {
+                                                    return zlib.gunzipSync(dataTarget)
+                                                }
+                                                else {
+                                                    return Buffer.alloc(1)
                                                 }
                                             }
                                         }
@@ -154,7 +169,7 @@ function removeBinaryRBDF(path, index) {
         }
     }
 }
-function writeBinaryRBDF(path, content) {
+async function writeBinaryRBDF(path, content, index) {
     if (path.endsWith(".rbdf")) {
         if (filesystem.existsSync(path)) {
             if (content != undefined && typeof (content) == "string") {
@@ -162,11 +177,63 @@ function writeBinaryRBDF(path, content) {
                     if (result == "binary") {
                         var data = filesystem.readFileSync(path)
                         var hash = crypto.createHash("md5").update(content).digest("hex")
-
+                        var itemcount = Buffer.from([data[13], data[14], data[15], data[16]]).readInt32LE()
+                        var totalLengthOld = Buffer.from([data[8], data[9], data[10], data[11], data[12]]).readInt32BE()
                         var split = content.split(' ', 2)
 
-                        var dataByte = getByteFromDataType(split[0].slice(1))
+                        const dataByte = getByteFromDataType(split[0].slice(1))
 
+                        if (itemcount > 0) {
+                            if (index != undefined) {
+
+                            } else {
+                                var dataWithoutHeader = Buffer.alloc(data.length - 17)
+                                data.copy(dataWithoutHeader, 0, 18, data.length)
+                                var contentcompressed = zlib.gzipSync(Buffer.from(content, "utf8"))
+                                var magicNumber = Buffer.alloc(4)
+                                magicNumber.writeInt32BE(293712399)
+                                var totalLength = Buffer.alloc(5)
+                                totalLength.writeInt32BE(contentcompressed.length + 21 + totalLengthOld)
+                                var contentLength = Buffer.alloc(4)
+                                itemcount++
+                                contentLength.writeInt32BE(contentcompressed.length)
+                                var totalItems = Buffer.alloc(4)
+                                totalItems.writeInt32LE(itemcount)
+                                var item = Buffer.concat([Buffer.from(hash, "hex"), Buffer.from([dataByte]), contentLength, contentcompressed])
+                                var headerBuffer = Buffer.concat([Buffer.from("RBDF", "utf8"), magicNumber, totalLength, totalItems])
+                                var combined = Buffer.concat([headerBuffer, dataWithoutHeader, item])
+                                filesystem.writeFileSync(path, combined)
+
+                                contentcompressed = null
+                                totalLength = null
+                                contentLength = null
+                                headerBuffer = null
+                                item = null
+                                combined = null
+                            }
+                        }
+                        else {
+                            var contentcompressed = zlib.gzipSync(Buffer.from(content, "utf8"))
+                            var magicNumber = Buffer.alloc(4)
+                            magicNumber.writeInt32BE(293712399)
+                            var totalLength = Buffer.alloc(5)
+                            totalLength.writeInt32BE(contentcompressed.length + 21)
+                            var contentLength = Buffer.alloc(4)
+                            contentLength.writeInt32BE(contentcompressed.length)
+                            var headerBuffer = Buffer.concat([Buffer.from("RBDF", "utf8"), magicNumber, totalLength, Buffer.from([0x01, 0x00, 0x00, 0x00])])
+                            var item = Buffer.concat([Buffer.from(hash, "hex"), Buffer.from([dataByte]), contentLength, contentcompressed])
+
+                            var combined = Buffer.concat([headerBuffer, item])
+
+                            filesystem.writeFileSync(path, combined)
+
+                            contentcompressed = null
+                            totalLength = null
+                            contentLength = null
+                            headerBuffer = null
+                            item = null
+                            combined = null
+                        }
                     }
                     else {
                         console.log("\x1b[31m%s\x1b[0m", "<ERROR> This appears to be a text-based version of RBDF or an invalid file, please try a different RBDF!")
@@ -204,8 +271,12 @@ function writeBinaryRBDF(path, content) {
     }
 }
 
-//writeBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", "<Badge userId=1038712 badgeId=58278772>")
-//readBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", 0)
+//writeBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", "<Badge userId=1038712 badgeId=58278772>").then(() => {
+//    readBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", 1).then((data) => {
+//        console.log(data.toString("utf8"))
+//    })
+//})
+
 function trueRaw(req, res, next) {
     if (req.headers["content-type"] == "*/*") {
         req.body = new Promise(resolve => {
@@ -362,8 +433,11 @@ process.argv.forEach(function (val) {
     else if (val == "-disableDataPersistence") {
         enableDataPersistence = false
     }
+    else if (val == "--verbose") {
+        verbose = true
+    }
     else if (val == "-help") {
-        console.log("\r\n<INFO> Usage for RobloxAssetFixer:\r\n\r\n-ROBLOSECURITY=\"roblosecurity\" - Set your ROBLOSECURITY (required for useAuth)\r\n-useAuth - Set the asset retrieval to use Roblox's servers that requires auth\r\n-username= - Set your player's username\r\n-userid= - Set your player's userid\r\n-accountUnder13 - Mark your account <13\r\n-r15 - Set your avatar to be R15\r\n-bodycolor=[0,0,0,0,0,0] - Set your body color of your avatar (deprecated)\r\n-clothes=[] - Set the asset ids of your avatar for customzation (deprecated)\r\n-ip= - Set an IP to the server if you're joining (required for -joining)\r\n-joining - Mark the server as joining and make several functions connect to the host's server instead of simulating it (-ip required)\r\n-disableDataStore - Disable saving/loading of data via DataStore with RBDF\n-disableBadges - Disable saving badges with RBDF\r\n-disableFollowing - Disable saving followers with RBDF\r\n-rbdf=\"path\" - A path to a ReBlox Datastore File\r\n-assetFromServer - Makes the asset link attempt to contact the local server you're joining, use Roblox's server as fallback (requires -ip and -joining)\r\n-disableNewSignature - use %DATA% instead of --rbxsig%DATA% (required for 2013M and older)\r\n-disableNewSignatureAsset - makes the format for script signing %ID% instead of --rbxassetid%ID%\r\n-disableOwnedAssets - Disables saving owned assets with RBDF\r\n-robux=amount - Set the amount of ROBUX you have.\r\n--disableTCP - Disables communication between the server and the launcher.\r\n-disableDataPersistence - Disables saving/loading data via Data Persistence with RBDF")
+        console.log("\r\n<INFO> Usage for RobloxAssetFixer:\r\n\r\n-ROBLOSECURITY=\"roblosecurity\" - Set your ROBLOSECURITY (required for useAuth)\r\n-useAuth - Set the asset retrieval to use Roblox's servers that requires auth\r\n-username= - Set your player's username\r\n-userid= - Set your player's userid\r\n-accountUnder13 - Mark your account <13\r\n-r15 - Set your avatar to be R15\r\n-bodycolor=[0,0,0,0,0,0] - Set your body color of your avatar (deprecated)\r\n-clothes=[] - Set the asset ids of your avatar for customzation (deprecated)\r\n-ip= - Set an IP to the server if you're joining (required for -joining)\r\n-joining - Mark the server as joining and make several functions connect to the host's server instead of simulating it (-ip required)\r\n-disableDataStore - Disable saving/loading of data via DataStore with RBDF\n-disableBadges - Disable saving badges with RBDF\r\n-disableFollowing - Disable saving followers with RBDF\r\n-rbdf=\"path\" - A path to a ReBlox Datastore File\r\n-assetFromServer - Makes the asset link attempt to contact the local server you're joining, use Roblox's server as fallback (requires -ip and -joining)\r\n-disableNewSignature - use %DATA% instead of --rbxsig%DATA% (required for 2013M and older)\r\n-disableNewSignatureAsset - makes the format for script signing %ID% instead of --rbxassetid%ID%\r\n-disableOwnedAssets - Disables saving owned assets with RBDF\r\n-robux=amount - Set the amount of ROBUX you have.\r\n--disableTCP - Disables communication between the server and the launcher.\r\n-disableDataPersistence - Disables saving/loading data via Data Persistence with RBDF\r\n--verbose - Give more information about what's happening, helpful when troubleshooting!")
         process.exit(0)
     }
 })
@@ -399,8 +473,18 @@ function getROBLOSECURITYfromLauncher(times) {
                 host: "127.0.0.1",
                 port: 50355
             }
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
+            }
             client.connect(options, () => {
-                if (verbose) { console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!") }
+                if (verbose == true) {
+                    if (debuglevel == 2) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
+                    }
+                    else {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+                    }
+                }
                 var roblosecurityfromlauncher = ""
                 client.setEncoding("utf8")
                 client.on("data", (chunk) => {
@@ -412,8 +496,14 @@ function getROBLOSECURITYfromLauncher(times) {
                         ROBLOSECURITY = Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8")
                         if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully synced ROBLOSECURITY with the launcher! Turning on useAuth...")
                         useAuth = true
+                        if (debuglevel == 2 && verbose == true) {
+                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> useAuth is now true.")
+                        }
                     }
                     else if (roblosecurityfromlauncher == "invalid") {
+                        if (debuglevel == 2 && verbose == true) {
+                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Attempt " + times + " of 5 failed, trying again...")
+                        }
                         getROBLOSECURITYfromLauncher(times + 1)
                     }
                     else {
@@ -421,8 +511,13 @@ function getROBLOSECURITYfromLauncher(times) {
                     }
                 })
             })
-
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to get ROBLOSECURITY from launcher")
+            }
             client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("GRS", "utf8"), Buffer.from(getTimestamp(), "utf8")]))
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
+            }
             client.end()
         }
         else {
@@ -539,19 +634,43 @@ function getAsset(id, callback) {
                                 var data = [], output
 
                                 if (res1.headers["content-encoding"] == "gzip") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) {
+                                        if (debuglevel == 2) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from assetdelivery.roblox.com")
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Compression type: gzip")
+                                        }
+                                        else {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery API (gzip compression)")
+                                        }
+                                    } else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const gzip = zlib.createGunzip()
                                     res1.pipe(gzip)
                                     output = gzip
                                 }
                                 else if (res.headers["content-encoding"] == "deflate") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) {
+                                        if (debuglevel == 2) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from assetdelivery.roblox.com")
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Compression type: deflate")
+                                        }
+                                        else {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery API (deflate compression)")
+                                        }
+                                    } else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const deflate = zlib.createDeflate()
                                     res1.pipe(deflate)
                                     output = deflate
                                 }
                                 else {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) {
+                                        if (debuglevel == 2) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from assetdelivery.roblox.com")
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Compression type: " + res1.headers["content-encoding"])
+                                        }
+                                        else {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery API")
+                                        }
+                                    } else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     output = res1
                                 }
 
@@ -562,18 +681,42 @@ function getAsset(id, callback) {
                                 output.on("end", () => {
                                     const buffer = Buffer.concat(data)
 
-                                    if (jsonresult["assetTypeId"] == 13) {
+                                    if (debuglevel == 2 && verbose == true) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Status code: " + res3.statusCode)
+                                        if (res3.statusCode != 200) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Body: " + buffer.toString("utf8"))
+                                        }
+                                    }
+                                    if (jsonresult["assetTypeId"] != undefined && jsonresult["assetTypeId"] == 13) {
+                                        if (debuglevel == 2 && verbose == true) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Content checked as decal, getting image ID... ")
+                                        }
                                         const buffertext = data.toString()
                                         const regex = new RegExp("<url>(.*)<\/url>")
                                         const match = regex.exec(buffertext)
 
                                         if (match != null && match.length > 0) {
+                                            if (debuglevel == 2 && verbose == true) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Extracted image ID: " + match[1])
+                                            }
                                             getAsset(match[1], function (data1) {
+                                                if (debuglevel == 2 && verbose == true) {
+                                                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Received data from getAsset(), sending decal as image...")
+                                                }
                                                 return callback(data1)
                                             })
                                         }
+                                        else {
+                                            if (debuglevel == 2 && verbose == true) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Image ID not found in the decal, sending an error as a response")
+                                            }
+                                            return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
+                                        }
                                     }
                                     else {
+                                        if (debuglevel == 2 && verbose == true) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending buffer to the function that called getAsset()")
+                                        }
                                         return callback(buffer)
                                     }
                                 })
@@ -636,19 +779,43 @@ function getAsset(id, callback) {
                                                             var data = [], output
 
                                                             if (res3.headers["content-encoding"] == "gzip") {
-                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (gzip compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                if (verbose) {
+                                                                    if (debuglevel == 2) {
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from thumbnails.roblox.com")
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Compression type: gzip")
+                                                                    }
+                                                                    else {
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (gzip compression)")
+                                                                    }
+                                                                } else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                                                 const gzip = zlib.createGunzip()
                                                                 res3.pipe(gzip)
                                                                 output = gzip
                                                             }
                                                             else if (res3.headers["content-encoding"] == "deflate") {
-                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (deflate compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                if (verbose) {
+                                                                    if (debuglevel == 2) {
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from thumbnails.roblox.com")
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Compression type: deflate")
+                                                                    }
+                                                                    else {
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API (deflate compression)")
+                                                                    }
+                                                                } else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                                                 const deflate = zlib.createDeflate()
                                                                 res3.pipe(deflate)
                                                                 output = deflate
                                                             }
                                                             else {
-                                                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                                                if (verbose) {
+                                                                    if (debuglevel == 2) {
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from thumbnails.roblox.com")
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Compression type: " + res3.headers["content-encoding"])
+                                                                    }
+                                                                    else {
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Thumbnails API")
+                                                                    }
+                                                                } else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                                                 output = res3
                                                             }
 
@@ -658,7 +825,13 @@ function getAsset(id, callback) {
 
                                                             output.on("end", () => {
                                                                 const buffer = Buffer.concat(data)
-
+                                                                if (debuglevel == 2 && verbose == true) {
+                                                                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Status code: " + res3.statusCode)
+                                                                    if (res3.statusCode != 200) {
+                                                                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Body: " + buffer.toString("utf8"))
+                                                                    }
+                                                                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending buffer to the function that called getAsset()")
+                                                                }
                                                                 return callback(buffer)
                                                             })
                                                         })
@@ -730,19 +903,43 @@ function getAsset(id, callback) {
                                 var data = [], output
 
                                 if (res1.headers["content-encoding"] == "gzip") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (gzip compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) {
+                                        if (debuglevel == 2) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from assetdelivery.roblox.com")
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Compression type: gzip")
+                                        }
+                                        else {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery API (gzip compression)")
+                                        }
+                                    } else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const gzip = zlib.createGunzip()
                                     res1.pipe(gzip)
                                     output = gzip
                                 }
                                 else if (res.headers["content-encoding"] == "deflate") {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery (deflate compression)"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) {
+                                        if (debuglevel == 2) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from assetdelivery.roblox.com")
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Compression type: deflate")
+                                        }
+                                        else {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery API (deflate compression)")
+                                        }
+                                    } else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     const deflate = zlib.createDeflate()
                                     res1.pipe(deflate)
                                     output = deflate
                                 }
                                 else {
-                                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery"); else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
+                                    if (verbose) {
+                                        if (debuglevel == 2) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from assetdelivery.roblox.com")
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Compression type: " + res1.headers["content-encoding"])
+                                        }
+                                        else {
+                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from AssetDelivery API")
+                                        }
+                                    } else console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + id + " from Roblox server");
                                     output = res1
                                 }
 
@@ -753,21 +950,42 @@ function getAsset(id, callback) {
                                 output.on("end", () => {
                                     const buffer = Buffer.concat(data)
 
-                                    if (jsonresult["assetTypeId"] == 13) {
+                                    if (debuglevel == 2 && verbose == true) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Status code: " + res1.statusCode)
+                                        if (res1.statusCode != 200) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Body: " + buffer.toString("utf8"))
+                                        }
+                                    }
+                                    if (jsonresult["assetTypeId"] != undefined && jsonresult["assetTypeId"] == 13) {
+                                        if (debuglevel == 2 && verbose == true) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Content checked as decal, getting image ID... ")
+                                        }
                                         const buffertext = data.toString()
-                                        const regex = new RegExp('<url>(.*)<\/url>')
+                                        const regex = new RegExp("<url>(.*)<\/url>")
                                         const match = regex.exec(buffertext)
 
                                         if (match != null && match.length > 0) {
+                                            if (debuglevel == 2 && verbose == true) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Extracted image ID: " + match[1])
+                                            }
                                             getAsset(match[1], function (data1) {
+                                                if (debuglevel == 2 && verbose == true) {
+                                                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Received data from getAsset(), sending decal as image...")
+                                                }
                                                 return callback(data1)
                                             })
                                         }
                                         else {
+                                            if (debuglevel == 2 && verbose == true) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Image ID not found in the decal, sending an error as a response")
+                                            }
                                             return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
                                         }
                                     }
                                     else {
+                                        if (debuglevel == 2 && verbose == true) {
+                                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending buffer to the function that called getAsset()")
+                                        }
                                         return callback(buffer)
                                     }
                                 })
@@ -777,6 +995,9 @@ function getAsset(id, callback) {
                             })
                         }
                         else {
+                            if (debuglevel == 2 && verbose == true) {
+                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Adding" + id + " to the list to not be attempted (Restart the server if this is a valid ID and you have access to it).")
+                            }
                             notWorkingAssetIds.push(id)
                             return callback(result)
                         }
@@ -2589,23 +2810,157 @@ app.post("/v1/assets/batch", (req, res) => {
 app.get("/Thumbs/Avatar.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.setHeader("Content-disposition", "attachment; filename=\"avatar.png\"")
-    if (req.query.userId != undefined && isNumeric(req.query.userId)) {
-        if (filesystem.existsSync("./renders/" + req.query.userId + ".png")) {
-            res.status(200).send(filesystem.readFileSync("./renders/" + req.query.userId + ".png"))
+    if (joining) {
+        var options = {
+            host: ip,
+            port: 80,
+            path: req.originalUrl,
+            method: "GET"
+        }
+        http.get(options, (res1) => {
+            var data = []
+
+            res1.on("data", (chunk) => {
+                data.push(chunk)
+            })
+
+            res1.on("end", () => {
+                var buffer = Buffer.concat(data)
+
+                res.status(res1.statusCode).send(buffer)
+            })
+        })
+    }
+    else {
+        if (req.query.userId != undefined && isNumeric(req.query.userId)) {
+            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
+                if (json["base64FullBody"] != undefined && json["base64FullBody"] != "") {
+                    res.status(200).send(Buffer.from(json["base64FullBody"], "base64"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+                }
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+            }
+        }
+        else if (req.query.username != undefined) {
+            var path2 = path.resolve(req.query.username)
+            var found = false
+            if (path2.startsWith(__dirname)) {
+                memoryUsers.forEach((user) => {
+                    if (user["username"] == req.query.username) {
+                        if (user["userId"] != undefined) {
+                            found = true
+                            if (filesystem.existsSync("./clothes/" + user["userId"] + ".json")) {
+                                var json = JSON.parse(filesystem.readFileSync("./clothes/" + user["userId"] + ".json"))
+                                if (json["base64FullBody"] != undefined && json["base64FullBody"] != "") {
+                                    res.status(200).send(Buffer.from(json["base64FullBody"], "base64"))
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+                            }
+                            return
+                        }
+                    }
+                })
+
+                if (found == false) {
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+                }
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+            }
         }
         else {
             res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
         }
-    }
-    else {
-        res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
     }
 })
 
 app.get("/avatar-thumbnail/image", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.setHeader("Content-disposition", "attachment; filename=\"avatar.png\"")
-    res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+    if (joining) {
+        var options = {
+            host: ip,
+            port: 80,
+            path: req.originalUrl,
+            method: "GET"
+        }
+        http.get(options, (res1) => {
+            var data = []
+
+            res1.on("data", (chunk) => {
+                data.push(chunk)
+            })
+
+            res1.on("end", () => {
+                var buffer = Buffer.concat(data)
+
+                res.status(res1.statusCode).send(buffer)
+            })
+        })
+    }
+    else {
+        if (req.query.userId != undefined && isNumeric(req.query.userId)) {
+            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
+                if (json["base64FullBody"] != undefined && json["base64FullBody"] != "") {
+                    res.status(200).send(Buffer.from(json["base64FullBody"], "base64"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+                }
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+            }
+        }
+        else if (req.query.username != undefined) {
+            var path2 = path.resolve(req.query.username)
+            var found = false
+            if (path2.startsWith(__dirname)) {
+                memoryUsers.forEach((user) => {
+                    if (user["username"] == req.query.username) {
+                        if (user["userId"] != undefined) {
+                            found = true
+                            if (filesystem.existsSync("./clothes/" + user["userId"] + ".json")) {
+                                var json = JSON.parse(filesystem.readFileSync("./clothes/" + user["userId"] + ".json"))
+                                if (json["base64FullBody"] != undefined && json["base64FullBody"] != "") {
+                                    res.status(200).send(Buffer.from(json["base64FullBody"], "base64"))
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+                            }
+                            return
+                        }
+                    }
+                })
+
+                if (found == false) {
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+                }
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+            }
+        }
+        else {
+            res.status(200).send(filesystem.readFileSync(assetfolder + "/avatar.png"))
+        }
+    }
 })
 
 
@@ -2717,7 +3072,79 @@ app.get("/Thumbs/GameIcon.ashx", (req, res) => {
 app.get("/Thumbs/HeadShot.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.setHeader("Content-disposition", "attachment; filename=\"headshot.png\"")
-    res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+    if (joining) {
+        var options = {
+            host: ip,
+            port: 80,
+            path: req.originalUrl,
+            method: "GET"
+        }
+        http.get(options, (res1) => {
+            var data = []
+
+            res1.on("data", (chunk) => {
+                data.push(chunk)
+            })
+
+            res1.on("end", () => {
+                var buffer = Buffer.concat(data)
+
+                res.status(res1.statusCode).send(buffer)
+            })
+        })
+    }
+    else {
+        if (req.query.userId != undefined && isNumeric(req.query.userId)) {
+            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
+                if (json["base64HeadShot"] != undefined && json["base64HeadShot"] != "") {
+                    res.status(200).send(Buffer.from(json["base64HeadShot"], "base64"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+                }
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+            }
+        }
+        else if (req.query.username != undefined) {
+            var path2 = path.resolve(req.query.username)
+            var found = false
+            if (path2.startsWith(__dirname)) {
+                memoryUsers.forEach((user) => {
+                    if (user["username"] == req.query.username) {
+                        if (user["userId"] != undefined) {
+                            found = true
+                            if (filesystem.existsSync("./clothes/" + user["userId"] + ".json")) {
+                                var json = JSON.parse(filesystem.readFileSync("./clothes/" + user["userId"] + ".json"))
+                                if (json["base64HeadShot"] != undefined && json["base64HeadShot"] != "") {
+                                    res.status(200).send(Buffer.from(json["base64HeadShot"], "base64"))
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+                            }
+                            return
+                        }
+                    }
+                })
+
+                if (found == false) {
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+                }
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+            }
+        }
+        else {
+            res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+        }
+    }
 })
 app.get("/Thumbs/Asset.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
@@ -3503,6 +3930,10 @@ app.get("/points/get-awardable/points", (_, res) => {
     res.status(200).send("{\"points\":\"0\"}") //STUB
 })
 
+app.get("/points/get-point-balance", (_, res) => {
+    res.status(200).send("{\"success\": true, \"pointBalance\": 0}") //STUB
+})
+
 app.get("/Game/Badge/IsBadgeDisabled.ashx", (_, res) => {
     res.status(200).send(0) //STUB
 })
@@ -4021,6 +4452,12 @@ app.get("/userblock/getblockedusers", (req, res) => {
 app.get("/universal-app-configuration/v1/behaviors/studio/content", (_, res) => {
     res.status(200).send("{}")
 })
+
+app.get("/guac-v2/v1/bundles/studio", (req, res) => {
+    res.status(200).send("{}")
+})
+
+
 app.post("/v1/avatar/set-avatar", (req, res) => {
     //custom api for ReBlox
 
@@ -4133,25 +4570,36 @@ app.post("/universes/create", async (req, res) => {
             var marketplacejson = JSON.parse(marketplace)
             var gamesjson = JSON.parse(games)
 
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Adding template data to marketplace.json and games.json")
+            }
             gamesjson.push({ id: universeId, name: "Baseplate", description: "", "isArchived": false, "rootPlaceId": placeId, isActive: false, genre: "All", isFriendsOnly: false, playableDevices: ["Computer", "Phone", "Tablet"], studioAccessToApisAllowed: false, privacyType: "Private", creatorType: "User", creatorTargetId: userId, creatorName: username, created: new Date(Date.now()).toISOString(), updated: new Date(Date.now()).toISOString() })
             marketplacejson.push({ id: placeId, name: "Baseplate", description: "", assetType: 9, imageId: placeId, robux: 0, creatorTargetId: userId, creatorName: username })
 
             var gamesrecompiled = JSON.stringify(gamesjson, null, 4)
             var marketplacerecompiled = JSON.stringify(marketplacejson, null, 4)
 
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Overwriting marketplace.json and games.json with new values.")
+            }
             if (filesystem.existsSync("./marketplace.json")) filesystem.unlinkSync("./marketplace.json");
             filesystem.writeFileSync("./marketplace.json", marketplacerecompiled);
             if (filesystem.existsSync("./games.json")) filesystem.unlinkSync("./games.json");
             filesystem.writeFileSync("./games.json", gamesrecompiled);
             if (filesystem.existsSync("./defaulticons")) {
                 var icons = filesystem.readdirSync("./defaulticons")
-
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Copying one of the default icons to ./icons")
+                }
                 if (icons.length > 0) {
                     if (filesystem.existsSync("./icons") == false) filesystem.mkdirSync("./icons");
                     filesystem.writeFileSync("./icons/" + placeId + ".png", filesystem.readFileSync("./defaulticons/" + icons[Math.floor(Math.random() * ((icons.length - 1) - 0))]))
                 }
             }
             if (filesystem.existsSync("./uploads/" + placeId)) {
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Overwriting place " + placeId + " with the template")
+                }
                 filesystem.unlinkSync("./uploads/" + placeId)
                 if (filesystem.existsSync("./assets/" + req.body["templatePlaceIdToUse"] + ".rbxl")) {
                     filesystem.writeFileSync("./uploads/" + placeId, filesystem.readFileSync("./assets/" + req.body["templatePlaceIdToUse"] + ".rbxl"))
@@ -4563,7 +5011,7 @@ app.get("/users/:userid/canmanage/:placeid", (req, res) => {
         if (json.length > 0) {
             var canManage = false
             for (var i = 0; i < json.length; i++) {
-                if (json[i]["rootPlaceId"] == req.params.placeid) {
+                if (json[i]["rootPlaceId"] == req.params.placeid && json[i]["creatorTargetId"] == userId) {
                     canManage = true
                     break
                 }
@@ -4597,78 +5045,156 @@ app.post("//moderation/filtertext/", async (req, res) => {
 
         for await (const line of rl) {
             if (line.startsWith("--") == false && line != "") {
-                if (line.startsWith("*") && line.endsWith("*") && line.length > 1) {
-                    if (req.body["text"].includes(line.slice(1, line.length - 1))) {
-                        var filteredword = ""
-                        for (var i = 1; i < line.length - 1; i++) {
-                            filteredword += "#"
-                        }
+                if (line.endsWith("/ns") && line.endsWith("\\/ns") == false) {
+                    if (line.startsWith("*") && line.endsWith("*/ns") && line.length > 4) {
+                        if (req.body["text"].toLowerCase().includes(line.slice(1, line.length - 4).toLowerCase())) {
+                            var filteredword = ""
+                            for (var i = 1; i < line.length - 4; i++) {
+                                filteredword += "#"
+                            }
 
-                        if (filteredtext != "") {
-                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 4)), "gi"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 4)), "gi"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line.startsWith("*") && line.endsWith("*/ns") == false && line.length > 4) {
+                        if (req.body["text"].toLowerCase().endsWith(line.slice(1, line.length - 3).toLowerCase())) {
+                            var filteredword = ""
+                            for (var i = 1; i < line.length - 3; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 3)) + "$", "gi"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 3)) + '$', "gi"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line.startsWith("*") == false && line.endsWith("*/ns") && line.length > 4) {
+                        if (req.body["text"].toLowerCase().startsWith(line.slice(0, line.length - 4).toLowerCase())) {
+                            var filteredword = ""
+                            for (var i = 0; i < line.length - 4; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp('^' + escapeRegExp(line.slice(0, line.length - 4)), "gi"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp('^' + escapeRegExp(line.slice(0, line.length - 4)), "gi"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line == "*/ns") {
+                        var filteredword = ""
+                        if (typeof (req.body["text"]) == "string") {
+                            for (var i = 0; i < req.body["text"].length; i++) {
+                                filteredword += "#"
+                            }
                         }
                         else {
-                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
-                        }
-                        continue
-                    }
-                }
-                else if (line.startsWith("*") && line.endsWith("*") == false && line.length > 1) {
-                    if (req.body["text"].endsWith(line.slice(1, line.length - 1))) {
-                        var filteredword = ""
-                        for (var i = 1; i < line.length; i++) {
-                            filteredword += "#"
-                        }
-
-                        if (filteredtext != "") {
-                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
-                        }
-                        else {
-                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
-                        }
-                        continue
-                    }
-                }
-                else if (line.startsWith("*") == false && line.endsWith("*") && line.length > 1) {
-                    if (req.body["text"].startsWith(line.slice(1, line.length - 1))) {
-                        var filteredword = ""
-                        for (var i = 0; i < line.length - 1; i++) {
-                            filteredword += "#"
-                        }
-
-                        if (filteredtext != "") {
-                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
-                        }
-                        else {
-                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
-                        }
-                        continue
-                    }
-                }
-                else if (line == "*") {
-                    var filteredword = ""
-                    if (typeof(req.body["text"]) == "string") {
-                        for (var i = 0; i < req.body["text"].length; i++) {
-                            filteredword += "#"
-                        }
-                    }
-                    else {
-                        res.status(400).end()
-                        return
-                    }
-
-                    filteredtext = filteredword
-                    break
-                }
-                else {
-                    if (req.body["text"] == line) {
-                        var filteredword = ""
-                        for (var i = 0; i < line.length; i++) {
-                            filteredword += "#"
+                            res.status(400).end()
+                            return
                         }
 
                         filteredtext = filteredword
                         break
+                    }
+                    else {
+                        if (req.body["text"].toLowerCase() == line.toLowerCase().slice(0, line.length - 3)) {
+                            var filteredword = ""
+                            for (var i = 0; i < line.length - 3; i++) {
+                                filteredword += "#"
+                            }
+
+                            filteredtext = filteredword
+                            break
+                        }
+                    }
+                }
+                else {
+                    if (line.startsWith("*") && line.endsWith("*") && line.length > 1) {
+                        if (req.body["text"].includes(line.slice(1, line.length - 1))) {
+                            var filteredword = ""
+                            for (var i = 1; i < line.length - 1; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line.startsWith("*") && line.endsWith("*") == false && line.length > 1) {
+                        if (req.body["text"].endsWith(line.slice(1, line.length))) {
+                            var filteredword = ""
+                            for (var i = 1; i < line.length; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length)) + '$', "g"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length)) + "$", "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line.startsWith("*") == false && line.endsWith("*") && line.length > 1) {
+                        if (req.body["text"].startsWith(line.slice(0, line.length - 1))) {
+                            var filteredword = ""
+                            for (var i = 0; i < line.length - 1; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp('^' + escapeRegExp(line.slice(0, line.length - 1)), "g"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp('^' + escapeRegExp(line.slice(0, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line == "*") {
+                        var filteredword = ""
+                        if (typeof (req.body["text"]) == "string") {
+                            for (var i = 0; i < req.body["text"].length; i++) {
+                                filteredword += "#"
+                            }
+                        }
+                        else {
+                            res.status(400).end()
+                            return
+                        }
+
+                        filteredtext = filteredword
+                        break
+                    }
+                    else {
+                        if (req.body["text"] == line) {
+                            var filteredword = ""
+                            for (var i = 0; i < line.length; i++) {
+                                filteredword += "#"
+                            }
+
+                            filteredtext = filteredword
+                            break
+                        }
                     }
                 }
             }
@@ -4703,78 +5229,156 @@ app.post("/moderation/filtertext/", async (req, res) => {
 
         for await (const line of rl) {
             if (line.startsWith("--") == false && line != "") {
-                if (line.startsWith("*") && line.endsWith("*") && line.length > 1) {
-                    if (req.body["text"].includes(line.slice(1, line.length - 1))) {
-                        var filteredword = ""
-                        for (var i = 1; i < line.length - 1; i++) {
-                            filteredword += "#"
-                        }
+                if (line.endsWith("/ns") && line.endsWith("\\/ns") == false) {
+                    if (line.startsWith("*") && line.endsWith("*/ns") && line.length > 4) {
+                        if (req.body["text"].toLowerCase().includes(line.slice(1, line.length - 4).toLowerCase())) {
+                            var filteredword = ""
+                            for (var i = 1; i < line.length - 4; i++) {
+                                filteredword += "#"
+                            }
 
-                        if (filteredtext != "") {
-                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 4)), "gi"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 4)), "gi"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line.startsWith("*") && line.endsWith("*/ns") == false && line.length > 4) {
+                        if (req.body["text"].toLowerCase().endsWith(line.slice(1, line.length - 3).toLowerCase())) {
+                            var filteredword = ""
+                            for (var i = 1; i < line.length - 3; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 3)) + "$", "gi"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 3)) + '$', "gi"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line.startsWith("*") == false && line.endsWith("*/ns") && line.length > 4) {
+                        if (req.body["text"].toLowerCase().startsWith(line.slice(0, line.length - 4).toLowerCase())) {
+                            var filteredword = ""
+                            for (var i = 0; i < line.length - 4; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp('^' + escapeRegExp(line.slice(0, line.length - 4)), "gi"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp('^' + escapeRegExp(line.slice(0, line.length - 4)), "gi"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line == "*/ns") {
+                        var filteredword = ""
+                        if (typeof (req.body["text"]) == "string") {
+                            for (var i = 0; i < req.body["text"].length; i++) {
+                                filteredword += "#"
+                            }
                         }
                         else {
-                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
-                        }
-                        continue
-                    }
-                }
-                else if (line.startsWith("*") && line.endsWith("*") == false && line.length > 1) {
-                    if (req.body["text"].endsWith(line.slice(1, line.length - 1))) {
-                        var filteredword = ""
-                        for (var i = 1; i < line.length; i++) {
-                            filteredword += "#"
-                        }
-
-                        if (filteredtext != "") {
-                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
-                        }
-                        else {
-                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
-                        }
-                        continue
-                    }
-                }
-                else if (line.startsWith("*") == false && line.endsWith("*") && line.length > 1) {
-                    if (req.body["text"].startsWith(line.slice(1, line.length - 1))) {
-                        var filteredword = ""
-                        for (var i = 0; i < line.length - 1; i++) {
-                            filteredword += "#"
-                        }
-
-                        if (filteredtext != "") {
-                            filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
-                        }
-                        else {
-                            filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
-                        }
-                        continue
-                    }
-                }
-                else if (line == "*") {
-                    var filteredword = ""
-                    if (typeof(req.body["text"]) == "string") {
-                        for (var i = 0; i < req.body["text"].length; i++) {
-                            filteredword += "#"
-                        }
-                    }
-                    else {
-                        res.status(400).end()
-                        return
-                    }
-
-                    filteredtext = filteredword
-                    break
-                }
-                else {
-                    if (req.body["text"] == line) {
-                        var filteredword = ""
-                        for (var i = 0; i < line.length; i++) {
-                            filteredword += "#"
+                            res.status(400).end()
+                            return
                         }
 
                         filteredtext = filteredword
                         break
+                    }
+                    else {
+                        if (req.body["text"].toLowerCase() == line.toLowerCase().slice(0, line.length - 3)) {
+                            var filteredword = ""
+                            for (var i = 0; i < line.length - 3; i++) {
+                                filteredword += "#"
+                            }
+
+                            filteredtext = filteredword
+                            break
+                        }
+                    }
+                }
+                else {
+                    if (line.startsWith("*") && line.endsWith("*") && line.length > 1) {
+                        if (req.body["text"].includes(line.slice(1, line.length - 1))) {
+                            var filteredword = ""
+                            for (var i = 1; i < line.length - 1; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line.startsWith("*") && line.endsWith("*") == false && line.length > 1) {
+                        if (req.body["text"].endsWith(line.slice(1, line.length))) {
+                            var filteredword = ""
+                            for (var i = 1; i < line.length; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp(escapeRegExp(line.slice(1, line.length)) + '$', "g"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp(escapeRegExp(line.slice(1, line.length)) + "$", "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line.startsWith("*") == false && line.endsWith("*") && line.length > 1) {
+                        if (req.body["text"].startsWith(line.slice(0, line.length - 1))) {
+                            var filteredword = ""
+                            for (var i = 0; i < line.length - 1; i++) {
+                                filteredword += "#"
+                            }
+
+                            if (filteredtext != "") {
+                                filteredtext = filteredtext.replace(new RegExp('^' + escapeRegExp(line.slice(0, line.length - 1)), "g"), filteredword)
+                            }
+                            else {
+                                filteredtext = req.body["text"].replace(new RegExp('^' + escapeRegExp(line.slice(0, line.length - 1)), "g"), filteredword).replace(new RegExp("\r\n", "g"), "\\r\\n").replace(new RegExp("\n", "g"), "\\n").replace(new RegExp("\"", "g"), "\\\"")
+                            }
+                            continue
+                        }
+                    }
+                    else if (line == "*") {
+                        var filteredword = ""
+                        if (typeof (req.body["text"]) == "string") {
+                            for (var i = 0; i < req.body["text"].length; i++) {
+                                filteredword += "#"
+                            }
+                        }
+                        else {
+                            res.status(400).end()
+                            return
+                        }
+
+                        filteredtext = filteredword
+                        break
+                    }
+                    else {
+                        if (req.body["text"] == line) {
+                            var filteredword = ""
+                            for (var i = 0; i < line.length; i++) {
+                                filteredword += "#"
+                            }
+
+                            filteredtext = filteredword
+                            break
+                        }
                     }
                 }
             }
@@ -4801,7 +5405,23 @@ app.get("//game/players/:id", (req, res) => {
     res.status(200).send("{ \"ChatFilter\": \"blacklist\" }")
 })
 
-app.get("/users/:userid/groups", (req, res) => {
+app.get("/users/:userid/groups", (_, res) => {
+    res.status(200).send("[]") //STUB
+})
+
+app.get("/groups/:groupid/enemies", (_, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+
+    res.status(200).send("{\"Groups\": [], \"FinalPage\": true}")
+})
+
+app.get("/groups/:groupid/allies", (_, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+
+    res.status(200).send("{\"Groups\": [], \"FinalPage\": true}")
+})
+
+app.get("/v0/users/:userid/groups", (_, res) => {
     res.status(200).send("[]") //STUB
 })
 
@@ -4868,6 +5488,7 @@ app.get("/users/:id/friends", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("[]") //STUB
 })
+
 app.get("/IDE/Toolbox/Items", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.send("{\"TotalResults\":0,\"Results\":[]}")
@@ -5492,6 +6113,7 @@ app.get("/v1/users/:userid/groups/roles", (req, res) => {
     res.status(200).send("{\"data\":[]}") //STUB
 })
 
+
 app.get("/localization/games/:id/configure", (_, res) => {
     res.status(200).get("<pre>*insert localization configuration page here*</pre>")
 })
@@ -5505,7 +6127,7 @@ app.get("/v1/universes/:id/permissions", (req, res) => {
         if (json.length > 0) {
             var canManage = false
             for (var i = 0; i < json.length; i++) {
-                if (json[i]["id"] == req.params.id) {
+                if (json[i]["id"] == req.params.id && json[i]["creatorTargetId"] == userId) {
                     canManage = true
                     break
                 }
@@ -6030,8 +6652,18 @@ app.get("/v1/gametemplates", (_, res) => {
     res.status(200).send("{\"data\":[" + (filesystem.existsSync("./gametemplates.json") ? filesystem.readFileSync("./gametemplates.json", "utf8") : "") + "]}")
 })
 
+app.post("/points/award-points", (req, res) => {
+    //STUB
+    res.setHeader("cache-control", "no-cache")
+    res.status(200).send("{\"success\": true, \"userId\": " + req.query.userId + ", \"userGameBalance\": " + req.query.amount + ", \"userBalance\": " + req.query.amount + ", \"pointsAwarded\": " + req.query.amount + "}")
+})
+
 app.get("/IDE/Upload.aspx", (_, res) => {
-    res.status(200).send("Uploading maps is not supported in 2020E and below, since it's supposed to be local anyways. HOWEVER! You can upload your game locally if you allow uploading files and use 2020M+")
+    res.status(200).send("<pre>Uploading maps is not supported in 2020E and below, since it's supposed to be local anyways. HOWEVER! You can upload your game locally if you allow uploading files and use 2020M+</pre>")
+})
+
+app.get("/ide/publish", (_, res) => {
+    res.status(200).send("<pre>Viewing published games is not supported in 2017L and below, use 2018+ clients to view the published maps.</pre>")
 })
 
 app.get("/v1/user/groups/canmanage", (req, res) => {
@@ -6047,7 +6679,7 @@ app.get("//users/:userid/canmanage/:placeid", (req, res) => {
         if (json.length > 0) {
             var canManage = false
             for (var i = 0; i < json.length; i++) {
-                if (json[i]["rootPlaceId"] == req.params.placeid) {
+                if (json[i]["rootPlaceId"] == req.params.placeid && json[i]["creatorTargetId"] == userId) {
                     canManage = true
                     break
                 }
@@ -6786,6 +7418,9 @@ app.post("/marketplace/purchase", async (req, res) => {
         var replacementtext = ""
 
         if (enableOwnedAssets == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Checking if " + RBDFpath + " exists...")
+            }
             if (filesystem.existsSync(RBDFpath)) {
                 const stream = filesystem.createReadStream(RBDFpath)
 
@@ -6796,6 +7431,9 @@ app.post("/marketplace/purchase", async (req, res) => {
 
                 for await (const line of rl) {
                     if (line == "RBDF==") {
+                        if (debuglevel == 2 && verbose == true) {
+                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Text-format RBDF verified")
+                        }
                         verified = true
                     }
                     else if (line == "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">") {
@@ -6955,24 +7593,36 @@ app.get("/login/RequestAuth.ashx", (_, res) => {
 app.get("/Login/Negotiate.ashx", (_, res) => {
     res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
+    if (debuglevel == 2 && verbose == true) {
+        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sent the client the ROBLOSECURITY cookie with the fake value with the expires date set to March 10, 2889")
+    }
     res.status(200).end()
 })
 
 app.post("/Login/Negotiate.ashx", (_, res) => {
     res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
+    if (debuglevel == 2 && verbose == true) {
+        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sent the client the ROBLOSECURITY cookie with the fake value with the expires date set to March 10, 2889")
+    }
     res.status(200).end()
 })
 
 app.get("/auth/negotiate", (_, res) => {
     res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
+    if (debuglevel == 2 && verbose == true) {
+        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sent the client the ROBLOSECURITY cookie with the fake value with the expires date set to March 10, 2889")
+    }
     res.status(200).end()
 })
 
 app.post("/auth/negotiate", (_, res) => {
     res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
+    if (debuglevel == 2 && verbose == true) {
+        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sent the client the ROBLOSECURITY cookie with the fake value with the expires date set to March 10, 2889")
+    }
     res.status(200).end()
 })
 
@@ -7001,6 +7651,15 @@ app.get("/groups/can-manage-games", (_, res) => {
     res.status(200).send("[]")
 })
 
+app.get("/v0/groups/:gid/relationships", (_, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.status(200).send("{\"Groups\": [], \"FinalPage\": true}")
+})
+
+app.get("/v0/groups/:gid", (_, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.status(404).send("{\"errors\": [{\"code\": 1, \"message\": \"Group is invalid or does not exist.\", \"userFacingMessage\": \"The group is invalid or does not exist.\"}]}") //STUB
+})
 app.post("//Analytics/Measurement.ashx", (_, res) => {
     res.status(200).end()
 })
@@ -7368,6 +8027,16 @@ app.get("/v2/settings/application/PCStudioApp", (req, res) => {
 
 app.post("/v1/authentication-ticket/redeem", (_, res) => {
     res.status(200).end()
+})
+
+app.get("/oauth/.well-known/openid-configuration", (_, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    if (filesystem.existsSync("./openid-configuration.json")) {
+        res.status(200).send(filesystem.readFileSync("./openid-configuration.json", "utf8"))
+    }
+    else {
+        res.status(200).send("{}")
+    }
 })
 
 app.get("/Setting/QuietGet/StudioAppSettings/", (req, res) => {
@@ -9284,6 +9953,30 @@ app.get("/assets/:id/versions", (req, res) => {
     }
 
 })
+
+app.get("//assets/:id/versions", (req, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.setHeader("cache-control", "no-cache")
+    var games = filesystem.existsSync("./games.json") ? filesystem.readFileSync("./games.json", "utf8") : "[]"
+    var gamesjson = JSON.parse(games)
+
+    if (gamesjson.length > 0) {
+        var found = false
+        gamesjson.forEach((game) => {
+            if (game["rootPlaceId"] == req.params.id) {
+                found = true
+                res.status(200).send("[{\"Id\": " + game["id"] + ", \"AssetId\":" + req.params.id + ", \"VersionNumber\":1, \"RawContentId\":" + req.params.id + ", \"ParentAssetVersionId\": " + req.params.id + ", \"CreatorType\":1, \"CreatorTargetId\": " + game["creatorTargetId"] + ", \"CreatingUniverseId\": null, \"Created\": \"" + game["created"] + "\",\"Updated\": \"" + game["updated"] + "\"}]")
+                return
+            }
+        })
+        if (found == false) res.status(200).send("[{\"Id\": " + req.params.id + ", \"AssetId\":0, \"VersionNumber\":1, \"RawContentId\":0, \"ParentAssetVersionId\": 0, \"CreatorType\":1, \"CreatorTargetId\": " + userId + ", \"CreatingUniverseId\": null, \"Created\": \"2015-07-13T11:51:12.9073098-05:00\",\"Updated\": \"2015-07-13T11:51:12.9073098-05:00\"}]")
+    }
+    else {
+        res.status(200).send("[{\"Id\": " + req.params.id + ", \"AssetId\":0, \"VersionNumber\":1, \"RawContentId\":0, \"ParentAssetVersionId\": 0, \"CreatorType\":1, \"CreatorTargetId\": " + userId + ", \"CreatingUniverseId\": null, \"Created\": \"2015-07-13T11:51:12.9073098-05:00\",\"Updated\": \"2015-07-13T11:51:12.9073098-05:00\"}]")
+    }
+
+})
+
 app.get("/user/get-friendship-count", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"success\": true, \"message\": \"Success\", \"count\": 0}")
@@ -9369,13 +10062,93 @@ app.post("/v1/batch", (req, res) => {
 app.get("/headshot-thumbnail/image", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.setHeader("Content-disposition", "attachment; filename=\"headshot.png\"")
-    res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+    if (joining) {
+        var options = {
+            host: ip,
+            port: 80,
+            path: req.originalUrl,
+            method: "GET"
+        }
+        http.get(options, (res1) => {
+            var data = []
+
+            res1.on("data", (chunk) => {
+                data.push(chunk)
+            })
+
+            res1.on("end", () => {
+                var buffer = Buffer.concat(data)
+
+                res.status(res1.statusCode).send(buffer)
+            })
+        })
+    }
+    else {
+        if (req.query.userId != undefined && isNumeric(req.query.userId)) {
+            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
+                if (json["base64HeadShot"] != undefined && json["base64HeadShot"] != "") {
+                    res.status(200).send(Buffer.from(json["base64HeadShot"], "base64"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+                }
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+            }
+        }
+        else if (req.query.username != undefined) {
+            var path2 = path.resolve(req.query.username)
+            var found = false
+            if (path2.startsWith(__dirname)) {
+                memoryUsers.forEach((user) => {
+                    if (user["username"] == req.query.username) {
+                        if (user["userId"] != undefined) {
+                            found = true
+                            if (filesystem.existsSync("./clothes/" + user["userId"] + ".json")) {
+                                var json = JSON.parse(filesystem.readFileSync("./clothes/" + user["userId"] + ".json"))
+                                if (json["base64HeadShot"] != undefined && json["base64HeadShot"] != "") {
+                                    res.status(200).send(Buffer.from(json["base64HeadShot"], "base64"))
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+                            }
+                            return
+                        }
+                    }
+                })
+
+                if (found == false) {
+                    res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+                }
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+            }
+        }
+        else {
+            res.status(200).send(filesystem.readFileSync(assetfolder + "/headshot.png"))
+        }
+    }
 })
 
-app.get("/headshot-thumbnail/json", (_, res) => {
+app.get("/headshot-thumbnail/json", (req, res) => {
     res.setHeader("cache-control", "no-cache")
-    res.setHeader("Content-disposition", "attachment; filename=\"headshot.png\"")
-    res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image\", \"Final\": true}")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    if (req.query.userId != undefined) {
+        res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image?userId=" + encodeURIComponent(req.query.userId) + "\", \"Final\": true}")
+    }
+    else if (req.query.username != undefined) {
+        res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image?userId=" + encodeURIComponent(req.query.username) + "\", \"Final\": true}")
+    }
+    else {
+        res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image\", \"Final\": true}")
+    }
 })
 
 app.get("/v1/locales", (req, res) => {
