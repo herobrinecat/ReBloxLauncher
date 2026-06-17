@@ -3360,7 +3360,7 @@ namespace ReBloxLauncher
 
         public class AssetData
         {
-            public int id { get; set; } = 0;
+            public ulong id { get; set; } = 0;
         }
         public class BodyColors
         {
@@ -3425,7 +3425,7 @@ namespace ReBloxLauncher
                     List<AssetData> data = new List<AssetData>();
                     foreach (var assetid in Properties.Settings.Default.ClothesArray.Split('|'))
                     {
-                        data.Add(new AssetData { id = int.Parse(assetid) });
+                        data.Add(new AssetData { id = ulong.Parse(assetid) });
                     }
                     jsondata = new AvatarType
                     {
