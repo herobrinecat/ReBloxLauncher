@@ -4466,7 +4466,7 @@ app.post("/v1/avatar/set-avatar", (req, res) => {
             var options = {
                 host: ip,
                 port: 80,
-                path: "/v1/avatar/set-avatar?userId=" + req.query.userId + (req.query.username != undefined ? "&username=" + req.query.username : ""),
+                path: "/v1/avatar/set-avatar?userId=" + req.query.userId + (req.query.username != undefined ? "&username=" + encodeURIComponent(req.query.username) : ""),
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -4490,7 +4490,7 @@ app.post("/v1/avatar/set-avatar", (req, res) => {
             if (req.headers["x-token"] != undefined) {
                 if (crypto.verify("SHA1", JSON.stringify(req.body), publicKeyObj, Buffer.from(req.headers["x-token"], "base64"))) {
                     if (isNumeric(req.query.userId)) {
-                        if (req.query.username != undefined) memoryUsers.push({ "userId": req.query.userId, "username": req.query.username })
+                        if (req.query.username != undefined) memoryUsers.push({ "userId": req.query.userId, "username": decodeURIComponent(req.query.username) })
                         console.log("\x1b[32m%s\x1b[0m", "<INFO> Saving the avatar of " + req.query.userId + " to file...")
                         if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) filesystem.unlinkSync("./clothes/" + req.query.userId + ".json")
                         if (filesystem.existsSync("./clothes") == false) filesystem.mkdirSync("./clothes")
