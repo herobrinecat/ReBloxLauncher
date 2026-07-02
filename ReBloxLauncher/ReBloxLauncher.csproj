@@ -142,7 +142,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="rebloxicon.ico" />
-	<None Include="Resources\avatar.png" />
+	<None Include="Resources\girlselected.png" />
+    <None Include="Resources\boyselected.png" />
+    <None Include="Resources\boynotselected.png" />
+    <None Include="Resources\girlunselected.png" />
+    <None Include="Resources\avatar.png" />
     <None Include="Resources\resources_logo.png" />
     <None Include="Resources\splashscreen.png" />
     <EmbeddedResource Include="Resources\DiscordRPC.dll" />

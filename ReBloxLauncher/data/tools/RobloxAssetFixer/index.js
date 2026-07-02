@@ -71,7 +71,7 @@ var forceCanManageTrue = false //Forces the canmanage value to be true (Pre-0.0.
 var enableTextFilter = true //Experimental text filter
 var checkROBLOSECURITY = false //A mark for checking ROBLOSECURITY from launcher
 var enableHTTPS = true //Enable support for HTTPS (Recommended!)
-
+var proxyUrl = "" //Url to replace roblox.com
 if (filesystem.existsSync(privateKey)) {
     publicKeyObj = crypto.createPublicKey({
         key: filesystem.readFileSync(privateKey),
@@ -436,6 +436,10 @@ process.argv.forEach(function (val) {
     else if (val == "--verbose") {
         verbose = true
     }
+    else if (val.startsWith("-proxyURL=")) {
+        console.log("\x1b[33m%s\x1b[0m", "<WARN> Proxies are usually not recommended as it could cause your account to be at risk of being compromised, we are not responsible for the damages of your account getting terminated/hacked. It's strongly recommended to use a proxy that you know well and is trusted by other people.")
+        proxyUrl = val.slice(10)
+    }
     else if (val == "-help") {
         console.log("\r\n<INFO> Usage for RobloxAssetFixer:\r\n\r\n-ROBLOSECURITY=\"roblosecurity\" - Set your ROBLOSECURITY (required for useAuth)\r\n-useAuth - Set the asset retrieval to use Roblox's servers that requires auth\r\n-username= - Set your player's username\r\n-userid= - Set your player's userid\r\n-accountUnder13 - Mark your account <13\r\n-r15 - Set your avatar to be R15\r\n-bodycolor=[0,0,0,0,0,0] - Set your body color of your avatar (deprecated)\r\n-clothes=[] - Set the asset ids of your avatar for customzation (deprecated)\r\n-ip= - Set an IP to the server if you're joining (required for -joining)\r\n-joining - Mark the server as joining and make several functions connect to the host's server instead of simulating it (-ip required)\r\n-disableDataStore - Disable saving/loading of data via DataStore with RBDF\n-disableBadges - Disable saving badges with RBDF\r\n-disableFollowing - Disable saving followers with RBDF\r\n-rbdf=\"path\" - A path to a ReBlox Datastore File\r\n-assetFromServer - Makes the asset link attempt to contact the local server you're joining, use Roblox's server as fallback (requires -ip and -joining)\r\n-disableNewSignature - use %DATA% instead of --rbxsig%DATA% (required for 2013M and older)\r\n-disableNewSignatureAsset - makes the format for script signing %ID% instead of --rbxassetid%ID%\r\n-disableOwnedAssets - Disables saving owned assets with RBDF\r\n-robux=amount - Set the amount of ROBUX you have.\r\n--disableTCP - Disables communication between the server and the launcher.\r\n-disableDataPersistence - Disables saving/loading data via Data Persistence with RBDF\r\n--verbose - Give more information about what's happening, helpful when troubleshooting!")
         process.exit(0)
@@ -452,13 +456,16 @@ checkInternet().then((result) => {
         console.log("\x1b[33m%s\x1b[0m", "<WARN> It appears that you have an internet connection, however we're unable to contact Roblox's servers (most likely because of your ISP or your country's ban), disabling useAuth...")
         useAuth = false
     }
-    if (checkROBLOSECURITY == true) getROBLOSECURITYfromLauncher(1)
+    else {
+        if (checkROBLOSECURITY == true) getROBLOSECURITYfromLauncher(1)
+    }
 })
 
 console.log("<INFO> Username: " + username)
 console.log("<INFO> User ID: " + userId)
 console.log("<INFO> Account Age: " + ((accountOver13) ? "13+" : "<13"))
 console.log("<INFO> Avatar Type: " + ((avatarR15) ? "R15" : "R6"))
+if (proxyUrl != "") console.log("<INFO> Proxy URL: " + proxyUrl)
 if (checkROBLOSECURITY == false) console.log("<INFO> Using Auth: " + useAuth.toString())
 if (joining && ip != "") console.log("<INFO> Server IP: " + ip)
 
@@ -494,7 +501,7 @@ function getROBLOSECURITYfromLauncher(times) {
                 client.on("end", () => {
                     if (Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8").startsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|")) {
                         ROBLOSECURITY = Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8")
-                        if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully synced ROBLOSECURITY with the launcher! Turning on useAuth...")
+                        if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully synced ROBLOSECURITY with the launcher! Turning on useAuth...");
                         useAuth = true
                         if (debuglevel == 2 && verbose == true) {
                             console.log("\x1b[34m%s\x1b[0m", "<DEBUG> useAuth is now true.")
@@ -549,34 +556,43 @@ async function checkInternet() {
                 path: "/generate_204",
                 port: 443,
                 method: "GET",
-                timeout: 2000
+                timeout: 4000
             }
 
             const req1 = https.request(options, (res) => {
 
                 const options2 = {
-                    host: "assetdelivery.roblox.com",
+                    host: (proxyUrl != "" ? "assetdelivery." + proxyUrl : "assetdelivery.roblox.com"),
                     path: "/",
                     port: 443,
                     method: "GET",
-                    timeout: 2000
+                    timeout: 4000
                 }
 
                 const req2 = https.request(options2, (res1) => {
                     isRobloxAvailable = true
                     result = true
+                    if (verbose == true && debuglevel == 2) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> ROBLOX internet test passed! Setting isRobloxAvailable to true.")
+                    }
                     resolve()
 
                 })
                 req2.on("error", () => {
                     isRobloxAvailable = false
                     result = true
+                    if (verbose == true && debuglevel == 2) {
+                        console.log("\x1b[33m%s\x1b[0m", "<DEBUG> ROBLOX internet test failed! Keeping isRobloxAvailable to false.")
+                    }
                     resolve()
                 })
                 req2.end()
             })
             req1.on("error", () => {
                 result = false
+                if (verbose == true && debuglevel == 2) {
+                    console.log("\x1b[33m%s\x1b[0m", "<DEBUG> Internet test failed! Keeping result to false.")
+                }
                 resolve()
             })
 
@@ -600,9 +616,9 @@ function getAsset(id, callback) {
         } else {
             if (useAuth == false && isRobloxAvailable == true) {
                 const options = {
-                    host: "assetdelivery.roblox.com",
+                    host: (proxyUrl != "" ? "assetdelivery." + proxyUrl : "assetdelivery.roblox.com"),
                     port: 443,
-                    path: "/v2/asset/?id=" + id,
+                    path: "/v1/assetId/" + id,
                     method: "GET",
                     headers: {
                         "User-Agent": "RobloxStudio/WinInet"
@@ -620,13 +636,13 @@ function getAsset(id, callback) {
                     res.on("end", () => {
                         const jsonresult = JSON.parse(result)
 
-                        if (jsonresult["locations"] != undefined) {
-                            const splitted = jsonresult["locations"][0]["location"].split('/', 3)
+                        if (jsonresult["location"] != undefined) {
+                            const splitted = jsonresult["location"].split('/', 3)
 
                             const options2 = {
                                 host: splitted[2],
                                 port: 443,
-                                path: jsonresult["locations"][0]["location"].replace("https://" + splitted[2], ""),
+                                path: jsonresult["location"].replace("https://" + splitted[2], ""),
                                 method: "GET"
                             }
 
@@ -728,7 +744,7 @@ function getAsset(id, callback) {
                         else {
                             if (verbose) console.log("\x1b[33m%s\x1b[0m", "<WARN> AssetDelivery attempt failed without auth, decals will only be supported.");
                             const options2 = {
-                                host: "apis.roblox.com",
+                                host: (proxyUrl != "" ? "apis." + proxyUrl : "apis.roblox.com"),
                                 port: 443,
                                 path: "/toolbox-service/v2/assets/" + id,
                                 method: "GET"
@@ -748,7 +764,7 @@ function getAsset(id, callback) {
                                     if (parsedJSON["asset"] != undefined) {
                                         if (parsedJSON["asset"]["assetTypeId"] == 13) {
                                             const options3 = {
-                                                host: "thumbnails.roblox.com",
+                                                host: (proxyUrl != "" ? "thumbnails." + proxyUrl : "thumbnails.roblox.com"),
                                                 port: 443,
                                                 path: "/v1/assets?assetIds=" + id + "&returnPolicy=PlaceHolder&size=700x700&format=Png&isCircular=false",
                                                 method: "GET"
@@ -850,6 +866,9 @@ function getAsset(id, callback) {
                             })
                         }
                     })
+                }).on("error", (err) => {
+                    console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong while trying to get the asset for " + id + " (" + err.code + ")")
+                    return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
                 })
             }
             else if (isRobloxAvailable == false) {
@@ -858,9 +877,9 @@ function getAsset(id, callback) {
             }
             else if (useAuth == true && isRobloxAvailable == true) {
                 const options = {
-                    host: "assetdelivery.roblox.com",
+                    host: (proxyUrl != "" ? "assetdelivery." + proxyUrl : "assetdelivery.roblox.com"),
                     port: 443,
-                    path: "/v2/asset/?id=" + id,
+                    path: "/v1/assetId/" + id,
                     method: "GET",
                     headers: {
                         "Cookie": ".ROBLOSECURITY=" + ROBLOSECURITY,
@@ -889,13 +908,13 @@ function getAsset(id, callback) {
 
                         const jsonresult = JSON.parse(result)
 
-                        if (jsonresult["locations"] != undefined) {
-                            const splitted = jsonresult["locations"][0]["location"].split('/', 3)
+                        if (jsonresult["location"] != undefined) {
+                            const splitted = jsonresult["location"].split('/', 3)
 
                             const options2 = {
                                 host: splitted[2],
                                 port: 443,
-                                path: jsonresult["locations"][0]["location"].replace("https://" + splitted[2], ""),
+                                path: jsonresult["location"].replace("https://" + splitted[2], ""),
                                 method: "GET"
                             }
 
@@ -995,13 +1014,20 @@ function getAsset(id, callback) {
                             })
                         }
                         else {
-                            if (debuglevel == 2 && verbose == true) {
-                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Adding" + id + " to the list to not be attempted (Restart the server if this is a valid ID and you have access to it).")
+                            if (jsonresult["errors"] != undefined) {
+                                if (jsonresult["errors"][0]["message"] != "Too many requests") {
+                                    if (debuglevel == 2 && verbose == true) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Adding " + id + " to the list to not be attempted (Restart the server if this is a valid ID and you have access to it).")
+                                    }
+                                    notWorkingAssetIds.push(id)
+                                }
                             }
-                            notWorkingAssetIds.push(id)
                             return callback(result)
                         }
                     })
+                }).on("error", (err) => {
+                    console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong while trying to get the asset for " + id + " (" + err.code + ")")
+                    return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
                 })
             }
         }
@@ -3015,8 +3041,7 @@ app.get("/Thumbs/GameIcon.ashx", (req, res) => {
                                 path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
                                 method: "GET",
                                 headers: {
-                                    "User-Agent": "totallychrome",
-                                    "Accept-Encoding": "gzip,deflate"
+                                    "User-Agent": "RobloxStudio/WinInet"
                                 }
 
                             }
@@ -3150,13 +3175,15 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
     var assetfound1 = false
-    if (isNumeric(((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId))) {
+    if (isNumeric((((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID)))) {
+
+
         if (verbose) {
-            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server/file (Image)")
+            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from Roblox server/file (Image)")
         }
         filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
-            if (splitted[0] == ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId).toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+            if (splitted[0] == ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID).toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
                 res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                 res.status(200).send(filesystem.readFileSync("./uploads/" + file))
                 assetfound1 = true
@@ -3167,7 +3194,7 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
         if (assetfound1 == false) {
             filesystem.readdirSync(assetfolder).forEach(file => {
                 var splitted = file.split('.')
-                if (splitted[0] == ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId).toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                if (splitted[0] == ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID).toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
                     res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                     res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
                     assetfound = true
@@ -3175,75 +3202,178 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
                 }
             })
             if (assetfound == false && isInternetAvailable) {
-                var options1 = {
-                    host: 'thumbnails.roblox.com',
-                    port: 443,
-                    path: '/v1/assets?assetIds=' + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + '&returnPolicy=PlaceHolder&size=700x700&format=' + req.query.format,
-                    method: "GET"
-                }
-                var infoiresult = ""
-                https.get(options1, (res2) => {
+                if (joining) {
+                    var options = {
+                        host: ip,
+                        port: 80,
+                        path: req.originalUrl,
+                        method: "GET"
+                    }
 
-                    res2.setEncoding("utf8")
-                    res2.on("data", (chunk) => {
-                        infoiresult += chunk
+                    http.get(options, (res1) => {
+                        var data = []
+
+                        res1.on("data", (chunk) => {
+                            data.push(chunk)
+                        })
+
+                        res1.on("end", () => {
+                            var buffer = Buffer.concat(data)
+                            if (res1.statusCode == 200) {
+                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from local server (Image)")
+                                res.status(res1.statusCode).send(buffer)
+                            }
+                            else {
+                                var options1 = {
+                                    host: 'thumbnails.roblox.com',
+                                    port: 443,
+                                    path: '/v1/assets?assetIds=' + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + '&returnPolicy=PlaceHolder&size=700x700&format=' + (req.query.format != undefined ? req.query.format : "png"),
+                                    method: "GET"
+                                }
+                                var infoiresult = ""
+                                https.get(options1, (res2) => {
+                                    res2.setEncoding("utf8")
+                                    res2.on("data", (chunk) => {
+                                        infoiresult += chunk
+                                    })
+                                    res2.on("end", () => {
+                                        if (infoiresult.trim().startsWith("{") || infoiresult.trim().startsWith("[")) {
+                                            var jsoninfo1 = JSON.parse(infoiresult)
+                                            if (jsoninfo1["data"] != undefined) {
+                                                var options2 = {
+                                                    host: 'tr.rbxcdn.com',
+                                                    port: 443,
+                                                    path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                                                    method: "GET",
+                                                    headers: {
+                                                        "User-Agent": "RobloxStudio/WinInet"
+                                                    }
+                                                }
+                                                https.get(options2, (res3) => {
+
+                                                    var data = [], output
+                                                    if (res3.headers["content-encoding"] == 'gzip') {
+                                                        if (verbose) {
+                                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from Roblox server (Image) [gzip compression]")
+                                                        }
+                                                        var gzip = zlib.createGunzip()
+                                                        res3.pipe(gzip)
+                                                        output = gzip
+                                                    }
+                                                    else if (res3.headers["content-encoding"] == 'deflate') {
+                                                        if (verbose) {
+                                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from Roblox server (Image) [deflate compression]")
+                                                        }
+                                                        var deflate = zlib.createDeflate()
+                                                        res3.pipe(deflate)
+                                                        output = deflate
+                                                    }
+                                                    else {
+                                                        if (verbose) {
+                                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from Roblox server (Image)")
+                                                        }
+                                                        output = res3
+                                                    }
+                                                    output.on("data", (chunk) => {
+                                                        data.push(chunk)
+                                                    })
+                                                    output.on("end", () => {
+                                                        var buffer = Buffer.concat(data)
+                                                        res.setHeader("Content-disposition", "attachment; filename=\"" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png") + "\"")
+                                                        res.status(200).send(buffer)
+                                                        if (saveFile) filesystem.writeFileSync("./saved/" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png"))
+                                                        assetfound = true
+                                                    })
+                                                })
+                                            } else {
+                                                console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from the Roblox server!")
+                                                res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
+                                            }
+                                        }
+                                        else {
+                                            res.status(200).send(infoiresult)
+                                        }
+                                    })
+                                })
+                            }
+                        })
+                    }).on("error", () => {
+                        res.status(500).end()
                     })
-                    res2.on("end", () => {
-                        var jsoninfo1 = JSON.parse(infoiresult)
-                        if (jsoninfo1["data"] != undefined) {
-                            var options2 = {
-                                host: 'tr.rbxcdn.com',
-                                port: 443,
-                                path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
-                                method: "GET",
-                                headers: {
-                                    "User-Agent": "totallychrome",
-                                    "Accept-Encoding": "gzip,deflate"
+                }
+                else {
+                    var options1 = {
+                        host: 'thumbnails.roblox.com',
+                        port: 443,
+                        path: '/v1/assets?assetIds=' + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + '&returnPolicy=PlaceHolder&size=700x700&format=' + (req.query.format != undefined ? req.query.format : "png"),
+                        method: "GET"
+                    }
+                    var infoiresult = ""
+                    https.get(options1, (res2) => {
+                        res2.setEncoding("utf8")
+                        res2.on("data", (chunk) => {
+                            infoiresult += chunk
+                        })
+                        res2.on("end", () => {
+                            if (infoiresult.trim().startsWith("{") || infoiresult.trim().startsWith("[")) {
+                                var jsoninfo1 = JSON.parse(infoiresult)
+                                if (jsoninfo1["data"] != undefined) {
+                                    var options2 = {
+                                        host: 'tr.rbxcdn.com',
+                                        port: 443,
+                                        path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                                        method: "GET",
+                                        headers: {
+                                            "User-Agent": "RobloxStudio/WinInet"
+                                        }
+                                    }
+                                    https.get(options2, (res3) => {
+
+                                        var data = [], output
+                                        if (res3.headers["content-encoding"] == 'gzip') {
+                                            if (verbose) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from Roblox server (Image) [gzip compression]")
+                                            }
+                                            var gzip = zlib.createGunzip()
+                                            res3.pipe(gzip)
+                                            output = gzip
+                                        }
+                                        else if (res3.headers["content-encoding"] == 'deflate') {
+                                            if (verbose) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from Roblox server (Image) [deflate compression]")
+                                            }
+                                            var deflate = zlib.createDeflate()
+                                            res3.pipe(deflate)
+                                            output = deflate
+                                        }
+                                        else {
+                                            if (verbose) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from Roblox server (Image)")
+                                            }
+                                            output = res3
+                                        }
+                                        output.on("data", (chunk) => {
+                                            data.push(chunk)
+                                        })
+                                        output.on("end", () => {
+                                            var buffer = Buffer.concat(data)
+                                            res.setHeader("Content-disposition", "attachment; filename=\"" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png") + "\"")
+                                            res.status(200).send(buffer)
+                                            if (saveFile) filesystem.writeFileSync("./saved/" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png"))
+                                            assetfound = true
+                                        })
+                                    })
+                                } else {
+                                    console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + " from the Roblox server!")
+                                    res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
                                 }
                             }
-                            https.get(options2, (res3) => {
-
-                                var data = [], output
-                                if (res3.headers["content-encoding"] == 'gzip') {
-                                    if (verbose) {
-                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server (Image) [gzip compression]")
-                                    }
-                                    var gzip = zlib.createGunzip()
-                                    res3.pipe(gzip)
-                                    output = gzip
-                                }
-                                else if (res3.headers["content-encoding"] == 'deflate') {
-                                    if (verbose) {
-                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server (Image) [deflate compression]")
-                                    }
-                                    var deflate = zlib.createDeflate()
-                                    res3.pipe(deflate)
-                                    output = deflate
-                                }
-                                else {
-                                    if (verbose) {
-                                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from Roblox server (Image)")
-                                    }
-                                    output = res3
-                                }
-                                output.on("data", (chunk) => {
-                                    data.push(chunk)
-                                })
-                                output.on("end", () => {
-                                    var buffer = Buffer.concat(data)
-                                    res.setHeader("Content-disposition", "attachment; filename=\"" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + "." + req.query.format + "\"")
-                                    res.status(200).send(buffer)
-                                    if (saveFile) filesystem.writeFileSync("./saved/" + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + "." + req.query.format)
-                                    assetfound = true
-                                })
-                            })
-                        } else {
-                            console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + ((req.query.assetid != undefined) ? req.query.assetid : req.query.assetId) + " from the Roblox server!")
-                            res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
-                        }
-
+                            else {
+                                res.status(200).send(infoiresult)
+                            }
+                        })
                     })
-                })
+                }
             }
             else {
                 res.status(404).end()
@@ -3262,7 +3392,7 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
         var options = {
             host: ip,
             port: 80,
-            path: "/Game/Tools/ThumbnailAsset.ashx?aid=" + req.query.aid + "&wd=" + (req.query.wd != undefined ? req.query.wd : 700) + "&ht=" + (req.query.ht != undefined ? req.query.ht : 700) + "&fmt=" + (req.query.fmt != undefined ? req.query.fmt : "png"),
+            path: "/Game/Tools/ThumbnailAsset.ashx?aid=" + (req.query.aid != undefined ? req.query.aid : req.query.assetversionid) + "&wd=" + (req.query.wd != undefined ? req.query.wd : 700) + "&ht=" + (req.query.ht != undefined ? req.query.ht : 700) + "&fmt=" + (req.query.fmt != undefined ? req.query.fmt : "png"),
             method: "GET"
         }
 
@@ -3343,8 +3473,7 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
                                                     path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
                                                     method: "GET",
                                                     headers: {
-                                                        "User-Agent": "totallychrome",
-                                                        "Accept-Encoding": "gzip,deflate"
+                                                        "User-Agent": "RobloxStudio/WinInet"
                                                     }
 
                                                 }
@@ -3379,6 +3508,116 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
                                                     output.on("end", () => {
                                                         var buffer = Buffer.concat(data)
                                                         res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.aid + "." + req.query.fmt + "\"")
+                                                        res.status(200).send(buffer)
+                                                        assetfound = true
+                                                    })
+                                                })
+                                            }
+                                        })
+                                    })
+                                }
+                                else {
+                                    res.status(404).end()
+                                }
+                            }
+                        }
+                    }
+                    else if (isNumeric(req.query.assetversionid)) {
+                        if (verbose) {
+                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from Roblox server/file (Image)")
+                        }
+                        filesystem.readdirSync("./icons").forEach(file => {
+                            var splitted = file.split('.')
+                            if (splitted[0] == req.query.assetversionid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                res.status(200).send(filesystem.readFileSync("./icons/" + file))
+                                assetfound2 = true
+                                return
+                            }
+                        })
+                        if (assetfound2 == false) {
+                            filesystem.readdirSync("./uploads").forEach(file => {
+                                var splitted = file.split('.')
+                                if (splitted[0] == req.query.assetversionid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                                    assetfound1 = true
+                                    return
+                                }
+                            })
+                            if (assetfound1 == false) {
+                                filesystem.readdirSync(assetfolder).forEach(file => {
+                                    var splitted = file.split('.')
+                                    if (splitted[0] == req.query.assetversionid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                        assetfound = true
+                                        return
+                                    }
+                                })
+                                if (assetfound == false && isInternetAvailable) {
+                                    var options1 = {
+                                        host: 'thumbnails.roblox.com',
+                                        port: 443,
+                                        path: '/v1/assets?assetIds=' + req.query.assetversionid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
+                                        method: "GET"
+                                    }
+                                    var infoiresult = ""
+
+                                    https.get(options1, (res2) => {
+
+                                        res2.setEncoding("utf8")
+                                        res2.on("data", (chunk) => {
+                                            infoiresult += chunk
+                                        })
+                                        res2.on("end", () => {
+                                            var jsoninfo1 = JSON.parse(infoiresult)
+                                            if (jsoninfo1["data"] == undefined) {
+                                                console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + req.query.assetversionid + " from the Roblox server!")
+                                                res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
+                                            }
+                                            else {
+                                                var options2 = {
+                                                    host: 'tr.rbxcdn.com',
+                                                    port: 443,
+                                                    path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                                                    method: "GET",
+                                                    headers: {
+                                                        "User-Agent": "RobloxStudio/WinInet"
+                                                    }
+
+                                                }
+                                                https.get(options2, (res3) => {
+
+                                                    var data = [], output
+                                                    if (res3.headers["content-encoding"] == 'gzip') {
+                                                        if (verbose) {
+                                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from Roblox server (Image) [gzip compression]")
+                                                        }
+                                                        var gzip = zlib.createGunzip()
+                                                        res3.pipe(gzip)
+                                                        output = gzip
+                                                    }
+                                                    else if (res3.headers["content-encoding"] == 'deflate') {
+                                                        if (verbose) {
+                                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from Roblox server (Image) [deflate compression]")
+                                                        }
+                                                        var deflate = zlib.createDeflate()
+                                                        res3.pipe(deflate)
+                                                        output = deflate
+                                                    }
+                                                    else {
+                                                        if (verbose) {
+                                                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from Roblox server (Image)")
+                                                        }
+                                                        output = res3
+                                                    }
+                                                    output.on("data", (chunk) => {
+                                                        data.push(chunk)
+                                                    })
+                                                    output.on("end", () => {
+                                                        var buffer = Buffer.concat(data)
+                                                        res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "." + req.query.fmt + "\"")
                                                         res.status(200).send(buffer)
                                                         assetfound = true
                                                     })
@@ -3462,8 +3701,7 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
                                         path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
                                         method: "GET",
                                         headers: {
-                                            "User-Agent": "totallychrome",
-                                            "Accept-Encoding": "gzip,deflate"
+                                            "User-Agent": "RobloxStudio/WinInet"
                                         }
 
                                     }
@@ -3498,6 +3736,116 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
                                         output.on("end", () => {
                                             var buffer = Buffer.concat(data)
                                             res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.aid + "." + req.query.fmt + "\"")
+                                            res.status(200).send(buffer)
+                                            assetfound = true
+                                        })
+                                    })
+                                }
+                            })
+                        })
+                    }
+                    else {
+                        res.status(404).end()
+                    }
+                }
+            }
+        }
+        else if (isNumeric(req.query.assetversionid)) {
+            if (verbose) {
+                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from Roblox server/file (Image)")
+            }
+            filesystem.readdirSync("./icons").forEach(file => {
+                var splitted = file.split('.')
+                if (splitted[0] == req.query.assetversionid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                    res.status(200).send(filesystem.readFileSync("./icons/" + file))
+                    assetfound2 = true
+                    return
+                }
+            })
+            if (assetfound2 == false) {
+                filesystem.readdirSync("./uploads").forEach(file => {
+                    var splitted = file.split('.')
+                    if (splitted[0] == req.query.assetversionid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        assetfound1 = true
+                        return
+                    }
+                })
+                if (assetfound1 == false) {
+                    filesystem.readdirSync(assetfolder).forEach(file => {
+                        var splitted = file.split('.')
+                        if (splitted[0] == req.query.assetversionid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            assetfound = true
+                            return
+                        }
+                    })
+                    if (assetfound == false && isInternetAvailable) {
+                        var options1 = {
+                            host: 'thumbnails.roblox.com',
+                            port: 443,
+                            path: '/v1/assets?assetIds=' + req.query.assetversionid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
+                            method: "GET"
+                        }
+                        var infoiresult = ""
+
+                        https.get(options1, (res2) => {
+
+                            res2.setEncoding("utf8")
+                            res2.on("data", (chunk) => {
+                                infoiresult += chunk
+                            })
+                            res2.on("end", () => {
+                                var jsoninfo1 = JSON.parse(infoiresult)
+                                if (jsoninfo1["data"] == undefined) {
+                                    console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong when trying to download image " + req.query.assetversionid + " from the Roblox server!")
+                                    res.status(400).send("{\"errors\":[{\"code\": 0, \"message\":\"BadRequest\"}]}")
+                                }
+                                else {
+                                    var options2 = {
+                                        host: 'tr.rbxcdn.com',
+                                        port: 443,
+                                        path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
+                                        method: "GET",
+                                        headers: {
+                                            "User-Agent": "RobloxStudio/WinInet"
+                                        }
+
+                                    }
+                                    https.get(options2, (res3) => {
+
+                                        var data = [], output
+                                        if (res3.headers["content-encoding"] == 'gzip') {
+                                            if (verbose) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from Roblox server (Image) [gzip compression]")
+                                            }
+                                            var gzip = zlib.createGunzip()
+                                            res3.pipe(gzip)
+                                            output = gzip
+                                        }
+                                        else if (res3.headers["content-encoding"] == 'deflate') {
+                                            if (verbose) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from Roblox server (Image) [deflate compression]")
+                                            }
+                                            var deflate = zlib.createDeflate()
+                                            res3.pipe(deflate)
+                                            output = deflate
+                                        }
+                                        else {
+                                            if (verbose) {
+                                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from Roblox server (Image)")
+                                            }
+                                            output = res3
+                                        }
+                                        output.on("data", (chunk) => {
+                                            data.push(chunk)
+                                        })
+                                        output.on("end", () => {
+                                            var buffer = Buffer.concat(data)
+                                            res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "." + req.query.fmt + "\"")
                                             res.status(200).send(buffer)
                                             assetfound = true
                                         })
@@ -4010,7 +4358,7 @@ async function getAssetType(assetid, callback) {
             else {
                 if (isInternetAvailable) {
                     var options = {
-                        host: "catalog.roblox.com",
+                        host: (proxyUrl != "" ? "catalog." + proxyUrl : "catalog.roblox.com"),
                         port: 443,
                         path: "/v1/catalog/items/" + assetid + "/details?itemType=asset",
                         method: "GET"
@@ -4028,13 +4376,13 @@ async function getAssetType(assetid, callback) {
                             else {
                                 if (useAuth) {
                                     var options1 = {
-                                        host: "assetdelivery.roblox.com",
+                                        host: (proxyUrl != "" ? "assetdelivery." + proxyUrl : "assetdelivery.roblox.com"),
                                         port: 443,
-                                        path: "/v2/asset/?id=" + assetid,
+                                        path: "/v1/assetId/" + assetid,
                                         method: "GET",
                                         headers: {
                                             "Cookie": ".ROBLOSECURITY=" + ROBLOSECURITY,
-                                            "User-Agent": "totallychrome"
+                                            "User-Agent": "RobloxStudio/WinInet"
                                         }
                                     }
 
@@ -4083,7 +4431,7 @@ async function getAssetType(assetid, callback) {
     else {
         if (isInternetAvailable) {
             var options = {
-                host: "catalog.roblox.com",
+                host: (proxyUrl != "" ? "catalog." + proxyUrl : "catalog.roblox.com"),
                 port: 443,
                 path: "/v1/catalog/items/" + assetid + "/details?itemType=asset",
                 method: "GET"
@@ -4101,13 +4449,13 @@ async function getAssetType(assetid, callback) {
                     else {
                         if (useAuth) {
                             var options1 = {
-                                host: "assetdelivery.roblox.com",
+                                host: (proxyUrl != "" ? "assetdelivery." + proxyUrl : "assetdelivery.roblox.com"),
                                 port: 443,
-                                path: "/v2/asset/?id=" + assetid,
+                                path: "/v1/assetId/" + assetid,
                                 method: "GET",
                                 headers: {
                                     "Cookie": ".ROBLOSECURITY=" + ROBLOSECURITY,
-                                    "User-Agent": "totallychrome"
+                                    "User-Agent": "RobloxStudio/WinInet"
                                 }
                             }
 
@@ -4479,6 +4827,12 @@ app.post("/v1/avatar/set-avatar", (req, res) => {
                     res.status(res1.statusCode).end()
                 })
             })
+            request1.on("error", (err) => {
+                if (verbose) {
+                    console.log("\x1b[31m%s\x1b[0m", "<ERROR> " + err)
+                }
+                res.status(500).end()
+            })
             request1.write(JSON.stringify(req.body))
             request1.end()
         } catch {
@@ -4499,13 +4853,22 @@ app.post("/v1/avatar/set-avatar", (req, res) => {
                     }
                     else {
                         res.status(400).end()
+                        if (debuglevel == 2) {
+                            if (verbose) { console.log("\x1b[33m%s\x1b[0m", "<WARN> Rejected " + req.ip + " because the User ID is invalid") }
+                        }
                     }
                 }
                 else {
+                    if (debuglevel == 2) {
+                        if (verbose) { console.log("\x1b[33m%s\x1b[0m", "<WARN> Rejected " + req.ip + " because the X-Token doesn't match the generated version") }
+                    }
                     res.status(500).send("{\"errors\": [{\"code\": 0, \"message\": \"Invalid verification (Not matching)\"}]}")
                 }
             }
             else {
+                if (debuglevel == 2) {
+                    if (verbose) { console.log("\x1b[33m%s\x1b[0m", "<WARN> Rejected " + req.ip + " because the request is missing X-Token") }
+                }
                 res.status(500).send("{\"errors\": [{\"code\": 0, \"message\": \"Invalid verification\"}]}")
             }
 
@@ -7310,6 +7673,7 @@ app.get("/v2/assets/:id/details", (req, res) => {
 app.get("/latency-measurements/get-servers-to-ping", (_, res) => {
     res.status(200).end()
 })
+
 app.get("/ownership/hasasset", async (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (joining) {
@@ -7375,6 +7739,82 @@ app.get("/ownership/hasasset", async (req, res) => {
         }
         else {
             res.status(200).send(false)
+        }
+    }
+})
+
+app.get("/Game/GamePass/GamePassHandler.ashx", async (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "text/plain")
+    if (joining) {
+        try {
+            var options = {
+                host: ip,
+                port: 80,
+                path: req.originalUrl,
+                method: "GET"
+            }
+
+            http.get(options, (res1) => {
+                res1.setEncoding("utf-8")
+                var data = ""
+                res1.on("data", (chunk) => {
+                    data += chunk
+                })
+                res1.on("end", () => {
+                    res.status(res1.statusCode).send(data)
+                })
+            })
+        } catch {
+            res.status(500).end()
+        }
+    }
+    else {
+        if (req.query.Action == "HasPass") {
+            var verified = false
+            var hasOwnedAsset = false
+            if (enableOwnedAssets == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+                if (filesystem.existsSync(RBDFpath)) {
+                    const stream = filesystem.createReadStream(RBDFpath)
+
+                    const rl = readline.createInterface({
+                        input: stream,
+                        crlfDelay: Infinity
+                    })
+
+                    for await (const line of rl) {
+                        if (line == "RBDF==") {
+                            verified = true
+                        }
+                        else if (line.trim() == "<OwnedAsset userId=" + req.query.UserID + " AssetId=" + req.query.PassID + ">") {
+                            hasOwnedAsset = true
+                        }
+                    }
+                    stream.destroy()
+                    rl.close()
+                    if (verified == true) {
+                        if (hasOwnedAsset == true) {
+                            res.status(200).send("<Value Type=\"boolean\">true</Value>")
+                        }
+                        else {
+                            res.status(200).send("<Value Type=\"boolean\">false</Value>")
+                        }
+                    }
+                    else {
+                        res.status(200).send("<Value Type=\"boolean\">false</Value>")
+                    }
+                }
+                else {
+                    res.status(200).send("<Value Type=\"boolean\">false</Value>")
+                }
+            }
+            else {
+                res.status(200).send("<Value Type=\"boolean\">false</Value>")
+            }
+        }
+        else {
+            console.log("\x1b[34m%s\x1b[0m", "<STUB> Unknown action: " + req.query.Action)
+            res.status(200).send("<Value Type=\"Boolean\">false</Value>")
         }
     }
 })
@@ -7692,7 +8132,7 @@ app.get("/v1/assets/:id/bundles", (req, res) => {
     if (useAuth == true) {
         try {
             var options = {
-                host: "catalog.roblox.com",
+                host: (proxyUrl != "" ? "catalog." + proxyUrl : "catalog.roblox.com"),
                 port: 443,
                 path: "/v1/assets/" + req.params.id + "/bundles",
                 method: "GET"
@@ -7827,8 +8267,7 @@ app.get("/asset-thumbnail/image", (req, res) => {
                                 path: jsoninfo1["data"][0]["imageUrl"].toString().slice(21),
                                 method: "GET",
                                 headers: {
-                                    "User-Agent": "totallychrome",
-                                    "Accept-Encoding": "gzip,deflate"
+                                    "User-Agent": "RobloxStudio/WinInet"
                                 }
                             }
                             https.get(options2, (res3) => {
@@ -8275,7 +8714,7 @@ app.get("/v1/games/icons", (req, res) => {
             })
         })
         var options = {
-            host: "thumbnails.roblox.com",
+            host: (proxyUrl != "" ? "thumbnails." + proxyUrl : "thumbnails.roblox.com"),
             port: 443,
             path: (req.get("host") + req.originalUrl).replace(new RegExp("thumbnails.reblox.zip", "g"), "").replace("AutoGenerated", "PlaceHolder"),
             method: "GET"

@@ -113,7 +113,7 @@
     <Setting Name="RBDFPath" Type="System.String" Scope="User">
       <Value Profile="(Default)">default.rbdf</Value>
     </Setting>
-    <Setting Name="UserIdLong" Type="System.UInt64" Scope="User">
+    <Setting Name="UserIdLong" Type="System.Int64" Scope="User">
       <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="LongUserIdExperiment" Type="System.Boolean" Scope="User">

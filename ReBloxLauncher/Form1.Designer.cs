@@ -105,6 +105,9 @@
             this.listBox3 = new System.Windows.Forms.ListBox();
             this.label12 = new System.Windows.Forms.Label();
             this.panel5 = new System.Windows.Forms.Panel();
+            this.pictureBox5 = new System.Windows.Forms.PictureBox();
+            this.pictureBox4 = new System.Windows.Forms.PictureBox();
+            this.label44 = new System.Windows.Forms.Label();
             this.button27 = new System.Windows.Forms.Button();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
             this.button26 = new System.Windows.Forms.Button();
@@ -179,7 +182,7 @@
             this.fadeImageTimer = new System.Windows.Forms.Timer(this.components);
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
-            this.label44 = new System.Windows.Forms.Label();
+            this.button28 = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -190,6 +193,8 @@
             this.panel3.SuspendLayout();
             this.panel4.SuspendLayout();
             this.panel5.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).BeginInit();
@@ -692,6 +697,7 @@
             this.textBox3.ReadOnly = true;
             this.textBox3.Size = new System.Drawing.Size(288, 20);
             this.textBox3.TabIndex = 3;
+            this.toolTip1.SetToolTip(this.textBox3, "Remember to hit enter (Return) to save your ROBLOSECURITY!");
             this.textBox3.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox3_KeyDown);
             // 
             // checkBox13
@@ -1155,6 +1161,8 @@
             // panel5
             // 
             this.panel5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.panel5.Controls.Add(this.pictureBox5);
+            this.panel5.Controls.Add(this.pictureBox4);
             this.panel5.Controls.Add(this.label44);
             this.panel5.Controls.Add(this.button27);
             this.panel5.Controls.Add(this.pictureBox3);
@@ -1192,6 +1200,47 @@
             this.panel5.Name = "panel5";
             this.panel5.Size = new System.Drawing.Size(526, 372);
             this.panel5.TabIndex = 31;
+            // 
+            // pictureBox5
+            // 
+            this.pictureBox5.Image = global::ReBloxLauncher.Properties.Resources.girlunselected;
+            this.pictureBox5.Location = new System.Drawing.Point(289, 75);
+            this.pictureBox5.Name = "pictureBox5";
+            this.pictureBox5.Size = new System.Drawing.Size(193, 231);
+            this.pictureBox5.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox5.TabIndex = 34;
+            this.pictureBox5.TabStop = false;
+            this.pictureBox5.Visible = false;
+            this.pictureBox5.Click += new System.EventHandler(this.pictureBox5_Click);
+            this.pictureBox5.MouseEnter += new System.EventHandler(this.pictureBox5_MouseEnter);
+            this.pictureBox5.MouseLeave += new System.EventHandler(this.pictureBox5_MouseLeave);
+            // 
+            // pictureBox4
+            // 
+            this.pictureBox4.Image = global::ReBloxLauncher.Properties.Resources.boynotselected;
+            this.pictureBox4.Location = new System.Drawing.Point(43, 75);
+            this.pictureBox4.Name = "pictureBox4";
+            this.pictureBox4.Size = new System.Drawing.Size(193, 231);
+            this.pictureBox4.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox4.TabIndex = 33;
+            this.pictureBox4.TabStop = false;
+            this.pictureBox4.Visible = false;
+            this.pictureBox4.Click += new System.EventHandler(this.pictureBox4_Click);
+            this.pictureBox4.MouseEnter += new System.EventHandler(this.pictureBox4_MouseEnter);
+            this.pictureBox4.MouseLeave += new System.EventHandler(this.pictureBox4_MouseLeave);
+            // 
+            // label44
+            // 
+            this.label44.AutoSize = true;
+            this.label44.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.label44.ForeColor = System.Drawing.Color.White;
+            this.label44.Location = new System.Drawing.Point(103, 324);
+            this.label44.Name = "label44";
+            this.label44.Size = new System.Drawing.Size(66, 17);
+            this.label44.TabIndex = 32;
+            this.label44.Text = "(R6 only)";
+            this.label44.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label44.Visible = false;
             // 
             // button27
             // 
@@ -2070,18 +2119,18 @@
             this.pictureBox2.TabStop = false;
             this.pictureBox2.Visible = false;
             // 
-            // label44
+            // button28
             // 
-            this.label44.AutoSize = true;
-            this.label44.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label44.ForeColor = System.Drawing.Color.White;
-            this.label44.Location = new System.Drawing.Point(103, 324);
-            this.label44.Name = "label44";
-            this.label44.Size = new System.Drawing.Size(66, 17);
-            this.label44.TabIndex = 32;
-            this.label44.Text = "(R6 only)";
-            this.label44.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.label44.Visible = false;
+            this.button28.BackColor = System.Drawing.Color.White;
+            this.button28.Font = new System.Drawing.Font("Microsoft Sans Serif", 6F);
+            this.button28.Location = new System.Drawing.Point(210, 532);
+            this.button28.Name = "button28";
+            this.button28.Size = new System.Drawing.Size(64, 18);
+            this.button28.TabIndex = 39;
+            this.button28.Text = "Cancel";
+            this.button28.UseVisualStyleBackColor = false;
+            this.button28.Visible = false;
+            this.button28.Click += new System.EventHandler(this.button28_Click);
             // 
             // Form1
             // 
@@ -2089,6 +2138,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
             this.ClientSize = new System.Drawing.Size(550, 552);
+            this.Controls.Add(this.button28);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.pictureBox2);
             this.Controls.Add(this.label33);
@@ -2144,6 +2194,8 @@
             this.panel4.PerformLayout();
             this.panel5.ResumeLayout(false);
             this.panel5.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).EndInit();
@@ -2322,6 +2374,9 @@
         private System.Windows.Forms.Button button27;
         private System.Windows.Forms.PictureBox pictureBox3;
         private System.Windows.Forms.Label label44;
+        private System.Windows.Forms.PictureBox pictureBox5;
+        private System.Windows.Forms.PictureBox pictureBox4;
+        private System.Windows.Forms.Button button28;
     }
 }
 

@@ -71,12 +71,52 @@ namespace ReBloxLauncher.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap boynotselected {
+            get {
+                object obj = ResourceManager.GetObject("boynotselected", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap boyselected {
+            get {
+                object obj = ResourceManager.GetObject("boyselected", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
         internal static byte[] DiscordRPC {
             get {
                 object obj = ResourceManager.GetObject("DiscordRPC", resourceCulture);
                 return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap girlselected {
+            get {
+                object obj = ResourceManager.GetObject("girlselected", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap girlunselected {
+            get {
+                object obj = ResourceManager.GetObject("girlunselected", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
         

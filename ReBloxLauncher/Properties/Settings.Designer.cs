@@ -469,9 +469,9 @@ namespace ReBloxLauncher.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1")]
-        public ulong UserIdLong {
+        public long UserIdLong {
             get {
-                return ((ulong)(this["UserIdLong"]));
+                return ((long)(this["UserIdLong"]));
             }
             set {
                 this["UserIdLong"] = value;
