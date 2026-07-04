@@ -3887,6 +3887,7 @@ namespace ReBloxLauncher
                                     if (cancelAsset) return;
                                     LoadAssets();
                                     button28.Invoke(new Action(() => { button28.Visible = false; }));
+                                    if (cancelAsset) return;
                                     ProcessStartInfo ps = new ProcessStartInfo();
                                     ps.UseShellExecute = false;
                                     ps.CreateNoWindow = false;
@@ -7411,6 +7412,7 @@ namespace ReBloxLauncher
                                             button28.Invoke(new Action(() => { button28.Visible = true; }));
                                             if (UseJoinJSONLink) SetupJoinScript(listView1.SelectedItems[0].SubItems[5].Text, int.Parse(listView1.SelectedItems[0].SubItems[4].Text));
                                             SetupGameFiles(false, listView1.SelectedItems[0].SubItems[1].Text);
+                                            if (cancelAsset) return;
                                             LoadAssets(listView1.SelectedItems[0].SubItems[1].Text);
                                             button28.Invoke(new Action(() => { button28.Visible = false; }));
                                             if (cancelAsset) return;
@@ -7584,8 +7586,10 @@ namespace ReBloxLauncher
                                     button28.Invoke(new Action(() => { button28.Visible = true; }));
                                     if (UseJoinJSONLink) SetupJoinScript(listView1.SelectedItems[0].SubItems[5].Text, int.Parse(listView1.SelectedItems[0].SubItems[4].Text));
                                     SetupGameFiles(false, listView1.SelectedItems[0].SubItems[1].Text);
+                                    if (cancelAsset) return;
                                     LoadAssets(listView1.SelectedItems[0].SubItems[1].Text);
                                     button28.Invoke(new Action(() => { button28.Visible = false; }));
+                                    if (cancelAsset) return;
                                     ProcessStartInfo ps = new ProcessStartInfo();
                                     ps.UseShellExecute = false;
                                     ps.CreateNoWindow = false;
@@ -7739,6 +7743,7 @@ namespace ReBloxLauncher
                                             button28.Invoke(new Action(() => { button28.Visible = true; }));
                                             if (UseJoinJSONLink) SetupJoinScript(listView1.SelectedItems[0].SubItems[5].Text, int.Parse(listView1.SelectedItems[0].SubItems[4].Text));
                                             SetupGameFiles(true, listView1.SelectedItems[0].SubItems[1].Text);
+                                            if (cancelAsset) return;
                                             LoadAssets(listView1.SelectedItems[0].SubItems[1].Text);
                                             button28.Invoke(new Action(() => { button28.Visible = false; }));
                                             if (cancelAsset) return;
@@ -7934,6 +7939,7 @@ namespace ReBloxLauncher
                                     button28.Invoke(new Action(() => { button28.Visible = true; }));
                                     if (UseJoinJSONLink) SetupJoinScript(listView1.SelectedItems[0].SubItems[5].Text, int.Parse(listView1.SelectedItems[0].SubItems[4].Text));
                                     SetupGameFiles(true, listView1.SelectedItems[0].SubItems[1].Text);
+                                    if (cancelAsset) return;
                                     LoadAssets(listView1.SelectedItems[0].SubItems[1].Text);
                                     button28.Invoke(new Action(() => { button28.Visible = false; }));
                                     if (cancelAsset) return;
