@@ -36,7 +36,7 @@
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="AssetPackEnabled" Type="System.String" Scope="User">
-      <Value Profile="(Default)">\data\assetpacks\Basic Roblox Assets|.\data\assetpacks\ReBlox Accessories (2016E-)|.\data\assetpacks\ReBlox Accessories (2016M+)|.\data\assetpacks\ReBlox Clothing|.\data\assetpacks\ReBlox Faces</Value>
+      <Value Profile="(Default)">.\data\assetpacks\Basic Roblox Assets|.\data\assetpacks\ReBlox Accessories (2016E-)|.\data\assetpacks\ReBlox Accessories (2016M+)|.\data\assetpacks\ReBlox Clothing|.\data\assetpacks\ReBlox Faces</Value>
     </Setting>
     <Setting Name="avatarR15" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
