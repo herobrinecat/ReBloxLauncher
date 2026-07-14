@@ -28,6 +28,22 @@ namespace ReBloxLauncher
         [STAThread]
         static void Main()
         {
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            {
+                Console.WriteLine("<ERROR> Something went wrong in the launcher that's not handled on the main thread! The error can be seen below:\r\n" + e.ExceptionObject.ToString());
+            };
+
+            TaskScheduler.UnobservedTaskException += (sender, e) =>
+            {
+                Console.WriteLine("<ERROR> Something went wrong in the launcher that's not observed! The error can be seen below:\r\n" + e.Exception);
+                e.SetObserved();
+            };
+
+            Application.ThreadException += (sender, e) =>
+            {
+                Console.WriteLine("<ERROR> Something went wrong in the launcher that's not handled! The error can be seen below:\r\n" + e.Exception);
+            };
+            
             if (Directory.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs"))
             {
                 bool success = false;
