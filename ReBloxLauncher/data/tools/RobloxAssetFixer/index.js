@@ -3916,6 +3916,12 @@ app.get("/game/placelauncher.ashx", (req, res) => {
     res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
 })
 
+app.get("//game/placelauncher.ashx", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> 2016 or later (Player) detected, using placelauncher.ashx")
+    res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
+})
+
 app.get("/game/join.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2017 or earlier (or Player) detected, using join.ashx")
@@ -6861,7 +6867,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
                         return
                     }
                     else {
-                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.UTC()).toISOString() + "\">\r\n")
+                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date().toISOString() + "\">\r\n")
                     }
 
                 }
@@ -6871,7 +6877,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
             }
             else {
                 filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
-                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.UTC()).toISOString() + "\">\r\n")
+                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date().toISOString() + "\">\r\n")
             }
         }
         if (isNumeric(req.query.BadgeID)) {
