@@ -25,7 +25,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1325")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1328")]
         public string version {
             get {
                 return ((string)(this["version"]));
@@ -154,9 +154,9 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("\\data\\assetpacks\\Basic Roblox Assets|.\\data\\assetpacks\\ReBlox Accessories (2016E-" +
-            ")|.\\data\\assetpacks\\ReBlox Accessories (2016M+)|.\\data\\assetpacks\\ReBlox Clothin" +
-            "g|.\\data\\assetpacks\\ReBlox Faces")]
+        [global::System.Configuration.DefaultSettingValueAttribute(".\\data\\assetpacks\\Basic Roblox Assets|.\\data\\assetpacks\\ReBlox Accessories (2016E" +
+            "-)|.\\data\\assetpacks\\ReBlox Accessories (2016M+)|.\\data\\assetpacks\\ReBlox Clothi" +
+            "ng|.\\data\\assetpacks\\ReBlox Faces")]
         public string AssetPackEnabled {
             get {
                 return ((string)(this["AssetPackEnabled"]));
@@ -523,6 +523,17 @@ namespace ReBloxLauncher.Properties {
             }
             set {
                 this["RenderAvatarExperiment"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public global::System.Collections.Specialized.StringCollection CharactersList {
+            get {
+                return ((global::System.Collections.Specialized.StringCollection)(this["CharactersList"]));
+            }
+            set {
+                this["CharactersList"] = value;
             }
         }
     }

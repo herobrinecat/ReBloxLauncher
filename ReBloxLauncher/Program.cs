@@ -8,7 +8,6 @@ namespace ReBloxLauncher
 {
     internal static class Program
     {
-        static FileStream ostrm;
         static StreamWriter writer;
         static TextWriter oldOut = Console.Out;
         static Random random = new Random();
@@ -25,6 +24,7 @@ namespace ReBloxLauncher
             }
         }
 
+        
         [STAThread]
         static void Main()
         {
@@ -43,30 +43,38 @@ namespace ReBloxLauncher
             {
                 Console.WriteLine("<ERROR> Something went wrong in the launcher that's not handled! The error can be seen below:\r\n" + e.Exception);
             };
-            
+
             if (Directory.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs"))
             {
-                bool success = false;
-                try
+                DirectoryInfo di = new DirectoryInfo(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs");
+                if (di.Attributes.HasFlag(FileAttributes.ReadOnly))
                 {
-                    if (File.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log"))
+                    MessageBox.Show("It appears that the logs folder is read-only! Please check your drive and/or logs folder to ensure that it's writable.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    bool success = false;
+                    try
                     {
-                        File.Move(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log", Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log" + RandomNumber(10000, 99999) + ".log");
+                        if (File.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log"))
+                        {
+                            File.Move(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log", Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log" + RandomNumber(10000, 99999) + ".log");
+                        }
+                        writer = File.AppendText("./logs/log.log");
+                        writer.AutoFlush = true;
+                        success = true;
                     }
-                    ostrm = new FileStream("./logs/log.log", FileMode.OpenOrCreate, FileAccess.Write);
-                    writer = new StreamWriter(ostrm);
-                    writer.AutoFlush = true;
-                    success = true;
-                }
-                catch
-                {
-                    //ignore, just to get rid of annoying moments
-                }
-                if (success)
-                {
-                    Console.SetOut(writer);
-                    Console.WriteLine("ReBlox Launcher Log (" + DateTime.Now.ToString("D") + ")\r\n");
-                    Console.WriteLine("<INFO> Logging has started!");
+                    catch
+                    {
+                        //ignore, just to get rid of annoying moments
+                    }
+                    if (success)
+                    {
+                        Console.SetOut(writer);
+                        Console.WriteLine("ReBlox Launcher Log (" + DateTime.Now.ToString("D") + ")\r\n");
+                        Console.WriteLine("<INFO> Logging has started!");
+                        Console.WriteLine("<INFO> ReBlox Version: " + Properties.Settings.Default.version);
+                    }
                 }
             }
             Application.ApplicationExit += Application_ApplicationExit;
@@ -84,7 +92,6 @@ namespace ReBloxLauncher
                 {
                     Console.SetOut(oldOut);
                     writer.Close();
-                    ostrm.Close();
                 }
             }
             catch

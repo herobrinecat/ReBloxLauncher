@@ -72,6 +72,7 @@ var enableTextFilter = true //Experimental text filter
 var checkROBLOSECURITY = false //A mark for checking ROBLOSECURITY from launcher
 var enableHTTPS = true //Enable support for HTTPS (Recommended!)
 var proxyUrl = "" //Url to replace roblox.com
+
 if (filesystem.existsSync(privateKey)) {
     publicKeyObj = crypto.createPublicKey({
         key: filesystem.readFileSync(privateKey),
@@ -493,12 +494,13 @@ function getROBLOSECURITYfromLauncher(times) {
                     }
                 }
                 var roblosecurityfromlauncher = ""
-                client.setEncoding("utf8")
+                var data = []
                 client.on("data", (chunk) => {
-                    roblosecurityfromlauncher += chunk
+                    data.push(chunk)
                 })
 
                 client.on("end", () => {
+                    roblosecurityfromlauncher = zlib.gunzipSync(Buffer.concat(data)).toString("utf-8")
                     if (Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8").startsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|")) {
                         ROBLOSECURITY = Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8")
                         if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully synced ROBLOSECURITY with the launcher! Turning on useAuth...");
@@ -4024,9 +4026,15 @@ app.get("/game/gameserver.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2016* or earlier detected, using gameserver.ashx")
     if (filesystem.existsSync(privateKey)) {
+        if (verbose == true && debuglevel == 2) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Signing the script as rbxsig and sending the script along with the rbxsig...")
+        }
         res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), filesystem.readFileSync("./game/gameserver.ashx")]), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/gameserver.ashx", "utf8"))
     }
     else {
+        if (verbose == true && debuglevel == 2) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Private key not detected, sending the script...")
+        }
         res.status(200).send(filesystem.readFileSync("./game/gameserver.ashx", "utf8"))
     }
 })
@@ -4039,9 +4047,15 @@ app.get("/game/visit.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2016 or earlier detected, using visit.ashx")
     if (filesystem.existsSync(privateKey)) {
+        if (verbose == true && debuglevel == 2) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Signing the script as rbxsig and sending the script along with the rbxsig...")
+        }
         res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), Buffer.from(filesystem.readFileSync("./game/visit.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId.toString()), "utf8")]), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/visit.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId.toString()))
     }
     else {
+        if (verbose == true && debuglevel == 2) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Private key not detected, sending the script...")
+        }
         res.status(200).send(filesystem.readFileSync("./game/visit.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId.toString()))
     }
 })
@@ -4115,9 +4129,15 @@ app.get("/Game/LoadPlaceInfo.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2017 or earlier detected, using LoadPlaceInfo.ashx")
     if (filesystem.existsSync(privateKey)) {
+        if (verbose == true && debuglevel == 2) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Signing the script as rbxsig and sending the script along with the rbxsig...")
+        }
         res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from([0x0D, 0x0A]) + Buffer.from(filesystem.readFileSync("./game/LoadPlaceInfo.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId), "utf8"), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/LoadPlaceInfo.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId))
     }
     else {
+        if (verbose == true && debuglevel == 2) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Private key not detected, sending the script...")
+        }
         res.status(200).send(filesystem.readFileSync("./game/LoadPlaceInfo.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId))
     }
 })
@@ -4126,9 +4146,15 @@ app.get("//Game/LoadPlaceInfo.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2017 or earlier detected, using LoadPlaceInfo.ashx")
     if (filesystem.existsSync(privateKey)) {
+        if (verbose == true && debuglevel == 2) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Signing the script as rbxsig and sending the script along with the rbxsig...")
+        }
         res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from([0x0D, 0x0A]) + Buffer.from(filesystem.readFileSync("./game/LoadPlaceInfo.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId), "utf8"), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/LoadPlaceInfo.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId))
     }
     else {
+        if (verbose == true && debuglevel == 2) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Private key not detected, sending the script...")
+        }
         res.status(200).send(filesystem.readFileSync("./game/LoadPlaceInfo.ashx", "utf8").replace(new RegExp("%userId%", "g"), userId))
     }
 })
@@ -4138,9 +4164,15 @@ app.get("/game/studio.ashx", (req, res) => {
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Early-2015 or earlier detected, using Studio.ashx")
     if (filesystem.existsSync("./game/studio.ashx")) {
         if (filesystem.existsSync(privateKey)) {
+            if (verbose == true && debuglevel == 2) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Signing the script as rbxsig and sending the script along with the rbxsig...")
+            }
             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from([0x0D, 0x0A]) + Buffer.from(filesystem.readFileSync("./game/studio.ashx", "utf8").replace(new RegExp("{id}", "g"), userId), "utf8"), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/studio.ashx", "utf8").replace(new RegExp("{id}", "g"), userId))
         }
         else {
+            if (verbose == true && debuglevel == 2) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Private key not detected, sending the script...")
+            }
             res.status(200).send(filesystem.readFileSync("./game/studio.ashx", "utf8").replace(new RegExp("{id}", "g"), userId))
         }
         res.status(200).send(filesystem.readFileSync("./game/studio.ashx", "utf-8").replace(new RegExp("{id}", "g"), userId))
@@ -4152,9 +4184,15 @@ app.get("/Game/PlaceSpecificScript.ashx", (req, res) => {
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2016 or earlier detected, using PlaceSpecificScript.ashx")
     if (filesystem.existsSync("./game/placespecificscript.ashx")) {
         if (filesystem.existsSync(privateKey)) {
+            if (verbose == true && debuglevel == 2) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Signing the script as rbxsig and sending the script along with the rbxsig...")
+            }
             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from([0x0D, 0x0A]) + filesystem.readFileSync("./game/placespecificscript.ashx"), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/placespecificscript.ashx", "utf8"))
         }
         else {
+            if (verbose == true && debuglevel == 2) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Private key not detected, sending the script...")
+            }
             res.status(200).send(filesystem.readFileSync("./game/placespecificscript.ashx", "utf8"))
         }
     }
@@ -4165,9 +4203,15 @@ app.get("//Game/PlaceSpecificScript.ashx", (req, res) => {
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2016 or earlier detected, using PlaceSpecificScript.ashx")
     if (filesystem.existsSync("./game/placespecificscript.ashx")) {
         if (filesystem.existsSync(privateKey)) {
+            if (verbose == true && debuglevel == 2) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Signing the script as rbxsig and sending the script along with the rbxsig...")
+            }
             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from([0x0D, 0x0A]) + filesystem.readFileSync("./game/placespecificscript.ashx"), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/placespecificscript.ashx", "utf8"))
         }
         else {
+            if (verbose == true && debuglevel == 2) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Private key not detected, sending the script...")
+            }
             res.status(200).send(filesystem.readFileSync("./game/placespecificscript.ashx", "utf8"))
         }
     }
@@ -4178,9 +4222,15 @@ app.get("//game/studio.ashx", (req, res) => {
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Early-2015 or earlier detected, using Studio.ashx")
     if (filesystem.existsSync("./game/studio.ashx")) {
         if (filesystem.existsSync(privateKey)) {
+            if (verbose == true && debuglevel == 2) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Signing the script as rbxsig and sending the script along with the rbxsig...")
+            }
             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from([0x0D, 0x0A]) + Buffer.from(filesystem.readFileSync("./game/studio.ashx", "utf8").replace(new RegExp("{id}", "g"), userId), "utf8"), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + "%\r\n" + filesystem.readFileSync("./game/studio.ashx", "utf8").replace(new RegExp("{id}", "g"), userId))
         }
         else {
+            if (verbose == true && debuglevel == 2) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Private key not detected, sending the script...")
+            }
             res.status(200).send(filesystem.readFileSync("./game/studio.ashx", "utf8").replace(new RegExp("{id}", "g"), userId))
         }
     }
@@ -4227,17 +4277,24 @@ app.get("/Game/Tools/InsertAsset.ashx", (req, res) => {
                 method: "GET"
             }
 
-            https.get(options, (res) => {
-                res.setEncoding("utf8")
+            https.get(options, (res1) => {
+                if (verbose == true && debuglevel == 2) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending the request to sets.pizzaboxer.xyz")
+                }
+                res1.setEncoding("utf8")
 
                 var httpresult = ""
 
-                res.on("data", (chunk) => {
+                res1.on("data", (chunk) => {
                     httpresult += chunk
                 })
 
-                res.on("end", () => {
+                res1.on("end", () => {
                     result = httpresult
+                    if (verbose == true && debuglevel == 2) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Setting the result to the request result")
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Status code: " + res1.statusCode)
+                    }
                 })
             })
         }
@@ -7029,6 +7086,10 @@ app.get("/ide/publish", (_, res) => {
     res.status(200).send("<pre>Viewing published games is not supported in 2017L and below, use 2018+ clients to view the published maps.</pre>")
 })
 
+app.get("/UI/Save.aspx", (_, res) => {
+    res.status(200).send("<pre>Saving assets to the server is not supported.</pre>")
+})
+
 app.get("/v1/user/groups/canmanage", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"data\":[]}")
@@ -9429,22 +9490,31 @@ function changeROBLOSECURITYOnLauncher(roblosecurityedit) {
             host: "127.0.0.1",
             port: 50355
         }
+        if (verbose == true && debuglevel == 2) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355 to update the ROBLOSECURITY")
+        }
         client.connect(options, () => {
             if (verbose) { console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!") }
 
             client.on("data", message => {
                 if (message.toString("utf8") == "200") {
+                    if (verbose == true && debuglevel == 2) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Received 200 from server, assuming it's successful")
+                    }
                     if (verbose) { console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully updated ROBLOSECURITY on the launcher! Disconnecting...") }
                     client.end()
                 }
                 else {
+                    if (verbose == true && debuglevel == 2) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Server response: " + message.toString("utf8"))
+                    }
                     if (verbose) { console.log("\x1b[33m%s\x1b[0m", "<WARN> Something went wrong while trying to update the ROBLOSECURITY, the new ROBLOSECURITY will only be used this session! Disconnecting...") }
                     client.end()
                 }
             })
         })
 
-        client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("URS", "utf8"), Buffer.from(roblosecurityedit, "utf8")]))
+        client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("URS", "utf8"), zlib.gzipSync(Buffer.from(roblosecurityedit, "utf8"))]))
     }
 }
 

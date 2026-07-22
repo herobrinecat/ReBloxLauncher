@@ -9,7 +9,8 @@ using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using System.Globalization;
 using System.Windows.Forms;
-
+using System.IO;
+using System.IO.Compression;
 namespace ReBloxLauncher
 {
     public class ServerUtils
@@ -36,6 +37,39 @@ namespace ReBloxLauncher
             }
         }
 
+        private static byte[] GzipCompress(byte[] bytes)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (GZipStream gzipStream = new GZipStream(stream, CompressionLevel.Optimal))
+                {
+                    using (BufferedStream bufferedStream = new BufferedStream(gzipStream))
+                    {
+                        bufferedStream.Write(bytes, 0, bytes.Length);
+                    }
+                }
+                return stream.ToArray();
+            }
+        }
+
+        private static byte[] GzipDecompress(byte[] bytes)
+        {
+            using (MemoryStream stream = new MemoryStream(bytes))
+            {
+                using (MemoryStream outputStream = new MemoryStream())
+                {
+                    using (GZipStream gzipStream = new GZipStream(stream, CompressionMode.Decompress))
+                    {
+                        using (BufferedStream bufferedStream = new BufferedStream(gzipStream))
+                        {
+                            bufferedStream.CopyTo(outputStream);
+                        }
+                    }
+                    return outputStream.ToArray();
+                }
+            }
+        }
+
         private static bool CallTryParse(string stringToConvert, NumberStyles styles)
         {
             CultureInfo provider;
@@ -54,18 +88,27 @@ namespace ReBloxLauncher
             return value.ToString("yyyyMMddHHmmss");
         }
 
-        private static bool checkPort(int port)
+        public static bool checkPortTcp(int port)
         {
             IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
             IPEndPoint[] tcpComInfoArray = ipGlobalProperties.GetActiveTcpListeners();
 
             return tcpComInfoArray.Any(endpoint => endpoint.Port == port);
         }
+
+        public static bool checkPortUdp(int port)
+        {
+            IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
+            IPEndPoint[] udpComInfoArray = ipGlobalProperties.GetActiveUdpListeners();
+
+            return udpComInfoArray.Any(endpoint => endpoint.Port == port);
+        }
+
         public static void StartServerCom()
         {
             Thread thread = new Thread(() =>
             {
-                if (checkPort(50355))
+                if (checkPortTcp(50355))
                 {
                     MessageBox.Show("It appears that another program/launcher is using the port that ReBlox uses, please close the program that uses the port and relaunch the launcher.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;  
@@ -102,7 +145,8 @@ namespace ReBloxLauncher
                                         var newarray = new byte[buffer.Length - 7];
                                         Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
 
-                                        var roblosecurity = Encoding.UTF8.GetString(newarray);
+                                        byte[] decompressedBuffer = GzipDecompress(newarray);
+                                        var roblosecurity = Encoding.UTF8.GetString(decompressedBuffer);
 
                                         if (roblosecurity.StartsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|"))
                                         {
@@ -133,7 +177,7 @@ namespace ReBloxLauncher
                                         Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
                                         if (Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }) == timestamp)
                                         {
-                                            byte[] roblosecurity = Encoding.UTF8.GetBytes(Properties.Settings.Default.ROBLOSECURITY);
+                                            byte[] roblosecurity = GzipCompress(Encoding.UTF8.GetBytes(Properties.Settings.Default.ROBLOSECURITY));
                                             Console.WriteLine("<INFO> Sending .ROBLOSECURITY to server...");
                                             stream.Write(roblosecurity, 0, roblosecurity.Length);
                                             Console.WriteLine("<INFO> .ROBLOSECURITY sent to the server!");
@@ -174,6 +218,8 @@ namespace ReBloxLauncher
                         Console.WriteLine("<WARN> Something went wrong while running the TCP server! RobloxAssetFixer integration may not be available.\r\n\r\nMessage: " + e.Message + "\r\n\r\nStack Trace:\r\n" + e.StackTrace);
                     }
                 }
+
+
             });
             thread.TrySetApartmentState(ApartmentState.STA);
             thread.Start();

@@ -53,6 +53,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -65,6 +66,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CharacterName.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CharacterName.Designer.cs">
+      <DependentUpon>CharacterName.cs</DependentUpon>
+    </Compile>
     <Compile Include="ColorPicker.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -77,7 +84,7 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-	<Compile Include="ImageSize.cs" />
+    <Compile Include="ImageSize.cs" />
     <Compile Include="LaunchScreen.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -100,6 +107,9 @@
       <DependentUpon>SteamDeckUI.cs</DependentUpon>
     </Compile>
     <Compile Include="WineDetector.cs" />
+    <EmbeddedResource Include="CharacterName.resx">
+      <DependentUpon>CharacterName.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ColorPicker.resx">
       <DependentUpon>ColorPicker.cs</DependentUpon>
     </EmbeddedResource>
@@ -136,13 +146,14 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <None Include="rebloxstrongname.pfx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="rebloxicon.ico" />
-	<None Include="Resources\girlselected.png" />
+    <None Include="Resources\girlselected.png" />
     <None Include="Resources\boyselected.png" />
     <None Include="Resources\boynotselected.png" />
     <None Include="Resources\girlunselected.png" />

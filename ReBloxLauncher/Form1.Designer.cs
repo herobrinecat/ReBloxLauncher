@@ -105,6 +105,8 @@
             this.listBox3 = new System.Windows.Forms.ListBox();
             this.label12 = new System.Windows.Forms.Label();
             this.panel5 = new System.Windows.Forms.Panel();
+            this.comboBox4 = new System.Windows.Forms.ComboBox();
+            this.button29 = new System.Windows.Forms.Button();
             this.pictureBox5 = new System.Windows.Forms.PictureBox();
             this.pictureBox4 = new System.Windows.Forms.PictureBox();
             this.label44 = new System.Windows.Forms.Label();
@@ -181,8 +183,8 @@
             this.label9 = new System.Windows.Forms.Label();
             this.fadeImageTimer = new System.Windows.Forms.Timer(this.components);
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
-            this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.button28 = new System.Windows.Forms.Button();
+            this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -271,6 +273,7 @@
             this.textBox2.Size = new System.Drawing.Size(134, 20);
             this.textBox2.TabIndex = 6;
             this.textBox2.Text = "53640";
+            this.textBox2.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textBox2_KeyPress);
             // 
             // label4
             // 
@@ -484,9 +487,9 @@
             this.checkBox19.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.checkBox19.Location = new System.Drawing.Point(20, 181);
             this.checkBox19.Name = "checkBox19";
-            this.checkBox19.Size = new System.Drawing.Size(283, 21);
+            this.checkBox19.Size = new System.Drawing.Size(273, 21);
             this.checkBox19.TabIndex = 35;
-            this.checkBox19.Text = "Change User ID limit from Int32 to UInt64";
+            this.checkBox19.Text = "Change User ID limit from Int32 to Int64";
             this.toolTip1.SetToolTip(this.checkBox19, "Switches from text-based RBDF to binary-based RBDF");
             this.checkBox19.UseVisualStyleBackColor = true;
             this.checkBox19.CheckedChanged += new System.EventHandler(this.checkBox19_CheckedChanged);
@@ -1161,6 +1164,8 @@
             // panel5
             // 
             this.panel5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.panel5.Controls.Add(this.comboBox4);
+            this.panel5.Controls.Add(this.button29);
             this.panel5.Controls.Add(this.pictureBox5);
             this.panel5.Controls.Add(this.pictureBox4);
             this.panel5.Controls.Add(this.label44);
@@ -1200,6 +1205,29 @@
             this.panel5.Name = "panel5";
             this.panel5.Size = new System.Drawing.Size(526, 372);
             this.panel5.TabIndex = 31;
+            // 
+            // comboBox4
+            // 
+            this.comboBox4.FormattingEnabled = true;
+            this.comboBox4.Location = new System.Drawing.Point(172, 337);
+            this.comboBox4.Name = "comboBox4";
+            this.comboBox4.Size = new System.Drawing.Size(159, 21);
+            this.comboBox4.TabIndex = 36;
+            this.comboBox4.Visible = false;
+            this.comboBox4.SelectedIndexChanged += new System.EventHandler(this.comboBox4_SelectedIndexChanged);
+            // 
+            // button29
+            // 
+            this.button29.BackColor = System.Drawing.Color.White;
+            this.button29.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.button29.ForeColor = System.Drawing.Color.Black;
+            this.button29.Location = new System.Drawing.Point(25, 331);
+            this.button29.Name = "button29";
+            this.button29.Size = new System.Drawing.Size(127, 29);
+            this.button29.TabIndex = 35;
+            this.button29.Text = "Save Character";
+            this.button29.UseVisualStyleBackColor = false;
+            this.button29.Click += new System.EventHandler(this.button29_Click);
             // 
             // pictureBox5
             // 
@@ -2108,17 +2136,6 @@
             this.progressBar1.TabIndex = 38;
             this.progressBar1.Visible = false;
             // 
-            // pictureBox2
-            // 
-            this.pictureBox2.BackColor = System.Drawing.Color.Transparent;
-            this.pictureBox2.Location = new System.Drawing.Point(206, 18);
-            this.pictureBox2.Name = "pictureBox2";
-            this.pictureBox2.Size = new System.Drawing.Size(127, 34);
-            this.pictureBox2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.pictureBox2.TabIndex = 37;
-            this.pictureBox2.TabStop = false;
-            this.pictureBox2.Visible = false;
-            // 
             // button28
             // 
             this.button28.BackColor = System.Drawing.Color.White;
@@ -2131,6 +2148,17 @@
             this.button28.UseVisualStyleBackColor = false;
             this.button28.Visible = false;
             this.button28.Click += new System.EventHandler(this.button28_Click);
+            // 
+            // pictureBox2
+            // 
+            this.pictureBox2.BackColor = System.Drawing.Color.Transparent;
+            this.pictureBox2.Location = new System.Drawing.Point(206, 18);
+            this.pictureBox2.Name = "pictureBox2";
+            this.pictureBox2.Size = new System.Drawing.Size(127, 34);
+            this.pictureBox2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox2.TabIndex = 37;
+            this.pictureBox2.TabStop = false;
+            this.pictureBox2.Visible = false;
             // 
             // Form1
             // 
@@ -2377,6 +2405,8 @@
         private System.Windows.Forms.PictureBox pictureBox5;
         private System.Windows.Forms.PictureBox pictureBox4;
         private System.Windows.Forms.Button button28;
+        private System.Windows.Forms.ComboBox comboBox4;
+        private System.Windows.Forms.Button button29;
     }
 }
 

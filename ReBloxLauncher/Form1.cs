@@ -96,6 +96,10 @@ namespace ReBloxLauncher
         string guestAvatar = "";
         bool useOldGuestAvatar = false;
         bool cancelAsset = false;
+        readonly List<int> savedPort = new List<int>();
+        System.Timers.Timer ServerCheck = new System.Timers.Timer();
+        public string characterName = String.Empty;
+        bool savingCharacter = false;
         //Functions
         [DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
         private static extern IntPtr CreateRoundRectRgn(
@@ -134,6 +138,7 @@ namespace ReBloxLauncher
         {
             return new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
         }
+
         private int convertDateRangeToInt(string dateRange)
         {
             switch (dateRange)
@@ -1037,6 +1042,15 @@ namespace ReBloxLauncher
                     guestUsername += RandomNumber(0, 10000);
                     guestUserId = RandomNumber(int.MinValue, 0);
                     if (Properties.Settings.Default.ClothesArray.Split('|').Length > 0) listBox4.Items.AddRange(Properties.Settings.Default.ClothesArray.Split('|'));
+
+                    if (Properties.Settings.Default.CharactersList != null && Properties.Settings.Default.CharactersList.Count > 0)
+                    {
+                        for (int i = 0; i < Properties.Settings.Default.CharactersList.Count; i++)
+                        {
+                            comboBox4.Items.Add(JsonConvert.DeserializeObject<SaveAvatarType>(Properties.Settings.Default.CharactersList[i]).name);
+                        }
+                        comboBox4.Visible = true;
+                    }
                     label43.Text = Path.GetFileName(Properties.Settings.Default.RBDFPath);
                     checkBox1.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) ? Properties.Settings.Default.useAuth : false;
                     checkBox1.Enabled = !WineDetector.IsRunningOnWine();
@@ -1078,7 +1092,7 @@ namespace ReBloxLauncher
                     numericUpDown6.Value = Properties.Settings.Default.TorsoColor;
                     numericUpDown7.Value = Properties.Settings.Default.Robux;
                     comboBox2.Text = Properties.Settings.Default.ChatStyle;
-                    comboBox3.Text = (guestMode ? "None" : Properties.Settings.Default.Membership);
+                    comboBox3.Text = guestMode ? "None" : Properties.Settings.Default.Membership;
                     comboBox3.Enabled = !guestMode;
                     TorsoPanel.BackColor = convertBrickColortoColor(Properties.Settings.Default.TorsoColor);
                     HeadPanel.BackColor = convertBrickColortoColor(Properties.Settings.Default.HeadColor);
@@ -1086,6 +1100,8 @@ namespace ReBloxLauncher
                     RightLegPanel.BackColor = convertBrickColortoColor(Properties.Settings.Default.RightLegColor);
                     LeftArmPanel.BackColor = convertBrickColortoColor(Properties.Settings.Default.LeftArmColor);
                     LeftLegPanel.BackColor = convertBrickColortoColor(Properties.Settings.Default.LeftLegColor);
+                    ServerCheck.Interval = 15000;
+                    ServerCheck.Elapsed += ServerCheck_Tick;
                     if (guestMode)
                     {
                         label28.Visible = false;
@@ -1115,8 +1131,10 @@ namespace ReBloxLauncher
                         label21.Visible = false;
                         label22.Visible = false;
                         label23.Visible = false;
+                        comboBox4.Visible = false;
                         pictureBox4.Visible = true;
                         pictureBox5.Visible = true;
+                        button29.Visible = false;
                         label16.Text = "Choose Your Character";
                     }
 
@@ -1690,7 +1708,10 @@ namespace ReBloxLauncher
                 string waitingForCharacterGuid = GenerateUUID().ToLower();
                 string sessionId = GenerateUUID().ToLower();
                 if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt");
-                File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt", @"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (guestMode ? guestUsername : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (guestMode ? "None" : Properties.Settings.Default.Membership).Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!guestMode == false && Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
+                {
+                    writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (guestMode ? guestUsername : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (guestMode ? "None" : Properties.Settings.Default.Membership).Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!guestMode == false && Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                }
             }
             else
             {
@@ -1721,10 +1742,17 @@ namespace ReBloxLauncher
                                 if (File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json").Contains("{id}"))
                                 {
                                     File.Move(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json", datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json.bak");
-                                    File.WriteAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+
+                                    using (StreamWriter writer = File.AppendText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json"))
+                                    {
+                                        writer.Write(File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                    }
                                 }
                                 if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
-                                File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json"))
+                                {
+                                    writer.Write(File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json"));
+                                }
                             }
                         }
                     }
@@ -1736,13 +1764,23 @@ namespace ReBloxLauncher
 
                             if (File.Exists(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json"))
                             {
-                                if (File.ReadAllText(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json").Contains("{id}"))
+                                if (File.Exists(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json"))
                                 {
-                                    File.Move(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json", datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json.bak");
-                                    File.WriteAllText(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                    if (File.ReadAllText(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json").Contains("{id}"))
+                                    {
+                                        File.Move(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json", datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json.bak");
+
+                                        using (StreamWriter writer = File.AppendText(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json"))
+                                        {
+                                            writer.Write(File.ReadAllText(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                        }
+                                    }
+                                    if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
+                                    using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json"))
+                                    {
+                                        writer.Write(File.ReadAllText(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json"));
+                                    }
                                 }
-                                if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
-                                File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + client + @"\Player\ClientSettings\ClientAppSettings.json").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
                             }
                         }
                         else if (Directory.Exists(datafolder + @"\clients\" + client + @"\Studio\ClientSettings"))
@@ -1753,10 +1791,17 @@ namespace ReBloxLauncher
                                 if (File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json").Contains("{id}"))
                                 {
                                     File.Move(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json", datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json.bak");
-                                    File.WriteAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+
+                                    using (StreamWriter writer = File.AppendText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json"))
+                                    {
+                                        writer.Write(File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                    }
                                 }
                                 if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
-                                File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json"))
+                                {
+                                    writer.Write(File.ReadAllText(datafolder + @"\clients\" + client + @"\Studio\ClientSettings\ClientAppSettings.json"));
+                                }
                             }
                         }
                     }
@@ -1825,10 +1870,17 @@ namespace ReBloxLauncher
                             if (File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json").Contains("{id}"))
                             {
                                 File.Move(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json", datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak");
-                                File.WriteAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+
+                                using (StreamWriter writer = File.AppendText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json"))
+                                {
+                                    writer.Write(File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                }
                             }
                             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
-                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                            using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json"))
+                            {
+                                writer.Write(File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json"));
+                            }
                         }
                     }
                 }
@@ -1840,13 +1892,20 @@ namespace ReBloxLauncher
 
                         if (File.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json"))
                         {
-                            if (File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json").Contains("{id}"))
+                            if (File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json").Contains("{id}"))
                             {
-                                File.Move(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json", datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak");
-                                File.WriteAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                File.Move(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json", datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak");
+
+                                using (StreamWriter writer = File.AppendText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json"))
+                                {
+                                    writer.Write(File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                }
                             }
                             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
-                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player\ClientSettings\ClientAppSettings.json").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                            using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json"))
+                            {
+                                writer.Write(File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json"));
+                            }
                         }
                     }
                     else if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings"))
@@ -1857,10 +1916,17 @@ namespace ReBloxLauncher
                             if (File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json").Contains("{id}"))
                             {
                                 File.Move(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json", datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak");
-                                File.WriteAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+
+                                using (StreamWriter writer = File.AppendText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json"))
+                                {
+                                    writer.Write(File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json.bak").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                                }
                             }
                             if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json");
-                            File.WriteAllText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json", File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json").Replace("{id}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
+                            using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\ClientAppSettings.json"))
+                            {
+                                writer.Write(File.ReadAllText(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Studio\ClientSettings\ClientAppSettings.json"));
+                            }
                         }
                     }
                 }
@@ -2106,8 +2172,9 @@ namespace ReBloxLauncher
                         return false;
                     }
                 }
-                catch
+                catch (Exception e)
                 {
+                    Console.WriteLine("<WARN> Something went wrong when trying to check for updates! The error can be seen below:\r\n" + e);
                     return false;
                 }
             }
@@ -2164,8 +2231,14 @@ namespace ReBloxLauncher
                     {
                         byte[] publicdata = RSA.ExportCspBlob(false);
                         byte[] privatedata = RSA.ExportCspBlob(true);
-                        File.WriteAllText(datafolder + @"\public.txt", Convert.ToBase64String(publicdata));
-                        File.WriteAllText(datafolder + @"\private.txt", Convert.ToBase64String(privatedata));
+                        using (StreamWriter writer = File.AppendText(datafolder + @"\public.txt"))
+                        {
+                            writer.Write(Convert.ToBase64String(publicdata));
+                        }
+                        using (StreamWriter writer = File.AppendText(datafolder + @"\private.txt"))
+                        {
+                            writer.Write(Convert.ToBase64String(privatedata));
+                        }
                         using (TextWriter w = File.CreateText(datafolder + @"\private.pem"))
                         {
                             ExportPrivateKey(RSA, w);
@@ -2383,9 +2456,31 @@ namespace ReBloxLauncher
                 {
                     guestMode = true;
                 }
+                else if (args[i] == "--benchmark")
+                {
+                    Type myFormType = Type.GetType("ReBloxLauncher.BenchmarkForm");
+
+                    if (myFormType != null)
+                    {
+                        if (typeof(Form).IsAssignableFrom(myFormType))
+                        {
+                            launchershortcut = true;
+                            Form form = (Form)Activator.CreateInstance(myFormType);
+                            form.Show();
+                        }
+                        else
+                        {
+                            MessageBox.Show("This is an invalid form for benchmarking! Please recompile the source code from the benchmark branch.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Benchmarking is not available in this version. Please use the source version (in the benchmark branch) of ReBlox to continue.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
                 else if (args[i] == "--help" || args[i] == "-h")
                 {
-                    if (MessageBox.Show("Command line options:\r\n -datafolder pathhere - Set the data folder path to the folder you choose\r\n--saveKeys - Save the public and private key for the clients\r\n--useSystemNode - Use node that is installed instead of the bundled version\r\n-launch versionhere - Launch a version like RobloxPlayerLauncher/RobloxStudioLauncher\r\n-updateUrl updateurlhere - Change the update url to your choosing\r\n--installCA - Installs the CA certificate if it's not already installed\r\n--editHosts - Edits the hosts file for best experience with ReBlox\r\n--aprilFools - Runs the launcher with April Fools enabled\r\n--experimentalFade - Enabled the experimental fade feature for client images. (deprecated, you can enable it on Experiments tab in Settings!)\r\n--logNodeServer - Makes the node server also be logged in the logs folder, use this if you wanna diagnose a problem with the server/launcher.\r\n--mockLinuxAsWindows - Ignore the Wine detector and assumes it's running on native Windows.\r\n--guest - Start the launcher as guest", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Information) == DialogResult.OK)
+                    if (MessageBox.Show("Command line options:\r\n -datafolder pathhere - Set the data folder path to the folder you choose\r\n--saveKeys - Save the public and private key for the clients (advanced)\r\n--useSystemNode - Use node that is installed instead of the bundled version\r\n-launch versionhere - Launch a version like RobloxPlayerLauncher/RobloxStudioLauncher\r\n-updateUrl updateurlhere - Change the update url to your choosing\r\n--installCA - Installs the CA certificate if it's not already installed\r\n--editHosts - Edits the hosts file for best experience with ReBlox\r\n--aprilFools - Runs the launcher with April Fools enabled\r\n--experimentalFade - Enabled the experimental fade feature for client images. (deprecated, you can enable it on Experiments tab in Settings!)\r\n--logNodeServer - Makes the node server also be logged in the logs folder, use this if you wanna diagnose a problem with the server/launcher.\r\n--mockLinuxAsWindows - Ignore the Wine detector and assumes it's running on native Windows.\r\n--guest - Start the launcher as guest\r\n--benchmark - Test the launcher to test performance and possible regressions (source version required)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Information) == DialogResult.OK)
                     {
                         this.Close();
                         Application.Exit();
@@ -2496,7 +2591,10 @@ namespace ReBloxLauncher
 
                 string convertedString = "\r\n127.0.0.1 " + string.Join("\r\n127.0.0.1 ", neededEdits);
 
-                File.AppendAllText(@"C:\Windows\System32\drivers\etc\hosts", convertedString);
+                using (StreamWriter writer = File.AppendText(@"C:\Windows\System32\drivers\etc\hosts"))
+                {
+                    writer.Write(convertedString);
+                }
             }
         }
 
@@ -2537,8 +2635,6 @@ namespace ReBloxLauncher
                     }
                 }
             }
-
-            string convertedString = "\r\n127.0.0.1 " + string.Join("\r\n127.0.0.1 ", neededEdits);
 
             if (neededEdits.Count > 0)
             {
@@ -2621,7 +2717,7 @@ namespace ReBloxLauncher
                         {
                             if (smartHostDetector() == false && Properties.Settings.Default.UsePatchInStudio == true && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                             {
-                                if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                 {
                                     if (IsAdministrator())
                                     {
@@ -2629,6 +2725,7 @@ namespace ReBloxLauncher
                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                         button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                        button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                         button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                         button28.Invoke(new Action(() => { button28.Visible = true; }));
                                         smartHostEdit();
@@ -2636,9 +2733,9 @@ namespace ReBloxLauncher
                                         if (Properties.Settings.Default.UsePatchInStudio)
                                         {
                                             if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", 53640);
-                                            SetupGameFiles(true);
+                                            SetupGameFiles(true, Properties.Settings.Default.lastselectedversion);
                                             if (cancelAsset) return;
-                                            LoadAssets();
+                                            LoadAssets(Properties.Settings.Default.lastselectedversion);
                                             button28.Invoke(new Action(() => { button28.Visible = false; }));
                                             if (cancelAsset) return;
                                         }
@@ -2670,6 +2767,7 @@ namespace ReBloxLauncher
                                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                 launchingClient = false;
                                                 test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
@@ -2699,6 +2797,7 @@ namespace ReBloxLauncher
                                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                 statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
                                                 Process roblox = Process.Start(ps);
@@ -2717,6 +2816,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             launchingClient = false;
                                             await Task.Delay(3000);
@@ -2763,13 +2863,14 @@ namespace ReBloxLauncher
                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                 button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                 button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                 button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                 if (Properties.Settings.Default.UsePatchInStudio)
                                 {
                                     if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", 53640);
-                                    SetupGameFiles(true);
+                                    SetupGameFiles(true, Properties.Settings.Default.lastselectedversion);
                                     if (cancelAsset) return;
-                                    LoadAssets();
+                                    LoadAssets(Properties.Settings.Default.lastselectedversion);
                                     button28.Invoke(new Action(() => { button28.Visible = false; }));
                                     if (cancelAsset) return;
                                 }
@@ -2806,6 +2907,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                             test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
@@ -2836,6 +2938,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             launchingClient = false;
                                             Process roblox = Process.Start(ps);
@@ -2852,6 +2955,7 @@ namespace ReBloxLauncher
                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                         statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
                                         Process roblox = Process.Start(ps);
@@ -2869,6 +2973,7 @@ namespace ReBloxLauncher
                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                     launchingClient = false;
                                     await Task.Delay(3000);
@@ -2880,9 +2985,14 @@ namespace ReBloxLauncher
                         }
                         catch (Exception e1)
                         {
-                            launchingClient = false;
                             MessageBox.Show("Something went wrong while trying to launch Studio, please look in the error message for details: " + e1.Message, aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             Console.WriteLine("<ERROR> Something went wrong when attempting to launch Studio! Please look in the error below and report it to the developer if it's launcher-sided!\n" + e1.Message + "\nStack Trace:\n" + e1.StackTrace);
+                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                            button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                            launchingClient = false;
                             await Task.Delay(3000);
                             statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                             statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -2915,12 +3025,16 @@ namespace ReBloxLauncher
                     //I know it's the second time, but a race condition could happen if we don't put an if here.
                     if (exitingClient == false && launchingClient == false)
                     {
+                        ServerCheck.Stop();
+                        ServerCheck.Enabled = false;
+                        savedPort.Clear();
                         exitingClient = true;
                         if (hostVersion != "") { if (Directory.Exists(datafolder + @"\clients\" + hostVersion + @"\RCCService")) { if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\RCCService\gameserver.txt")) { File.Delete(datafolder + @"\clients\" + hostVersion + @"\RCCService\gameserver.txt"); } } }
                         hostVersion = "";
                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
                         button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                        button8.Invoke(new Action(() => { button8.Enabled = false; }));
                         button27.Invoke(new Action(() => { button27.Enabled = false; }));
                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                         Process[] processes = Process.GetProcessesByName("node");
@@ -2967,6 +3081,7 @@ namespace ReBloxLauncher
                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                         statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                         exitingClient = false;
@@ -3467,6 +3582,7 @@ namespace ReBloxLauncher
         {
             public ulong id { get; set; } = 0;
         }
+
         public class BodyColors
         {
             public uint headColor { get; set; } = 194;
@@ -3476,6 +3592,7 @@ namespace ReBloxLauncher
             public uint rightLegColor { get; set; } = 194;
             public uint torsoColor { get; set; } = 194;
         }
+
         public class AvatarType
         {
             public string bodyType { get; set; } = "R6";
@@ -3486,6 +3603,13 @@ namespace ReBloxLauncher
             public string base64HeadShot { get; set; }
         }
 
+        public class SaveAvatarType
+        {
+            public string name { get; set; } = "Untitled Character 1";
+            public string bodyType { get; set; } = "R6";
+            public IList<AssetData> asset { get; set; }
+            public BodyColors colors { get; set; }
+        }
         private bool IsNodeFromAppRunning()
         {
             bool isRunning = false;
@@ -3700,7 +3824,7 @@ namespace ReBloxLauncher
                             {
                                 if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                 {
-                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                     {
                                         if (IsAdministrator())
                                         {
@@ -3710,6 +3834,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                             button28.Invoke(new Action(() => { button28.Visible = true; }));
                                             if (UseJoinJSONLink) SetupJoinScript(textBox1.Text, int.Parse(textBox2.Text));
@@ -3792,6 +3917,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     launchingClient = false;
                                                     statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
@@ -3826,6 +3952,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     launchingClient = false;
                                                     Process roblox = Process.Start(ps);
@@ -3842,6 +3969,7 @@ namespace ReBloxLauncher
                                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                 launchingClient = false;
                                                 await Task.Delay(3000);
@@ -3880,6 +4008,7 @@ namespace ReBloxLauncher
                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                    button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                     button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                     button28.Invoke(new Action(() => { button28.Visible = true; }));
                                     if (UseJoinJSONLink) SetupJoinScript(textBox1.Text, int.Parse(textBox2.Text));
@@ -3963,6 +4092,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             Process test = Process.Start(ps1);
                                             statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
@@ -3997,6 +4127,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             Process roblox = Process.Start(ps);
                                             roblox.EnableRaisingEvents = true;
@@ -4012,6 +4143,7 @@ namespace ReBloxLauncher
                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                         launchingClient = false;
                                         await Task.Delay(3000);
@@ -4024,7 +4156,7 @@ namespace ReBloxLauncher
                             {
                                 if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                 {
-                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                     {
                                         if (IsAdministrator())
                                         {
@@ -4034,6 +4166,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                             button28.Invoke(new Action(() => { button28.Visible = true; }));
                                             if (UseJoinJSONLink) SetupJoinScript(textBox1.Text, int.Parse(textBox2.Text));
@@ -4117,6 +4250,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                     test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
@@ -4150,6 +4284,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     launchingClient = false;
                                                     Process roblox = Process.Start(ps);
@@ -4166,6 +4301,7 @@ namespace ReBloxLauncher
                                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                 launchingClient = false;
                                                 await Task.Delay(3000);
@@ -4224,6 +4360,7 @@ namespace ReBloxLauncher
                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                    button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                     button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                     button28.Invoke(new Action(() => { button28.Visible = true; }));
                                     if (UseJoinJSONLink) SetupJoinScript(textBox1.Text, int.Parse(textBox2.Text));
@@ -4307,6 +4444,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             Process test = Process.Start(ps1);
                                             statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
@@ -4338,6 +4476,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             Process roblox = Process.Start(ps);
                                             roblox.EnableRaisingEvents = true;
@@ -4354,6 +4493,7 @@ namespace ReBloxLauncher
                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                         launchingClient = false;
                                         await Task.Delay(3000);
@@ -4370,6 +4510,7 @@ namespace ReBloxLauncher
                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                             launchingClient = false;
                             await Task.Delay(3000);
@@ -4397,19 +4538,292 @@ namespace ReBloxLauncher
             {
                 if (guestMode == true && guestAvatar != "" || guestMode == false)
                 {
-                    string selectedVersion = listBox1.GetItemText(listBox1.SelectedItem);
-                    isJoiningOrStudio = false;
-                    Thread thread = new Thread(async () =>
+                    if (ServerUtils.checkPortUdp(int.Parse(textBox2.Text)) == false)
                     {
-                        try
+                        string selectedVersion = listBox1.GetItemText(listBox1.SelectedItem);
+                        isJoiningOrStudio = false;
+                        Thread thread = new Thread(async () =>
                         {
-                            if (Properties.Settings.Default.lastselectedmap != "" && listBox2.SelectedIndex != -1)
+                            try
                             {
-                                if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player") && usedRCCService == false)
+                                if (Properties.Settings.Default.lastselectedmap != "" && listBox2.SelectedIndex != -1)
                                 {
-                                    if (Control.ModifierKeys == Keys.Shift)
+                                    ServerCheck.Interval = 15000;
+                                    savedPort.Add(int.Parse(textBox2.Text));
+                                    if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\Player") && usedRCCService == false)
                                     {
-                                        if (openFileDialog1.ShowDialog() == DialogResult.OK)
+                                        if (Control.ModifierKeys == Keys.Shift)
+                                        {
+                                            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+                                            {
+                                                if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
+                                                {
+                                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                                    {
+                                                        if (IsAdministrator())
+                                                        {
+                                                            hostVersion = Properties.Settings.Default.lastselectedversion;
+                                                            launchingClient = true;
+                                                            smartHostEdit();
+                                                            statusText.Invoke(new Action(() => { statusText.Visible = true; }));
+                                                            button1.Invoke(new Action(() => { button1.Enabled = false; }));
+                                                            button2.Invoke(new Action(() => { button2.Enabled = false; }));
+                                                            button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = false; }));
+                                                            button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                            button28.Invoke(new Action(() => { button28.Visible = true; }));
+                                                            if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
+                                                            SetupGameFiles(false, hostVersion);
+                                                            if (cancelAsset) return;
+                                                            LoadAssets(hostVersion);
+                                                            button28.Invoke(new Action(() => { button28.Visible = false; }));
+                                                            if (cancelAsset) return;
+                                                            ProcessStartInfo ps = new ProcessStartInfo();
+                                                            ps.UseShellExecute = false;
+                                                            ps.CreateNoWindow = false;
+                                                            ps.FileName = datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe";
+                                                            ps.Arguments = hostargument;
+                                                            ProcessStartInfo ps1 = new ProcessStartInfo();
+                                                            ps1.UseShellExecute = false;
+                                                            ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
+                                                            ps1.RedirectStandardOutput = true;
+                                                            ps1.CreateNoWindow = true;
+                                                            if (Properties.Settings.Default.useAuth && internetConnected)
+                                                            {
+                                                                if (Properties.Settings.Default.avatarR15)
+                                                                {
+                                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                }
+                                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                            }
+                                                            else
+                                                            {
+                                                                if (Properties.Settings.Default.avatarR15)
+                                                                {
+                                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                }
+                                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                            }
+                                                            ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
+                                                            ps1.WindowStyle = ProcessWindowStyle.Hidden;
+                                                            if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
+                                                            {
+                                                                if (IsNodeFromAppRunning() == false)
+                                                                {
+                                                                    Process test = Process.Start(ps1);
+                                                                    statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
+                                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                                    launchingClient = false;
+                                                                    test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
+                                                                    {
+                                                                        if (e1.Data != null)
+                                                                        {
+                                                                            if (logNodeServer) Console.WriteLine(e1.Data);
+                                                                            if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
+                                                                            {
+                                                                                ServerCheck.Enabled = true;
+                                                                                ServerCheck.Start();
+                                                                                ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
+                                                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                                                Process roblox = Process.Start(ps);
+                                                                                roblox.EnableRaisingEvents = true;
+                                                                                roblox.Exited += Roblox_Exited;
+                                                                                test.CancelOutputRead();
+                                                                                await Task.Delay(3000);
+                                                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                    test.BeginOutputReadLine();
+                                                                }
+                                                                else
+                                                                {
+                                                                    ServerCheck.Enabled = true;
+                                                                    ServerCheck.Start();
+                                                                    ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
+                                                                    statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
+                                                                    button1.Invoke(new Action(() => { button1.Enabled = false; }));
+                                                                    button2.Invoke(new Action(() => { button2.Enabled = false; }));
+                                                                    button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                    button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                                    launchingClient = false;
+                                                                    Process roblox = Process.Start(ps);
+                                                                    roblox.EnableRaisingEvents = true;
+                                                                    roblox.Exited += Roblox_Exited;
+                                                                    await Task.Delay(3000);
+                                                                    statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                    statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                MessageBox.Show("A valid username or UserId is required!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                                launchingClient = false;
+                                                                await Task.Delay(3000);
+                                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            try
+                                                            {
+                                                                ProcessStartInfo ps = new ProcessStartInfo();
+                                                                ps.UseShellExecute = true;
+                                                                ps.FileName = Application.ExecutablePath;
+                                                                ps.Verb = "runas";
+                                                                ps.Arguments = "--editHosts";
+                                                                Process.Start(ps);
+                                                                Application.Exit();
+                                                            }
+                                                            catch
+                                                            {
+                                                                MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        MessageBox.Show("Hosting on Mid-2017 and older clients requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    hostVersion = Properties.Settings.Default.lastselectedversion;
+                                                    launchingClient = true;
+                                                    statusText.Invoke(new Action(() => { statusText.Visible = true; }));
+                                                    button1.Invoke(new Action(() => { button1.Enabled = false; }));
+                                                    button2.Invoke(new Action(() => { button2.Enabled = false; }));
+                                                    button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                    button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                    button28.Invoke(new Action(() => { button28.Visible = true; }));
+
+                                                    if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
+                                                    SetupGameFiles(false, hostVersion);
+                                                    if (cancelAsset) return;
+                                                    LoadAssets(hostVersion);
+                                                    button28.Invoke(new Action(() => { button28.Visible = false; }));
+                                                    if (cancelAsset) return;
+                                                    ProcessStartInfo ps = new ProcessStartInfo();
+                                                    ps.UseShellExecute = false;
+                                                    ps.CreateNoWindow = false;
+                                                    ps.FileName = datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe";
+                                                    ps.Arguments = hostargument;
+                                                    ProcessStartInfo ps1 = new ProcessStartInfo();
+                                                    ps1.UseShellExecute = false;
+                                                    ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
+                                                    ps1.RedirectStandardOutput = true;
+                                                    ps1.CreateNoWindow = true;
+                                                    if (Properties.Settings.Default.useAuth && internetConnected)
+                                                    {
+                                                        if (Properties.Settings.Default.avatarR15)
+                                                        {
+                                                            if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                            else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                        }
+                                                        else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                        else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                    }
+                                                    else
+                                                    {
+                                                        if (Properties.Settings.Default.avatarR15)
+                                                        {
+                                                            if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                            else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                        }
+                                                        else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                        else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                    }
+                                                    ps1.WindowStyle = ProcessWindowStyle.Hidden;
+                                                    ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
+                                                    if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
+                                                    {
+                                                        if (IsNodeFromAppRunning() == false)
+                                                        {
+                                                            Process test = Process.Start(ps1);
+                                                            launchingClient = false;
+                                                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                            button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                            statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
+                                                            test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
+                                                            {
+                                                                if (e1.Data != null)
+                                                                {
+                                                                    if (logNodeServer) Console.WriteLine(e1.Data);
+                                                                    if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
+                                                                    {
+                                                                        ServerCheck.Enabled = true;
+                                                                        ServerCheck.Start();
+                                                                        ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
+                                                                        statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                                        Process roblox = Process.Start(ps);
+                                                                        roblox.EnableRaisingEvents = true;
+                                                                        roblox.Exited += Roblox_Exited;
+                                                                        test.CancelOutputRead();
+                                                                        await Task.Delay(3000);
+                                                                        statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                        statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                                    }
+                                                                }
+                                                            });
+                                                            test.BeginOutputReadLine();
+                                                        }
+                                                        else
+                                                        {
+                                                            ServerCheck.Enabled = true;
+                                                            ServerCheck.Start();
+                                                            ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
+                                                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                            button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                            statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                            Process roblox = Process.Start(ps);
+                                                            roblox.EnableRaisingEvents = true;
+                                                            roblox.Exited += Roblox_Exited;
+                                                            launchingClient = false;
+                                                            await Task.Delay(3000);
+                                                            statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                            statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        MessageBox.Show("A valid username or UserId is required!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                        button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                        button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                        button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                        button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                        launchingClient = false;
+                                                        await Task.Delay(3000);
+                                                        statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                        statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
                                         {
                                             if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                             {
@@ -4424,6 +4838,7 @@ namespace ReBloxLauncher
                                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                                         button28.Invoke(new Action(() => { button28.Visible = true; }));
                                                         if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
@@ -4439,9 +4854,9 @@ namespace ReBloxLauncher
                                                         ps.Arguments = hostargument;
                                                         ProcessStartInfo ps1 = new ProcessStartInfo();
                                                         ps1.UseShellExecute = false;
-                                                        ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                         ps1.RedirectStandardOutput = true;
                                                         ps1.CreateNoWindow = true;
+                                                        ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                         if (Properties.Settings.Default.useAuth && internetConnected)
                                                         {
                                                             if (Properties.Settings.Default.avatarR15)
@@ -4469,12 +4884,13 @@ namespace ReBloxLauncher
                                                             if (IsNodeFromAppRunning() == false)
                                                             {
                                                                 Process test = Process.Start(ps1);
-                                                                statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
+                                                                launchingClient = false;
                                                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                                launchingClient = false;
+                                                                statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                                 test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
                                                                 {
                                                                     if (e1.Data != null)
@@ -4482,6 +4898,8 @@ namespace ReBloxLauncher
                                                                         if (logNodeServer) Console.WriteLine(e1.Data);
                                                                         if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                                         {
+                                                                            ServerCheck.Enabled = true;
+                                                                            ServerCheck.Start();
                                                                             ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                                             statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                                             Process roblox = Process.Start(ps);
@@ -4498,13 +4916,16 @@ namespace ReBloxLauncher
                                                             }
                                                             else
                                                             {
+                                                                ServerCheck.Enabled = true;
+                                                                ServerCheck.Start();
                                                                 ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                                statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
-                                                                button1.Invoke(new Action(() => { button1.Enabled = false; }));
-                                                                button2.Invoke(new Action(() => { button2.Enabled = false; }));
-                                                                button3.Invoke(new Action(() => { button3.Enabled = false; }));
-                                                                button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                                 launchingClient = false;
+                                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                                 Process roblox = Process.Start(ps);
                                                                 roblox.EnableRaisingEvents = true;
                                                                 roblox.Exited += Roblox_Exited;
@@ -4519,6 +4940,7 @@ namespace ReBloxLauncher
                                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                             launchingClient = false;
                                                             await Task.Delay(3000);
@@ -4546,7 +4968,16 @@ namespace ReBloxLauncher
                                                 }
                                                 else
                                                 {
-                                                    MessageBox.Show("Hosting on Mid-2017 and older clients requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    statusText.Invoke(new Action(() => { statusText.Visible = true; }));
+                                                    statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
+                                                    ProcessStartInfo ps = new ProcessStartInfo();
+                                                    listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + selectedVersion + @"\Studio\RobloxStudioBeta.exe"; }));
+                                                    this.Invoke(new Action(() => { ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); }));
+                                                    launchingClient = false;
+                                                    if (UseJoinJSONLink == false) { Process.Start(ps); } else MessageBox.Show("Hosting on Mid-2017 and older clients requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    await Task.Delay(3000);
+                                                    statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                    statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                                 }
                                             }
                                             else
@@ -4557,9 +4988,9 @@ namespace ReBloxLauncher
                                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                                 button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                                 button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                                 button28.Invoke(new Action(() => { button28.Visible = true; }));
-
                                                 if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
                                                 SetupGameFiles(false, hostVersion);
                                                 if (cancelAsset) return;
@@ -4573,9 +5004,9 @@ namespace ReBloxLauncher
                                                 ps.Arguments = hostargument;
                                                 ProcessStartInfo ps1 = new ProcessStartInfo();
                                                 ps1.UseShellExecute = false;
-                                                ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                 ps1.RedirectStandardOutput = true;
                                                 ps1.CreateNoWindow = true;
+                                                ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                 if (Properties.Settings.Default.useAuth && internetConnected)
                                                 {
                                                     if (Properties.Settings.Default.avatarR15)
@@ -4607,6 +5038,7 @@ namespace ReBloxLauncher
                                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                         statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                         test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
@@ -4616,6 +5048,8 @@ namespace ReBloxLauncher
                                                                 if (logNodeServer) Console.WriteLine(e1.Data);
                                                                 if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                                 {
+                                                                    ServerCheck.Enabled = true;
+                                                                    ServerCheck.Start();
                                                                     ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                                     statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                                     Process roblox = Process.Start(ps);
@@ -4632,16 +5066,19 @@ namespace ReBloxLauncher
                                                     }
                                                     else
                                                     {
+                                                        ServerCheck.Enabled = true;
+                                                        ServerCheck.Start();
                                                         ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                        launchingClient = false;
                                                         statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                         Process roblox = Process.Start(ps);
                                                         roblox.EnableRaisingEvents = true;
                                                         roblox.Exited += Roblox_Exited;
-                                                        launchingClient = false;
                                                         await Task.Delay(3000);
                                                         statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                                                         statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -4653,6 +5090,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     launchingClient = false;
                                                     await Task.Delay(3000);
@@ -4662,24 +5100,182 @@ namespace ReBloxLauncher
                                             }
                                         }
                                     }
-                                    else
+                                    else if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\RCCService") && RCCService == true)
                                     {
-                                        if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
+                                        if (Control.ModifierKeys == Keys.Shift)
                                         {
-                                            if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                            if (openFileDialog1.ShowDialog() == DialogResult.OK)
                                             {
-                                                if (IsAdministrator())
+                                                if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
+                                                {
+                                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                                    {
+                                                        if (IsAdministrator())
+                                                        {
+                                                            hostVersion = Properties.Settings.Default.lastselectedversion;
+                                                            launchingClient = true;
+                                                            if (Directory.Exists(datafolder + @"\clients\" + hostVersion + @"\Player")) { if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe")) { File.Copy(datafolder + @"\clients\" + selectedVersion + @"\Player\RobloxPlayerBeta.exe", datafolder + @"\tools\RobloxAssetFixer\RobloxPlayerBeta.exe", true); } }
+                                                            if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\RCCService\gametemplate.txt")) { File.WriteAllText(datafolder + @"\clients\" + hostVersion + @"\RCCService\gameserver.txt", File.ReadAllText(datafolder + @"\clients\" + selectedVersion + @"\RCCService\gametemplate.txt").Replace("{port}", textBox2.Text)); }
+                                                            smartHostEdit();
+                                                            statusText.Invoke(new Action(() => { statusText.Visible = true; }));
+                                                            button1.Invoke(new Action(() => { button1.Enabled = false; }));
+                                                            button2.Invoke(new Action(() => { button2.Enabled = false; }));
+                                                            button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = false; }));
+                                                            button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                            button28.Invoke(new Action(() => { button28.Visible = true; }));
+                                                            SetupGameFiles(false, hostVersion);
+                                                            if (cancelAsset) return;
+                                                            LoadAssets(hostVersion);
+                                                            button28.Invoke(new Action(() => { button28.Visible = false; }));
+                                                            if (cancelAsset) return;
+                                                            ProcessStartInfo ps = new ProcessStartInfo();
+                                                            ps.UseShellExecute = false;
+                                                            ps.CreateNoWindow = false;
+                                                            ps.FileName = datafolder + @"\clients\" + hostVersion + @"\RCCService\RCCService.exe";
+                                                            ps.WorkingDirectory = datafolder + @"\clients\" + hostVersion + @"\RCCService";
+                                                            ps.Arguments = hostargument;
+                                                            ProcessStartInfo ps1 = new ProcessStartInfo();
+                                                            ps1.UseShellExecute = false;
+                                                            ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
+                                                            ps1.RedirectStandardOutput = true;
+                                                            ps1.CreateNoWindow = true;
+                                                            if (Properties.Settings.Default.useAuth && internetConnected)
+                                                            {
+                                                                if (Properties.Settings.Default.avatarR15)
+                                                                {
+                                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                }
+                                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                            }
+                                                            else
+                                                            {
+                                                                if (Properties.Settings.Default.avatarR15)
+                                                                {
+                                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                }
+                                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                            }
+                                                            ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
+                                                            ps1.WindowStyle = ProcessWindowStyle.Hidden;
+                                                            if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
+                                                            {
+                                                                if (IsNodeFromAppRunning() == false)
+                                                                {
+                                                                    Process test = Process.Start(ps1);
+                                                                    statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
+                                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                                    launchingClient = false;
+                                                                    test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
+                                                                    {
+                                                                        if (e1.Data != null)
+                                                                        {
+                                                                            if (logNodeServer) Console.WriteLine(e1.Data);
+                                                                            if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
+                                                                            {
+                                                                                ServerCheck.Enabled = true;
+                                                                                ServerCheck.Start();
+                                                                                ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
+                                                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                                                Process roblox = Process.Start(ps);
+                                                                                roblox.EnableRaisingEvents = true;
+                                                                                roblox.Exited += Roblox_Exited;
+                                                                                test.CancelOutputRead();
+                                                                                await Task.Delay(3000);
+                                                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                    test.BeginOutputReadLine();
+                                                                }
+                                                                else
+                                                                {
+                                                                    ServerCheck.Enabled = true;
+                                                                    ServerCheck.Start();
+                                                                    ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
+                                                                    statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                    button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                                    launchingClient = false;
+                                                                    Process roblox = Process.Start(ps);
+                                                                    roblox.EnableRaisingEvents = true;
+                                                                    roblox.Exited += Roblox_Exited;
+                                                                    await Task.Delay(3000);
+                                                                    statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                    statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                MessageBox.Show("A valid username or UserId is required!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                                launchingClient = false;
+                                                                await Task.Delay(3000);
+                                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            try
+                                                            {
+                                                                ProcessStartInfo ps = new ProcessStartInfo();
+                                                                ps.UseShellExecute = true;
+                                                                ps.FileName = Application.ExecutablePath;
+                                                                ps.Verb = "runas";
+                                                                ps.Arguments = "--editHosts";
+                                                                Process.Start(ps);
+                                                                Application.Exit();
+                                                            }
+                                                            catch
+                                                            {
+                                                                MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                        button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                        button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                        button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                        launchingClient = false;
+                                                        MessageBox.Show("Hosting on RCCService requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                        await Task.Delay(3000);
+                                                        statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                        statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                    }
+                                                }
+                                                else
                                                 {
                                                     hostVersion = Properties.Settings.Default.lastselectedversion;
                                                     launchingClient = true;
-                                                    smartHostEdit();
+                                                    if (Directory.Exists(datafolder + @"\clients\" + hostVersion + @"\Player")) { if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe")) { File.Copy(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe", datafolder + @"\tools\RobloxAssetFixer\RobloxPlayerBeta.exe", true); } }
+                                                    if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\RCCService\gametemplate.txt")) { File.WriteAllText(datafolder + @"\clients\" + hostVersion + @"\RCCService\gameserver.txt", File.ReadAllText(datafolder + @"\clients\" + selectedVersion + @"\RCCService\gametemplate.txt").Replace("{port}", textBox2.Text)); }
                                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                                     button28.Invoke(new Action(() => { button28.Visible = true; }));
-                                                    if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
                                                     SetupGameFiles(false, hostVersion);
                                                     if (cancelAsset) return;
                                                     LoadAssets(hostVersion);
@@ -4688,13 +5284,14 @@ namespace ReBloxLauncher
                                                     ProcessStartInfo ps = new ProcessStartInfo();
                                                     ps.UseShellExecute = false;
                                                     ps.CreateNoWindow = false;
-                                                    ps.FileName = datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe";
+                                                    listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\RCCService\RCCService.exe"; }));
                                                     ps.Arguments = hostargument;
+                                                    ps.WorkingDirectory = datafolder + @"\clients\" + hostVersion + @"\RCCService";
                                                     ProcessStartInfo ps1 = new ProcessStartInfo();
                                                     ps1.UseShellExecute = false;
+                                                    ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                     ps1.RedirectStandardOutput = true;
                                                     ps1.CreateNoWindow = true;
-                                                    ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                     if (Properties.Settings.Default.useAuth && internetConnected)
                                                     {
                                                         if (Properties.Settings.Default.avatarR15)
@@ -4715,8 +5312,8 @@ namespace ReBloxLauncher
                                                         else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
                                                         else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
                                                     }
-                                                    ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                                     ps1.WindowStyle = ProcessWindowStyle.Hidden;
+                                                    ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                                     if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
                                                     {
                                                         if (IsNodeFromAppRunning() == false)
@@ -4726,6 +5323,7 @@ namespace ReBloxLauncher
                                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                             statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                             test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
@@ -4735,6 +5333,8 @@ namespace ReBloxLauncher
                                                                     if (logNodeServer) Console.WriteLine(e1.Data);
                                                                     if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                                     {
+                                                                        ServerCheck.Enabled = true;
+                                                                        ServerCheck.Start();
                                                                         ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                                         statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                                         Process roblox = Process.Start(ps);
@@ -4751,16 +5351,19 @@ namespace ReBloxLauncher
                                                         }
                                                         else
                                                         {
+                                                            ServerCheck.Enabled = true;
+                                                            ServerCheck.Start();
                                                             ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                            launchingClient = false;
-                                                            statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                            statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
                                                             Process roblox = Process.Start(ps);
                                                             roblox.EnableRaisingEvents = true;
                                                             roblox.Exited += Roblox_Exited;
+                                                            launchingClient = false;
                                                             await Task.Delay(3000);
                                                             statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                                                             statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -4772,6 +5375,7 @@ namespace ReBloxLauncher
                                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                         launchingClient = false;
                                                         await Task.Delay(3000);
@@ -4779,155 +5383,9 @@ namespace ReBloxLauncher
                                                         statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                                     }
                                                 }
-                                                else
-                                                {
-                                                    try
-                                                    {
-                                                        ProcessStartInfo ps = new ProcessStartInfo();
-                                                        ps.UseShellExecute = true;
-                                                        ps.FileName = Application.ExecutablePath;
-                                                        ps.Verb = "runas";
-                                                        ps.Arguments = "--editHosts";
-                                                        Process.Start(ps);
-                                                        Application.Exit();
-                                                    }
-                                                    catch
-                                                    {
-                                                        MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                statusText.Invoke(new Action(() => { statusText.Visible = true; }));
-                                                statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
-                                                ProcessStartInfo ps = new ProcessStartInfo();
-                                                listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + selectedVersion + @"\Studio\RobloxStudioBeta.exe"; }));
-                                                this.Invoke(new Action(() => { ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); }));
-                                                launchingClient = false;
-                                                if (UseJoinJSONLink == false) { Process.Start(ps); } else MessageBox.Show("Hosting on Mid-2017 and older clients requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                await Task.Delay(3000);
-                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                             }
                                         }
                                         else
-                                        {
-                                            hostVersion = Properties.Settings.Default.lastselectedversion;
-                                            launchingClient = true;
-                                            statusText.Invoke(new Action(() => { statusText.Visible = true; }));
-                                            button1.Invoke(new Action(() => { button1.Enabled = false; }));
-                                            button2.Invoke(new Action(() => { button2.Enabled = false; }));
-                                            button3.Invoke(new Action(() => { button3.Enabled = false; }));
-                                            button27.Invoke(new Action(() => { button27.Enabled = false; }));
-                                            button28.Invoke(new Action(() => { button28.Visible = true; }));
-                                            if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
-                                            SetupGameFiles(false, hostVersion);
-                                            if (cancelAsset) return;
-                                            LoadAssets(hostVersion);
-                                            button28.Invoke(new Action(() => { button28.Visible = false; }));
-                                            if (cancelAsset) return;
-                                            ProcessStartInfo ps = new ProcessStartInfo();
-                                            ps.UseShellExecute = false;
-                                            ps.CreateNoWindow = false;
-                                            ps.FileName = datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe";
-                                            ps.Arguments = hostargument;
-                                            ProcessStartInfo ps1 = new ProcessStartInfo();
-                                            ps1.UseShellExecute = false;
-                                            ps1.RedirectStandardOutput = true;
-                                            ps1.CreateNoWindow = true;
-                                            ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
-                                            if (Properties.Settings.Default.useAuth && internetConnected)
-                                            {
-                                                if (Properties.Settings.Default.avatarR15)
-                                                {
-                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                }
-                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                            }
-                                            else
-                                            {
-                                                if (Properties.Settings.Default.avatarR15)
-                                                {
-                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                }
-                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                            }
-                                            ps1.WindowStyle = ProcessWindowStyle.Hidden;
-                                            ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
-                                            if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
-                                            {
-                                                if (IsNodeFromAppRunning() == false)
-                                                {
-                                                    Process test = Process.Start(ps1);
-                                                    launchingClient = false;
-                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                    statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
-                                                    test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
-                                                    {
-                                                        if (e1.Data != null)
-                                                        {
-                                                            if (logNodeServer) Console.WriteLine(e1.Data);
-                                                            if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
-                                                            {
-                                                                ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                                Process roblox = Process.Start(ps);
-                                                                roblox.EnableRaisingEvents = true;
-                                                                roblox.Exited += Roblox_Exited;
-                                                                test.CancelOutputRead();
-                                                                await Task.Delay(3000);
-                                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                                            }
-                                                        }
-                                                    });
-                                                    test.BeginOutputReadLine();
-                                                }
-                                                else
-                                                {
-                                                    ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                    launchingClient = false;
-                                                    statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                    Process roblox = Process.Start(ps);
-                                                    roblox.EnableRaisingEvents = true;
-                                                    roblox.Exited += Roblox_Exited;
-                                                    await Task.Delay(3000);
-                                                    statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                    statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                                }
-                                            }
-                                            else
-                                            {
-                                                MessageBox.Show("A valid username or UserId is required!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                launchingClient = false;
-                                                await Task.Delay(3000);
-                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                            }
-                                        }
-                                    }
-                                }
-                                else if (Directory.Exists(datafolder + @"\clients\" + Properties.Settings.Default.lastselectedversion + @"\RCCService") && RCCService == true)
-                                {
-                                    if (Control.ModifierKeys == Keys.Shift)
-                                    {
-                                        if (openFileDialog1.ShowDialog() == DialogResult.OK)
                                         {
                                             if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                             {
@@ -4937,13 +5395,14 @@ namespace ReBloxLauncher
                                                     {
                                                         hostVersion = Properties.Settings.Default.lastselectedversion;
                                                         launchingClient = true;
-                                                        if (Directory.Exists(datafolder + @"\clients\" + hostVersion + @"\Player")) { if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe")) { File.Copy(datafolder + @"\clients\" + selectedVersion + @"\Player\RobloxPlayerBeta.exe", datafolder + @"\tools\RobloxAssetFixer\RobloxPlayerBeta.exe", true); } }
+                                                        if (Directory.Exists(datafolder + @"\clients\" + hostVersion + @"\Player")) { if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe")) { File.Copy(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe", datafolder + @"\tools\RobloxAssetFixer\RobloxPlayerBeta.exe", true); } }
                                                         if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\RCCService\gametemplate.txt")) { File.WriteAllText(datafolder + @"\clients\" + hostVersion + @"\RCCService\gameserver.txt", File.ReadAllText(datafolder + @"\clients\" + selectedVersion + @"\RCCService\gametemplate.txt").Replace("{port}", textBox2.Text)); }
                                                         smartHostEdit();
                                                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                                         button28.Invoke(new Action(() => { button28.Visible = true; }));
                                                         SetupGameFiles(false, hostVersion);
@@ -4954,14 +5413,14 @@ namespace ReBloxLauncher
                                                         ProcessStartInfo ps = new ProcessStartInfo();
                                                         ps.UseShellExecute = false;
                                                         ps.CreateNoWindow = false;
-                                                        ps.FileName = datafolder + @"\clients\" + hostVersion + @"\RCCService\RCCService.exe";
                                                         ps.WorkingDirectory = datafolder + @"\clients\" + hostVersion + @"\RCCService";
+                                                        ps.FileName = datafolder + @"\clients\" + hostVersion + @"\RCCService\RCCService.exe";
                                                         ps.Arguments = hostargument;
                                                         ProcessStartInfo ps1 = new ProcessStartInfo();
                                                         ps1.UseShellExecute = false;
-                                                        ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                         ps1.RedirectStandardOutput = true;
                                                         ps1.CreateNoWindow = true;
+                                                        ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                         if (Properties.Settings.Default.useAuth && internetConnected)
                                                         {
                                                             if (Properties.Settings.Default.avatarR15)
@@ -4989,12 +5448,13 @@ namespace ReBloxLauncher
                                                             if (IsNodeFromAppRunning() == false)
                                                             {
                                                                 Process test = Process.Start(ps1);
-                                                                statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
+                                                                launchingClient = false;
                                                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                                launchingClient = false;
+                                                                statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                                 test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
                                                                 {
                                                                     if (e1.Data != null)
@@ -5002,6 +5462,8 @@ namespace ReBloxLauncher
                                                                         if (logNodeServer) Console.WriteLine(e1.Data);
                                                                         if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                                         {
+                                                                            ServerCheck.Enabled = true;
+                                                                            ServerCheck.Start();
                                                                             ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                                             statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                                             Process roblox = Process.Start(ps);
@@ -5018,13 +5480,16 @@ namespace ReBloxLauncher
                                                             }
                                                             else
                                                             {
+                                                                ServerCheck.Enabled = true;
+                                                                ServerCheck.Start();
                                                                 ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                                button1.Invoke(new Action(() => { button1.Enabled = false; }));
-                                                                button2.Invoke(new Action(() => { button2.Enabled = false; }));
-                                                                button3.Invoke(new Action(() => { button3.Enabled = false; }));
-                                                                button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                                 launchingClient = false;
+                                                                statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
                                                                 Process roblox = Process.Start(ps);
                                                                 roblox.EnableRaisingEvents = true;
                                                                 roblox.Exited += Roblox_Exited;
@@ -5039,6 +5504,7 @@ namespace ReBloxLauncher
                                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                             launchingClient = false;
                                                             await Task.Delay(3000);
@@ -5069,6 +5535,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     launchingClient = false;
                                                     MessageBox.Show("Hosting on RCCService requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -5087,6 +5554,7 @@ namespace ReBloxLauncher
                                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                                 button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                 button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                                 button28.Invoke(new Action(() => { button28.Visible = true; }));
                                                 SetupGameFiles(false, hostVersion);
@@ -5096,15 +5564,15 @@ namespace ReBloxLauncher
                                                 if (cancelAsset) return;
                                                 ProcessStartInfo ps = new ProcessStartInfo();
                                                 ps.UseShellExecute = false;
-                                                ps.CreateNoWindow = false;
-                                                listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\RCCService\RCCService.exe"; }));
-                                                ps.Arguments = hostargument;
                                                 ps.WorkingDirectory = datafolder + @"\clients\" + hostVersion + @"\RCCService";
+                                                ps.CreateNoWindow = false;
+                                                ps.FileName = datafolder + @"\clients\" + hostVersion + @"\RCCService\RCCService.exe";
+                                                ps.Arguments = hostargument;
                                                 ProcessStartInfo ps1 = new ProcessStartInfo();
                                                 ps1.UseShellExecute = false;
-                                                ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                 ps1.RedirectStandardOutput = true;
                                                 ps1.CreateNoWindow = true;
+                                                ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                 if (Properties.Settings.Default.useAuth && internetConnected)
                                                 {
                                                     if (Properties.Settings.Default.avatarR15)
@@ -5136,6 +5604,7 @@ namespace ReBloxLauncher
                                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                         statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                         test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
@@ -5145,6 +5614,8 @@ namespace ReBloxLauncher
                                                                 if (logNodeServer) Console.WriteLine(e1.Data);
                                                                 if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                                 {
+                                                                    ServerCheck.Enabled = true;
+                                                                    ServerCheck.Start();
                                                                     ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                                     statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                                     Process roblox = Process.Start(ps);
@@ -5161,16 +5632,19 @@ namespace ReBloxLauncher
                                                     }
                                                     else
                                                     {
+                                                        ServerCheck.Enabled = true;
+                                                        ServerCheck.Start();
                                                         ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                        statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
+                                                        launchingClient = false;
+                                                        statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                         Process roblox = Process.Start(ps);
                                                         roblox.EnableRaisingEvents = true;
                                                         roblox.Exited += Roblox_Exited;
-                                                        launchingClient = false;
                                                         await Task.Delay(3000);
                                                         statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                                                         statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -5182,6 +5656,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     launchingClient = false;
                                                     await Task.Delay(3000);
@@ -5193,39 +5668,195 @@ namespace ReBloxLauncher
                                     }
                                     else
                                     {
-                                        if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
+                                        if (Control.ModifierKeys == Keys.Shift)
                                         {
-                                            if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                            if (openFileDialog1.ShowDialog() == DialogResult.OK)
                                             {
-                                                if (IsAdministrator())
+                                                if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
+                                                {
+                                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                                    {
+                                                        if (IsAdministrator())
+                                                        {
+                                                            hostVersion = Properties.Settings.Default.lastselectedversion;
+                                                            launchingClient = true;
+                                                            smartHostEdit();
+                                                            statusText.Invoke(new Action(() => { statusText.Visible = true; }));
+                                                            button1.Invoke(new Action(() => { button1.Enabled = false; }));
+                                                            button2.Invoke(new Action(() => { button2.Enabled = false; }));
+                                                            button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = false; }));
+                                                            button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                            button28.Invoke(new Action(() => { button28.Visible = true; }));
+                                                            if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
+                                                            SetupGameFiles(true, hostVersion);
+                                                            if (cancelAsset) return;
+                                                            LoadAssets(hostVersion);
+                                                            button28.Invoke(new Action(() => { button28.Visible = false; }));
+                                                            if (cancelAsset) return;
+                                                            ProcessStartInfo ps = new ProcessStartInfo();
+                                                            ps.UseShellExecute = false;
+                                                            ps.CreateNoWindow = false;
+                                                            ps.FileName = datafolder + @"\clients\" + hostVersion + @"\Studio\RobloxStudioBeta.exe";
+                                                            this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" -rbdf=\"" + openFileDialog1.FileName + "\""; }));
+                                                            ProcessStartInfo ps1 = new ProcessStartInfo();
+                                                            ps1.UseShellExecute = false;
+                                                            ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
+                                                            ps1.RedirectStandardOutput = true;
+                                                            ps1.CreateNoWindow = true;
+                                                            if (Properties.Settings.Default.useAuth && internetConnected)
+                                                            {
+                                                                if (Properties.Settings.Default.avatarR15)
+                                                                {
+                                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                }
+                                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                            }
+                                                            else
+                                                            {
+                                                                if (Properties.Settings.Default.avatarR15)
+                                                                {
+                                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                }
+                                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                                            }
+                                                            ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
+                                                            ps1.WindowStyle = ProcessWindowStyle.Hidden;
+                                                            if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
+                                                            {
+                                                                if (IsNodeFromAppRunning() == false)
+                                                                {
+                                                                    Process test = Process.Start(ps1);
+                                                                    statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
+                                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                                    launchingClient = false;
+                                                                    test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
+                                                                    {
+                                                                        if (e1.Data != null)
+                                                                        {
+                                                                            if (logNodeServer) Console.WriteLine(e1.Data);
+                                                                            if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
+                                                                            {
+                                                                                ServerCheck.Enabled = true;
+                                                                                ServerCheck.Start();
+                                                                                ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
+                                                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                                                Process roblox = Process.Start(ps);
+                                                                                roblox.EnableRaisingEvents = true;
+                                                                                roblox.Exited += Roblox_Exited;
+                                                                                test.CancelOutputRead();
+                                                                                await Task.Delay(3000);
+                                                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                    test.BeginOutputReadLine();
+                                                                }
+                                                                else
+                                                                {
+                                                                    ServerCheck.Enabled = true;
+                                                                    ServerCheck.Start();
+                                                                    ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
+                                                                    statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                    button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                                    launchingClient = false;
+                                                                    Process roblox = Process.Start(ps);
+                                                                    roblox.EnableRaisingEvents = true;
+                                                                    roblox.Exited += Roblox_Exited;
+                                                                    await Task.Delay(3000);
+                                                                    statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                    statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                MessageBox.Show("A valid username or UserId is required!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                                launchingClient = false;
+                                                                await Task.Delay(3000);
+                                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            try
+                                                            {
+                                                                ProcessStartInfo ps = new ProcessStartInfo();
+                                                                ps.UseShellExecute = true;
+                                                                ps.FileName = Application.ExecutablePath;
+                                                                ps.Verb = "runas";
+                                                                ps.Arguments = "--editHosts";
+                                                                Process.Start(ps);
+                                                                Application.Exit();
+                                                            }
+                                                            catch
+                                                            {
+                                                                MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        statusText.Invoke(new Action(() => { statusText.Visible = true; }));
+                                                        statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                        button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                        button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                        button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                        button27.Invoke(new Action(() => { button27.Enabled = false; }));
+                                                        launchingClient = false;
+                                                        ProcessStartInfo ps = new ProcessStartInfo();
+                                                        listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
+                                                        this.Invoke(new Action(() => { ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); }));
+                                                        if (UseJoinJSONLink == false) { Process.Start(ps); } else MessageBox.Show("Hosting on Mid-2017 and older clients requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                        await Task.Delay(3000);
+                                                        statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                                        statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                                    }
+                                                }
+                                                else
                                                 {
                                                     hostVersion = Properties.Settings.Default.lastselectedversion;
                                                     launchingClient = true;
-                                                    if (Directory.Exists(datafolder + @"\clients\" + hostVersion + @"\Player")) { if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe")) { File.Copy(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe", datafolder + @"\tools\RobloxAssetFixer\RobloxPlayerBeta.exe", true); } }
-                                                    if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\RCCService\gametemplate.txt")) { File.WriteAllText(datafolder + @"\clients\" + hostVersion + @"\RCCService\gameserver.txt", File.ReadAllText(datafolder + @"\clients\" + selectedVersion + @"\RCCService\gametemplate.txt").Replace("{port}", textBox2.Text)); }
-                                                    smartHostEdit();
                                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                                     button28.Invoke(new Action(() => { button28.Visible = true; }));
-                                                    SetupGameFiles(false, hostVersion);
+                                                    if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
+                                                    SetupGameFiles(true, hostVersion);
                                                     if (cancelAsset) return;
                                                     LoadAssets(hostVersion);
                                                     button28.Invoke(new Action(() => { button28.Visible = false; }));
                                                     if (cancelAsset) return;
                                                     ProcessStartInfo ps = new ProcessStartInfo();
-                                                    ps.UseShellExecute = false;
-                                                    ps.CreateNoWindow = false;
-                                                    ps.WorkingDirectory = datafolder + @"\clients\" + hostVersion + @"\RCCService";
-                                                    ps.FileName = datafolder + @"\clients\" + hostVersion + @"\RCCService\RCCService.exe";
-                                                    ps.Arguments = hostargument;
+                                                    ps.FileName = datafolder + @"\clients\" + hostVersion + @"\Studio\RobloxStudioBeta.exe";
+                                                    this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" -rbdf=\"" + openFileDialog1.FileName + "\""; }));
                                                     ProcessStartInfo ps1 = new ProcessStartInfo();
                                                     ps1.UseShellExecute = false;
+                                                    ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                     ps1.RedirectStandardOutput = true;
                                                     ps1.CreateNoWindow = true;
-                                                    ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                     if (Properties.Settings.Default.useAuth && internetConnected)
                                                     {
                                                         if (Properties.Settings.Default.avatarR15)
@@ -5246,8 +5877,8 @@ namespace ReBloxLauncher
                                                         else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
                                                         else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
                                                     }
-                                                    ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                                     ps1.WindowStyle = ProcessWindowStyle.Hidden;
+                                                    ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                                     if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
                                                     {
                                                         if (IsNodeFromAppRunning() == false)
@@ -5257,6 +5888,7 @@ namespace ReBloxLauncher
                                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                             statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                             test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
@@ -5266,6 +5898,8 @@ namespace ReBloxLauncher
                                                                     if (logNodeServer) Console.WriteLine(e1.Data);
                                                                     if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                                     {
+                                                                        ServerCheck.Enabled = true;
+                                                                        ServerCheck.Start();
                                                                         ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                                         statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                                         Process roblox = Process.Start(ps);
@@ -5282,13 +5916,16 @@ namespace ReBloxLauncher
                                                         }
                                                         else
                                                         {
+                                                            ServerCheck.Enabled = true;
+                                                            ServerCheck.Start();
                                                             ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                            statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                             launchingClient = false;
-                                                            statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
                                                             Process roblox = Process.Start(ps);
                                                             roblox.EnableRaisingEvents = true;
                                                             roblox.Exited += Roblox_Exited;
@@ -5303,6 +5940,7 @@ namespace ReBloxLauncher
                                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                         launchingClient = false;
                                                         await Task.Delay(3000);
@@ -5310,156 +5948,9 @@ namespace ReBloxLauncher
                                                         statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                                     }
                                                 }
-                                                else
-                                                {
-                                                    try
-                                                    {
-                                                        ProcessStartInfo ps = new ProcessStartInfo();
-                                                        ps.UseShellExecute = true;
-                                                        ps.FileName = Application.ExecutablePath;
-                                                        ps.Verb = "runas";
-                                                        ps.Arguments = "--editHosts";
-                                                        Process.Start(ps);
-                                                        Application.Exit();
-                                                    }
-                                                    catch
-                                                    {
-                                                        MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                launchingClient = false;
-                                                MessageBox.Show("Hosting on RCCService requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                await Task.Delay(3000);
-                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                             }
                                         }
                                         else
-                                        {
-                                            hostVersion = Properties.Settings.Default.lastselectedversion;
-                                            launchingClient = true;
-                                            if (Directory.Exists(datafolder + @"\clients\" + hostVersion + @"\Player")) { if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe")) { File.Copy(datafolder + @"\clients\" + hostVersion + @"\Player\RobloxPlayerBeta.exe", datafolder + @"\tools\RobloxAssetFixer\RobloxPlayerBeta.exe", true); } }
-                                            if (File.Exists(datafolder + @"\clients\" + hostVersion + @"\RCCService\gametemplate.txt")) { File.WriteAllText(datafolder + @"\clients\" + hostVersion + @"\RCCService\gameserver.txt", File.ReadAllText(datafolder + @"\clients\" + selectedVersion + @"\RCCService\gametemplate.txt").Replace("{port}", textBox2.Text)); }
-                                            statusText.Invoke(new Action(() => { statusText.Visible = true; }));
-                                            button1.Invoke(new Action(() => { button1.Enabled = false; }));
-                                            button2.Invoke(new Action(() => { button2.Enabled = false; }));
-                                            button3.Invoke(new Action(() => { button3.Enabled = false; }));
-                                            button27.Invoke(new Action(() => { button27.Enabled = false; }));
-                                            button28.Invoke(new Action(() => { button28.Visible = true; }));
-                                            SetupGameFiles(false, hostVersion);
-                                            if (cancelAsset) return;
-                                            LoadAssets(hostVersion);
-                                            button28.Invoke(new Action(() => { button28.Visible = false; }));
-                                            if (cancelAsset) return;
-                                            ProcessStartInfo ps = new ProcessStartInfo();
-                                            ps.UseShellExecute = false;
-                                            ps.WorkingDirectory = datafolder + @"\clients\" + hostVersion + @"\RCCService";
-                                            ps.CreateNoWindow = false;
-                                            ps.FileName = datafolder + @"\clients\" + hostVersion + @"\RCCService\RCCService.exe";
-                                            ps.Arguments = hostargument;
-                                            ProcessStartInfo ps1 = new ProcessStartInfo();
-                                            ps1.UseShellExecute = false;
-                                            ps1.RedirectStandardOutput = true;
-                                            ps1.CreateNoWindow = true;
-                                            ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
-                                            if (Properties.Settings.Default.useAuth && internetConnected)
-                                            {
-                                                if (Properties.Settings.Default.avatarR15)
-                                                {
-                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                }
-                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                            }
-                                            else
-                                            {
-                                                if (Properties.Settings.Default.avatarR15)
-                                                {
-                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                }
-                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                            }
-                                            ps1.WindowStyle = ProcessWindowStyle.Hidden;
-                                            ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
-                                            if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
-                                            {
-                                                if (IsNodeFromAppRunning() == false)
-                                                {
-                                                    Process test = Process.Start(ps1);
-                                                    launchingClient = false;
-                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                    statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
-                                                    test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
-                                                    {
-                                                        if (e1.Data != null)
-                                                        {
-                                                            if (logNodeServer) Console.WriteLine(e1.Data);
-                                                            if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
-                                                            {
-                                                                ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                                Process roblox = Process.Start(ps);
-                                                                roblox.EnableRaisingEvents = true;
-                                                                roblox.Exited += Roblox_Exited;
-                                                                test.CancelOutputRead();
-                                                                await Task.Delay(3000);
-                                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                                            }
-                                                        }
-                                                    });
-                                                    test.BeginOutputReadLine();
-                                                }
-                                                else
-                                                {
-                                                    ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                    launchingClient = false;
-                                                    statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                    Process roblox = Process.Start(ps);
-                                                    roblox.EnableRaisingEvents = true;
-                                                    roblox.Exited += Roblox_Exited;
-                                                    await Task.Delay(3000);
-                                                    statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                    statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                                }
-                                            }
-                                            else
-                                            {
-                                                MessageBox.Show("A valid username or UserId is required!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                launchingClient = false;
-                                                await Task.Delay(3000);
-                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                            }
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    if (Control.ModifierKeys == Keys.Shift)
-                                    {
-                                        if (openFileDialog1.ShowDialog() == DialogResult.OK)
                                         {
                                             if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                             {
@@ -5474,6 +5965,7 @@ namespace ReBloxLauncher
                                                         button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                                         button28.Invoke(new Action(() => { button28.Visible = true; }));
                                                         if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
@@ -5485,13 +5977,13 @@ namespace ReBloxLauncher
                                                         ProcessStartInfo ps = new ProcessStartInfo();
                                                         ps.UseShellExecute = false;
                                                         ps.CreateNoWindow = false;
-                                                        ps.FileName = datafolder + @"\clients\" + hostVersion + @"\Studio\RobloxStudioBeta.exe";
-                                                        this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" -rbdf=\"" + openFileDialog1.FileName + "\""; }));
+                                                        ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe";
+                                                        this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" "; }));
                                                         ProcessStartInfo ps1 = new ProcessStartInfo();
                                                         ps1.UseShellExecute = false;
-                                                        ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                         ps1.RedirectStandardOutput = true;
                                                         ps1.CreateNoWindow = true;
+                                                        ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                         if (Properties.Settings.Default.useAuth && internetConnected)
                                                         {
                                                             if (Properties.Settings.Default.avatarR15)
@@ -5519,12 +6011,13 @@ namespace ReBloxLauncher
                                                             if (IsNodeFromAppRunning() == false)
                                                             {
                                                                 Process test = Process.Start(ps1);
-                                                                statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                                 launchingClient = false;
+                                                                statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                                 test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
                                                                 {
                                                                     if (e1.Data != null)
@@ -5532,6 +6025,8 @@ namespace ReBloxLauncher
                                                                         if (logNodeServer) Console.WriteLine(e1.Data);
                                                                         if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                                         {
+                                                                            ServerCheck.Enabled = true;
+                                                                            ServerCheck.Start();
                                                                             ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                                             statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                                             Process roblox = Process.Start(ps);
@@ -5548,16 +6043,19 @@ namespace ReBloxLauncher
                                                             }
                                                             else
                                                             {
+                                                                ServerCheck.Enabled = true;
+                                                                ServerCheck.Start();
                                                                 ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                                button1.Invoke(new Action(() => { button1.Enabled = false; }));
-                                                                button2.Invoke(new Action(() => { button2.Enabled = false; }));
-                                                                button3.Invoke(new Action(() => { button3.Enabled = false; }));
-                                                                button27.Invoke(new Action(() => { button27.Enabled = false; }));
-                                                                launchingClient = false;
+                                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                                                statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
                                                                 Process roblox = Process.Start(ps);
                                                                 roblox.EnableRaisingEvents = true;
                                                                 roblox.Exited += Roblox_Exited;
+                                                                launchingClient = false;
                                                                 await Task.Delay(3000);
                                                                 statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                                                                 statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -5569,6 +6067,7 @@ namespace ReBloxLauncher
                                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                             launchingClient = false;
                                                             await Task.Delay(3000);
@@ -5597,16 +6096,17 @@ namespace ReBloxLauncher
                                                 else
                                                 {
                                                     statusText.Invoke(new Action(() => { statusText.Visible = true; }));
+                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                    button1.Invoke(new Action(() => { button1.Enabled = false; }));
-                                                    button2.Invoke(new Action(() => { button2.Enabled = false; }));
-                                                    button3.Invoke(new Action(() => { button3.Enabled = false; }));
-                                                    button27.Invoke(new Action(() => { button27.Enabled = false; }));
-                                                    launchingClient = false;
                                                     ProcessStartInfo ps = new ProcessStartInfo();
                                                     listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
                                                     this.Invoke(new Action(() => { ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); }));
                                                     if (UseJoinJSONLink == false) { Process.Start(ps); } else MessageBox.Show("Hosting on Mid-2017 and older clients requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    launchingClient = false;
                                                     await Task.Delay(3000);
                                                     statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                                                     statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -5620,6 +6120,7 @@ namespace ReBloxLauncher
                                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                                 button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                                button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                                 button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                                 button28.Invoke(new Action(() => { button28.Visible = true; }));
                                                 if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
@@ -5629,13 +6130,15 @@ namespace ReBloxLauncher
                                                 button28.Invoke(new Action(() => { button28.Visible = false; }));
                                                 if (cancelAsset) return;
                                                 ProcessStartInfo ps = new ProcessStartInfo();
+                                                ps.UseShellExecute = false;
+                                                ps.CreateNoWindow = false;
                                                 ps.FileName = datafolder + @"\clients\" + hostVersion + @"\Studio\RobloxStudioBeta.exe";
-                                                this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" -rbdf=\"" + openFileDialog1.FileName + "\""; }));
+                                                this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" "; }));
                                                 ProcessStartInfo ps1 = new ProcessStartInfo();
                                                 ps1.UseShellExecute = false;
-                                                ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                 ps1.RedirectStandardOutput = true;
                                                 ps1.CreateNoWindow = true;
+                                                ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
                                                 if (Properties.Settings.Default.useAuth && internetConnected)
                                                 {
                                                     if (Properties.Settings.Default.avatarR15)
@@ -5663,12 +6166,13 @@ namespace ReBloxLauncher
                                                     if (IsNodeFromAppRunning() == false)
                                                     {
                                                         Process test = Process.Start(ps1);
-                                                        launchingClient = false;
                                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                         statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
+                                                        launchingClient = false;
                                                         test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
                                                         {
                                                             if (e1.Data != null)
@@ -5676,6 +6180,8 @@ namespace ReBloxLauncher
                                                                 if (logNodeServer) Console.WriteLine(e1.Data);
                                                                 if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                                 {
+                                                                    ServerCheck.Enabled = true;
+                                                                    ServerCheck.Start();
                                                                     ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                                     statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                                     Process roblox = Process.Start(ps);
@@ -5692,12 +6198,15 @@ namespace ReBloxLauncher
                                                     }
                                                     else
                                                     {
+                                                        ServerCheck.Enabled = true;
+                                                        ServerCheck.Start();
                                                         ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
                                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                        statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
+                                                        statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
                                                         launchingClient = false;
                                                         Process roblox = Process.Start(ps);
                                                         roblox.EnableRaisingEvents = true;
@@ -5713,306 +6222,53 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     launchingClient = false;
                                                     await Task.Delay(3000);
                                                     statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                                                     statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                                 }
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
-                                        {
-                                            if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                                            {
-                                                if (IsAdministrator())
-                                                {
-                                                    hostVersion = Properties.Settings.Default.lastselectedversion;
-                                                    launchingClient = true;
-                                                    smartHostEdit();
-                                                    statusText.Invoke(new Action(() => { statusText.Visible = true; }));
-                                                    button1.Invoke(new Action(() => { button1.Enabled = false; }));
-                                                    button2.Invoke(new Action(() => { button2.Enabled = false; }));
-                                                    button3.Invoke(new Action(() => { button3.Enabled = false; }));
-                                                    button27.Invoke(new Action(() => { button27.Enabled = false; }));
-                                                    button28.Invoke(new Action(() => { button28.Visible = true; }));
-                                                    if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
-                                                    SetupGameFiles(true, hostVersion);
-                                                    if (cancelAsset) return;
-                                                    LoadAssets(hostVersion);
-                                                    button28.Invoke(new Action(() => { button28.Visible = false; }));
-                                                    if (cancelAsset) return;
-                                                    ProcessStartInfo ps = new ProcessStartInfo();
-                                                    ps.UseShellExecute = false;
-                                                    ps.CreateNoWindow = false;
-                                                    ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe";
-                                                    this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" "; }));
-                                                    ProcessStartInfo ps1 = new ProcessStartInfo();
-                                                    ps1.UseShellExecute = false;
-                                                    ps1.RedirectStandardOutput = true;
-                                                    ps1.CreateNoWindow = true;
-                                                    ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
-                                                    if (Properties.Settings.Default.useAuth && internetConnected)
-                                                    {
-                                                        if (Properties.Settings.Default.avatarR15)
-                                                        {
-                                                            if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                            else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                        }
-                                                        else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                        else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                    }
-                                                    else
-                                                    {
-                                                        if (Properties.Settings.Default.avatarR15)
-                                                        {
-                                                            if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                            else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                        }
-                                                        else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                        else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                    }
-                                                    ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
-                                                    ps1.WindowStyle = ProcessWindowStyle.Hidden;
-                                                    if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
-                                                    {
-                                                        if (IsNodeFromAppRunning() == false)
-                                                        {
-                                                            Process test = Process.Start(ps1);
-                                                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                            button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                            launchingClient = false;
-                                                            statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
-                                                            test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
-                                                            {
-                                                                if (e1.Data != null)
-                                                                {
-                                                                    if (logNodeServer) Console.WriteLine(e1.Data);
-                                                                    if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
-                                                                    {
-                                                                        ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                                        statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                                        Process roblox = Process.Start(ps);
-                                                                        roblox.EnableRaisingEvents = true;
-                                                                        roblox.Exited += Roblox_Exited;
-                                                                        test.CancelOutputRead();
-                                                                        await Task.Delay(3000);
-                                                                        statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                                        statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                                                    }
-                                                                }
-                                                            });
-                                                            test.BeginOutputReadLine();
-                                                        }
-                                                        else
-                                                        {
-                                                            ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                            button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                            statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
-                                                            Process roblox = Process.Start(ps);
-                                                            roblox.EnableRaisingEvents = true;
-                                                            roblox.Exited += Roblox_Exited;
-                                                            launchingClient = false;
-                                                            await Task.Delay(3000);
-                                                            statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                            statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        MessageBox.Show("A valid username or UserId is required!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                        button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                        button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                        button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                        button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                        launchingClient = false;
-                                                        await Task.Delay(3000);
-                                                        statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                        statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    try
-                                                    {
-                                                        ProcessStartInfo ps = new ProcessStartInfo();
-                                                        ps.UseShellExecute = true;
-                                                        ps.FileName = Application.ExecutablePath;
-                                                        ps.Verb = "runas";
-                                                        ps.Arguments = "--editHosts";
-                                                        Process.Start(ps);
-                                                        Application.Exit();
-                                                    }
-                                                    catch
-                                                    {
-                                                        MessageBox.Show("Something went wrong while trying to run the launcher as administrator! Please run the launcher manually as administrator.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                statusText.Invoke(new Action(() => { statusText.Visible = true; }));
-                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                ProcessStartInfo ps = new ProcessStartInfo();
-                                                listBox1.Invoke(new Action(() => { ps.FileName = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\Studio\RobloxStudioBeta.exe"; }));
-                                                this.Invoke(new Action(() => { ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); }));
-                                                if (UseJoinJSONLink == false) { Process.Start(ps); } else MessageBox.Show("Hosting on Mid-2017 and older clients requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                launchingClient = false;
-                                                await Task.Delay(3000);
-                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                            }
-                                        }
-                                        else
-                                        {
-                                            hostVersion = Properties.Settings.Default.lastselectedversion;
-                                            launchingClient = true;
-                                            statusText.Invoke(new Action(() => { statusText.Visible = true; }));
-                                            button1.Invoke(new Action(() => { button1.Enabled = false; }));
-                                            button2.Invoke(new Action(() => { button2.Enabled = false; }));
-                                            button3.Invoke(new Action(() => { button3.Enabled = false; }));
-                                            button27.Invoke(new Action(() => { button27.Enabled = false; }));
-                                            button28.Invoke(new Action(() => { button28.Visible = true; }));
-                                            if (UseJoinJSONLink) SetupJoinScript("127.0.0.1", int.Parse(textBox2.Text));
-                                            SetupGameFiles(true, hostVersion);
-                                            if (cancelAsset) return;
-                                            LoadAssets(hostVersion);
-                                            button28.Invoke(new Action(() => { button28.Visible = false; }));
-                                            if (cancelAsset) return;
-                                            ProcessStartInfo ps = new ProcessStartInfo();
-                                            ps.UseShellExecute = false;
-                                            ps.CreateNoWindow = false;
-                                            ps.FileName = datafolder + @"\clients\" + hostVersion + @"\Studio\RobloxStudioBeta.exe";
-                                            this.Invoke(new Action(() => { if (UseJoinJSONLink == false) ps.Arguments = hostargument + " -localPlaceFile \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem) + "\" -port " + textBox2.Text + " -placeId 1 -universeId 2 -creatorId " + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)); else ps.Arguments = hostargument.Replace("$Port$", textBox2.Text) + (dontLoadMapFromArgument ? "" : " -fileLocation \"" + datafolder + @"\maps\" + listBox2.GetItemText(listBox2.SelectedItem)) + "\" "; }));
-                                            ProcessStartInfo ps1 = new ProcessStartInfo();
-                                            ps1.UseShellExecute = false;
-                                            ps1.RedirectStandardOutput = true;
-                                            ps1.CreateNoWindow = true;
-                                            ps1.FileName = useSystemNode ? "node" : datafolder + @"\tools\node\node.exe";
-                                            if (Properties.Settings.Default.useAuth && internetConnected)
-                                            {
-                                                if (Properties.Settings.Default.avatarR15)
-                                                {
-                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                }
-                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js --syncROBLOSECURITYfromLauncher -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                            }
-                                            else
-                                            {
-                                                if (Properties.Settings.Default.avatarR15)
-                                                {
-                                                    if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                    else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -r15 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                }
-                                                else if (guestMode == false && Properties.Settings.Default.AccountOver13) ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                                else ps1.Arguments = datafolder + @"\tools\RobloxAssetFixer\index.js -username=" + (guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + " -accountUnder13 -bodycolor=[" + Properties.Settings.Default.HeadColor + "," + Properties.Settings.Default.LeftArmColor + "," + Properties.Settings.Default.LeftLegColor + "," + Properties.Settings.Default.RightArmColor + "," + Properties.Settings.Default.RightLegColor + "," + Properties.Settings.Default.TorsoColor + "] -clothes=[" + Properties.Settings.Default.ClothesArray.Replace("|", ",") + "] " + (Properties.Settings.Default.EnableDataStore ? "" : "-disableDataStore ") + (Properties.Settings.Default.EnableBadges ? "" : "-disableBadges ") + (Properties.Settings.Default.EnableFollowing ? "" : "-disableFollowing ") + (Properties.Settings.Default.assetFromServer ? "-assetFromServer " : "") + (useOldSignature ? "-disableNewSignature " : "") + (useOldAssetFormat ? "-disableNewSignatureAsset " : "") + (Properties.Settings.Default.EnableFriendships ? "" : "-disableFriendships ") + (Properties.Settings.Default.EnableOwnedAssets ? "" : "-disableOwnedAssets ") + "-robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
-                                            }
-                                            ps1.WindowStyle = ProcessWindowStyle.Hidden;
-                                            ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
-                                            if ((guestMode ? guestUsername : Properties.Settings.Default.username).Length > 2 && (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) > 0 || guestMode == true)
-                                            {
-                                                if (IsNodeFromAppRunning() == false)
-                                                {
-                                                    Process test = Process.Start(ps1);
-                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                    statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
-                                                    launchingClient = false;
-                                                    test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
-                                                    {
-                                                        if (e1.Data != null)
-                                                        {
-                                                            if (logNodeServer) Console.WriteLine(e1.Data);
-                                                            if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
-                                                            {
-                                                                ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                                statusText.Invoke(new Action(() => { statusText.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
-                                                                Process roblox = Process.Start(ps);
-                                                                roblox.EnableRaisingEvents = true;
-                                                                roblox.Exited += Roblox_Exited;
-                                                                test.CancelOutputRead();
-                                                                await Task.Delay(3000);
-                                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                                            }
-                                                        }
-                                                    });
-                                                    test.BeginOutputReadLine();
-                                                }
-                                                else
-                                                {
-                                                    ServerUtils.StartListServer(hostVersion, Properties.Settings.Default.lastselectedmap, (guestMode ? guestUsername : Properties.Settings.Default.username) + "'s Server", int.Parse(textBox2.Text));
-                                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                    statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
-                                                    launchingClient = false;
-                                                    Process roblox = Process.Start(ps);
-                                                    roblox.EnableRaisingEvents = true;
-                                                    roblox.Exited += Roblox_Exited;
-                                                    await Task.Delay(3000);
-                                                    statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                    statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                                                }
-                                            }
-                                            else
-                                            {
-                                                MessageBox.Show("A valid username or UserId is required!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                                                button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                                                button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                                                button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                                                launchingClient = false;
-                                                await Task.Delay(3000);
-                                                statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                                statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                                             }
                                         }
                                     }
                                 }
+                                else
+                                {
+                                    MessageBox.Show("A map is required to begin hosting!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                                    button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                                    button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                                    button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                                    launchingClient = false;
+                                    await Task.Delay(3000);
+                                    statusText.Invoke(new Action(() => { statusText.Visible = false; }));
+                                    statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                }
                             }
-                            else
+                            catch (Exception e1)
                             {
-                                MessageBox.Show("A map is required to begin hosting!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox.Show("Something went wrong while trying to launch Studio/Player, please look in the error message for details: " + e1.Message, aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                Console.WriteLine("<ERROR> Something went wrong when attempting to launch Studio/Player! Please look in the error below and report it to the developer if it's launcher-sided!\r\n" + e1.Message + "\r\nStack Trace:\r\n" + e1.StackTrace);
                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                 launchingClient = false;
                                 await Task.Delay(3000);
                                 statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                                 statusText.Invoke(new Action(() => { statusText.Text = ""; }));
                             }
-                        }
-                        catch (Exception e1)
-                        {
-                            MessageBox.Show("Something went wrong while trying to launch Studio/Player, please look in the error message for details: " + e1.Message, aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            Console.WriteLine("<ERROR> Something went wrong when attempting to launch Studio/Player! Please look in the error below and report it to the developer if it's launcher-sided!\r\n" + e1.Message + "\r\nStack Trace:\r\n" + e1.StackTrace);
-                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
-                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
-                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
-                            button27.Invoke(new Action(() => { button27.Enabled = true; }));
-                            launchingClient = false;
-                            await Task.Delay(3000);
-                            statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                            statusText.Invoke(new Action(() => { statusText.Text = ""; }));
-                        }
-                    });
-                    thread.TrySetApartmentState(ApartmentState.MTA);
-                    thread.Start();
+                        });
+                        thread.TrySetApartmentState(ApartmentState.MTA);
+                        thread.Start();
+                    }
+                    else
+                    {
+                        MessageBox.Show("It looks like another client is currently hosting! You must close the client that's using the port or use a different port.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
                 else
                 {
@@ -7035,11 +7291,11 @@ namespace ReBloxLauncher
         {
             try
             {
-                if (File.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + (currentImage) + ".png") == false) currentImage = 1;
-                if (File.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + (currentImage) + ".png"))
+                if (File.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png") == false) currentImage = 1;
+                if (File.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png"))
                 {
-                    pictureBox1.ImageLocation = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + (currentImage) + ".png";
-                    pictureBox1.Image = Image.FromFile(pictureBox1.ImageLocation = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + (currentImage) + ".png");
+                    pictureBox1.ImageLocation = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png";
+                    pictureBox1.Image = Image.FromFile(pictureBox1.ImageLocation = datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png");
                     currentImage++;
                 }
 
@@ -7398,7 +7654,7 @@ namespace ReBloxLauncher
                             {
                                 if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                 {
-                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                     {
                                         if (IsAdministrator())
                                         {
@@ -7408,6 +7664,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                             button28.Invoke(new Action(() => { button28.Visible = true; }));
                                             if (UseJoinJSONLink) SetupJoinScript(listView1.SelectedItems[0].SubItems[5].Text, int.Parse(listView1.SelectedItems[0].SubItems[4].Text));
@@ -7490,6 +7747,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                     launchingClient = false;
@@ -7526,6 +7784,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     Process roblox = Process.Start(ps);
                                                     roblox.EnableRaisingEvents = true;
@@ -7543,6 +7802,7 @@ namespace ReBloxLauncher
                                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                 loadConfigFromClient(Properties.Settings.Default.lastselectedversion);
                                                 await Task.Delay(3000);
@@ -7582,6 +7842,7 @@ namespace ReBloxLauncher
                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                    button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                     button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                     button28.Invoke(new Action(() => { button28.Visible = true; }));
                                     if (UseJoinJSONLink) SetupJoinScript(listView1.SelectedItems[0].SubItems[5].Text, int.Parse(listView1.SelectedItems[0].SubItems[4].Text));
@@ -7665,6 +7926,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             Process test = Process.Start(ps1);
                                             statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
@@ -7700,6 +7962,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             Process roblox = Process.Start(ps);
                                             roblox.EnableRaisingEvents = true;
@@ -7717,6 +7980,7 @@ namespace ReBloxLauncher
                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                         loadConfigFromClient(Properties.Settings.Default.lastselectedversion);
                                         await Task.Delay(3000);
@@ -7729,7 +7993,7 @@ namespace ReBloxLauncher
                             {
                                 if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                                 {
-                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                                    if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                                     {
                                         if (IsAdministrator())
                                         {
@@ -7739,6 +8003,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                             button28.Invoke(new Action(() => { button28.Visible = true; }));
                                             if (UseJoinJSONLink) SetupJoinScript(listView1.SelectedItems[0].SubItems[5].Text, int.Parse(listView1.SelectedItems[0].SubItems[4].Text));
@@ -7822,6 +8087,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
                                                     test.OutputDataReceived += new DataReceivedEventHandler(async (object sender1, DataReceivedEventArgs e1) =>
@@ -7856,6 +8122,7 @@ namespace ReBloxLauncher
                                                     button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                     button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                    button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                     Process roblox = Process.Start(ps);
                                                     roblox.EnableRaisingEvents = true;
@@ -7874,6 +8141,7 @@ namespace ReBloxLauncher
                                                 button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                                 button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                                 button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                                button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                                 await Task.Delay(3000);
                                                 statusText.Invoke(new Action(() => { statusText.Visible = false; }));
@@ -7935,6 +8203,7 @@ namespace ReBloxLauncher
                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
+                                    button8.Invoke(new Action(() => { button8.Enabled = false; }));
                                     button27.Invoke(new Action(() => { button27.Enabled = false; }));
                                     button28.Invoke(new Action(() => { button28.Visible = true; }));
                                     if (UseJoinJSONLink) SetupJoinScript(listView1.SelectedItems[0].SubItems[5].Text, int.Parse(listView1.SelectedItems[0].SubItems[4].Text));
@@ -8018,6 +8287,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             Process test = Process.Start(ps1);
                                             statusText.Invoke(new Action(() => { statusText.Text = "Waiting for node server to start..."; }));
@@ -8053,6 +8323,7 @@ namespace ReBloxLauncher
                                             button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                             button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                             button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                             loadConfigFromClient(Properties.Settings.Default.lastselectedversion);
                                             Process roblox = Process.Start(ps);
@@ -8070,6 +8341,7 @@ namespace ReBloxLauncher
                                         button1.Invoke(new Action(() => { button1.Enabled = true; }));
                                         button2.Invoke(new Action(() => { button2.Enabled = true; }));
                                         button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                                        button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                         button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                         loadConfigFromClient(Properties.Settings.Default.lastselectedversion);
                                         await Task.Delay(3000);
@@ -8089,6 +8361,12 @@ namespace ReBloxLauncher
                             MessageBox.Show("Something went wrong while trying to launch Studio/Player, please look in the error message for details: " + e1.Message, aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             Console.WriteLine("<ERROR> Something went wrong when attempting to launch Studio/Player! Please look in the error below and report it to the developer if it's launcher-sided!\n" + e1.Message + "\nStack Trace:\n" + e1.StackTrace);
                             loadConfigFromClient(Properties.Settings.Default.lastselectedversion);
+                            button1.Invoke(new Action(() => { button1.Enabled = true; }));
+                            button2.Invoke(new Action(() => { button2.Enabled = true; }));
+                            button3.Invoke(new Action(() => { button3.Enabled = true; }));
+                            button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
+                            button27.Invoke(new Action(() => { button27.Enabled = true; }));
+                            launchingClient = false;
                             await Task.Delay(3000);
                             statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                             statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -8400,6 +8678,8 @@ namespace ReBloxLauncher
                     e.Graphics.DrawImage(image, new Rectangle(0, 0, panel7.Width, panel7.Height));
 
                     image.Dispose();
+
+                    e.Dispose();
                 }
             }
         }
@@ -8550,6 +8830,7 @@ namespace ReBloxLauncher
             label21.Visible = true;
             label22.Visible = true;
             label23.Visible = true;
+            button29.Visible = true;
             pictureBox3.Visible = false;
             button27.Visible = false;
             button27.Enabled = false;
@@ -8592,6 +8873,7 @@ namespace ReBloxLauncher
                         label21.Visible = false;
                         label22.Visible = false;
                         label23.Visible = false;
+                        button29.Visible = false;
                         pictureBox3.Visible = true;
                         button27.Visible = true;
                         label44.Visible = true;
@@ -8648,6 +8930,7 @@ namespace ReBloxLauncher
                     label21.Visible = false;
                     label22.Visible = false;
                     label23.Visible = false;
+                    button29.Visible = false;
                     label44.Visible = true;
                     pictureBox3.Visible = true;
                     button27.Visible = true;
@@ -8686,6 +8969,7 @@ namespace ReBloxLauncher
                 label21.Visible = false;
                 label22.Visible = false;
                 label23.Visible = false;
+                button29.Visible = false;
                 pictureBox3.Visible = true;
                 button27.Visible = true;
                 label44.Visible = true;
@@ -8704,7 +8988,7 @@ namespace ReBloxLauncher
                 {
                     if (smartHostDetector() == false && (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true))
                     {
-                        if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                        if (MessageBox.Show("Wanna edit the hosts file to make sure that assets loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                         {
                             if (IsAdministrator())
                             {
@@ -8765,16 +9049,39 @@ namespace ReBloxLauncher
                                             if (e1.Data != null)
                                             {
                                                 if (logNodeServer) Console.WriteLine(e1.Data);
+
                                                 if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                 {
                                                     setupAvatarOnServer();
                                                     statusText.Invoke(new Action(() => { statusText.Text = "Starting RCCService to render... (If it doesn't close after few minutes, then close it manually)."; }));
                                                     Process roblox = Process.Start(ps);
-                                                    roblox.OutputDataReceived += Roblox_OutputDataReceived;
+                                                    //roblox.OutputDataReceived += Roblox_OutputDataReceived;
                                                     roblox.EnableRaisingEvents = true;
                                                     roblox.Exited += Roblox_Exited;
                                                     test.CancelOutputRead();
-                                                    roblox.BeginOutputReadLine();
+                                                    Thread outputThread = new Thread(() =>
+                                                    {
+                                                        string data;
+                                                        while (roblox.StandardOutput.Peek() > -1)
+                                                        {
+                                                            data = roblox.StandardOutput.ReadLine();
+                                                            RCCServiceString += data;
+
+                                                            thumbnailgeneratorchecker += successDetector.Matches(data).Count;
+
+                                                            if (thumbnailgeneratorchecker == 2)
+                                                            {
+                                                                thumbnailgeneratorchecker = 0;
+                                                                Thread.Sleep(3000);
+                                                                roblox.Kill();
+                                                            }
+                                                        }
+                                                        Console.WriteLine("Done!");
+                                                    });
+                                                    test.CancelOutputRead();
+                                                    outputThread.IsBackground = true;
+                                                    outputThread.TrySetApartmentState(ApartmentState.STA);
+                                                    outputThread.Start();
                                                 }
                                             }
                                         });
@@ -8784,10 +9091,31 @@ namespace ReBloxLauncher
                                     {
                                         statusText.Invoke(new Action(() => { statusText.Text = "Starting RCCService to render... (If it doesn't close after few minutes, then close it manually)."; }));
                                         Process roblox = Process.Start(ps);
-                                        roblox.OutputDataReceived += Roblox_OutputDataReceived;
+                                        //roblox.OutputDataReceived += Roblox_OutputDataReceived;
                                         roblox.EnableRaisingEvents = true;
                                         roblox.Exited += Roblox_Exited1;
-                                        roblox.BeginOutputReadLine();
+                                        Thread outputThread = new Thread(() =>
+                                        {
+                                            string data;
+                                            while (roblox.StandardOutput.Peek() > -1)
+                                            {
+                                                data = roblox.StandardOutput.ReadLine();
+                                                RCCServiceString += data;
+
+                                                thumbnailgeneratorchecker += successDetector.Matches(data).Count;
+
+                                                if (thumbnailgeneratorchecker == 2)
+                                                {
+                                                    thumbnailgeneratorchecker = 0;
+                                                    Thread.Sleep(3000);
+                                                    roblox.Kill();
+                                                }
+                                            }
+                                            Console.WriteLine("Done!");
+                                        });
+                                        outputThread.IsBackground = true;
+                                        outputThread.TrySetApartmentState(ApartmentState.STA);
+                                        outputThread.Start();
                                     }
                                 }
                                 else
@@ -8897,25 +9225,67 @@ namespace ReBloxLauncher
                                             setupAvatarOnServer();
                                             statusText.Invoke(new Action(() => { statusText.Text = "Starting RCCService to render... (If it doesn't close after few minutes, then close it manually)."; }));
                                             Process roblox = Process.Start(ps);
-                                            roblox.OutputDataReceived += Roblox_OutputDataReceived;
+                                            //roblox.OutputDataReceived += Roblox_OutputDataReceived;
                                             roblox.EnableRaisingEvents = true;
                                             roblox.Exited += Roblox_Exited1;
+                                            Thread outputThread = new Thread(() =>
+                                            {
+                                                string data;
+                                                while (roblox.StandardOutput.Peek() > -1)
+                                                {
+                                                    data = roblox.StandardOutput.ReadLine();
+                                                    RCCServiceString += data;
 
+                                                    thumbnailgeneratorchecker += successDetector.Matches(data).Count;
+
+                                                    if (thumbnailgeneratorchecker == 2)
+                                                    {
+                                                        thumbnailgeneratorchecker = 0;
+                                                        Thread.Sleep(3000);
+                                                        roblox.Kill();
+                                                    }
+                                                }
+                                                Console.WriteLine("Done!");
+                                            });
                                             test.CancelOutputRead();
-                                            roblox.BeginOutputReadLine();
+                                            outputThread.IsBackground = true;
+                                            outputThread.TrySetApartmentState(ApartmentState.STA);
+                                            outputThread.Start();
                                         }
                                     }
                                 });
                                 test.BeginOutputReadLine();
+
                             }
                             else
                             {
                                 statusText.Invoke(new Action(() => { statusText.Text = "Starting RCCService to render... (If it doesn't close after few minutes, then close it manually)."; }));
                                 Process roblox = Process.Start(ps);
                                 roblox.EnableRaisingEvents = true;
-                                roblox.OutputDataReceived += Roblox_OutputDataReceived;
+                                //roblox.OutputDataReceived += Roblox_OutputDataReceived;
                                 roblox.Exited += Roblox_Exited1;
-                                roblox.BeginOutputReadLine();
+                                Thread outputThread = new Thread(() =>
+                                {
+                                    string data;
+                                    while (roblox.StandardOutput.Peek() > -1)
+                                    {
+                                        data = roblox.StandardOutput.ReadLine();
+                                        RCCServiceString += data;
+
+                                        thumbnailgeneratorchecker += successDetector.Matches(data).Count;
+
+                                        if (thumbnailgeneratorchecker == 2)
+                                        {
+                                            thumbnailgeneratorchecker = 0;
+                                            Thread.Sleep(3000);
+                                            roblox.Kill();
+                                        }
+                                    }
+                                    Console.WriteLine("Done!");
+                                });
+                                outputThread.IsBackground = true;
+                                outputThread.TrySetApartmentState(ApartmentState.STA);
+                                outputThread.Start();
                             }
                         }
                         else
@@ -9130,6 +9500,141 @@ namespace ReBloxLauncher
             cancelAsset = false;
             statusText.Visible = false;
             statusText.Text = "";
+        }
+
+        private void ServerCheck_Tick(object sender, EventArgs e)
+        {
+            if (ServerCheck.Interval == 15000)
+            {
+                ServerCheck.Interval = 5000;
+            }
+            if (savedPort.Count == 1)
+            {
+                if (ServerUtils.checkPortUdp(savedPort[0]) == false)
+                {
+                    Console.WriteLine("<INFO> Assuming nothing is using the port... Killing the list server.");
+                    savedPort.Clear();
+                    ServerUtils.StopListServer();
+                    ServerCheck.Stop();
+                    ServerCheck.Enabled = false;
+                }
+            }
+            else if (savedPort.Count > 1)
+            {
+                for (int i = 0; i < savedPort.Count; i++)
+                {
+                    if (i == savedPort.Count) break;
+                    if (ServerUtils.checkPortUdp(savedPort[i]) == false)
+                    {
+                        savedPort.RemoveAt(i);
+                        i--;
+                    }
+                    if (savedPort.Count == 0)
+                    {
+                        Console.WriteLine("<INFO> Assuming nothing is using the port... Killing the list server.");
+                        ServerUtils.StopListServer();
+                        ServerCheck.Stop();
+                        ServerCheck.Enabled = false;
+                    }
+                }
+            }
+        }
+
+        private void textBox2_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void button29_Click(object sender, EventArgs e)
+        {
+            if (new CharacterName(this).ShowDialog() == DialogResult.OK)
+            {
+                savingCharacter = true;
+                SaveAvatarType jsondata;
+                if (Properties.Settings.Default.ClothesArray.Length > 0)
+                {
+                    List<AssetData> data = new List<AssetData>();
+                    foreach (var assetid in Properties.Settings.Default.ClothesArray.Split('|'))
+                    {
+                        data.Add(new AssetData { id = ulong.Parse(assetid) });
+                    }
+                    jsondata = new SaveAvatarType
+                    {
+                        name = characterName.Trim() != "" ? characterName : "Untitled Character " + Properties.Settings.Default.CharactersList.Count + 1,
+                        bodyType = Properties.Settings.Default.avatarR15 ? "R15" : "R6",
+                        asset = data,
+                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor }
+                    };
+                }
+                else
+                {
+                    jsondata = new SaveAvatarType
+                    {
+                        name = characterName.Trim() != "" ? characterName : "Untitled Character " + Properties.Settings.Default.CharactersList.Count + 1,
+                        bodyType = Properties.Settings.Default.avatarR15 ? "R15" : "R6",
+                        asset = { },
+                        colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor }
+                    };
+                }
+                comboBox4.Items.Add(characterName.Trim() != "" ? characterName : "Untitled Character " + Properties.Settings.Default.CharactersList.Count + 1);
+                comboBox4.SelectedIndex = comboBox4.Items.Count - 1;
+                if (Properties.Settings.Default.CharactersList == null || Properties.Settings.Default.CharactersList.Count == 0) comboBox4.Visible = true;
+                
+                if (Properties.Settings.Default.CharactersList == null)
+                {
+                    System.Collections.Specialized.StringCollection firstCharacter = new System.Collections.Specialized.StringCollection();
+                    firstCharacter.Add(JsonConvert.SerializeObject(jsondata));
+                    Properties.Settings.Default.CharactersList = firstCharacter;
+                }
+                else Properties.Settings.Default.CharactersList.Add(JsonConvert.SerializeObject(jsondata));
+                characterName = "";
+                Properties.Settings.Default.Save();
+                savingCharacter = false;
+            }
+        }
+
+        private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (savingCharacter == false && comboBox4.SelectedIndex >= 0) 
+            {
+                listBox4.Items.Clear();
+                SaveAvatarType avatar = JsonConvert.DeserializeObject<SaveAvatarType>(Properties.Settings.Default.CharactersList[comboBox4.SelectedIndex]);
+                Properties.Settings.Default.ClothesArray = "";
+                if (avatar.asset != null && avatar.asset.Count > 0)
+                {
+                    for (int i = 0; i < avatar.asset.Count; i++)
+                    {
+                        Properties.Settings.Default.ClothesArray += i == avatar.asset.Count - 1 ? avatar.asset[i].id.ToString() : avatar.asset[i].id + "|";
+                        listBox4.Items.Add(avatar.asset[i].id);
+                    }
+                }
+                comboBox1.SelectedItem = avatar.bodyType;
+                Properties.Settings.Default.avatarR15 = avatar.bodyType == "R15";
+                Properties.Settings.Default.TorsoColor = avatar.colors.torsoColor;
+                numericUpDown6.Value = avatar.colors.torsoColor;
+                Properties.Settings.Default.HeadColor = avatar.colors.headColor;
+                numericUpDown1.Value = avatar.colors.headColor;
+                Properties.Settings.Default.LeftArmColor = avatar.colors.leftArmColor;
+                numericUpDown2.Value = avatar.colors.leftArmColor;
+                Properties.Settings.Default.RightArmColor = avatar.colors.rightArmColor;
+                numericUpDown4.Value = avatar.colors.rightArmColor;
+                Properties.Settings.Default.LeftLegColor = avatar.colors.leftLegColor;
+                numericUpDown3.Value = avatar.colors.leftLegColor;
+                Properties.Settings.Default.RightLegColor = avatar.colors.rightLegColor;
+                numericUpDown5.Value = avatar.colors.rightLegColor;
+
+                TorsoPanel.BackColor = convertBrickColortoColor(avatar.colors.torsoColor);
+                HeadPanel.BackColor = convertBrickColortoColor(avatar.colors.headColor);
+                LeftArmPanel.BackColor = convertBrickColortoColor(avatar.colors.leftArmColor);
+                RightArmPanel.BackColor = convertBrickColortoColor(avatar.colors.rightArmColor);
+                LeftLegPanel.BackColor = convertBrickColortoColor(avatar.colors.leftLegColor);
+                RightLegPanel.BackColor = convertBrickColortoColor(avatar.colors.rightLegColor);
+
+                Properties.Settings.Default.Save();
+            }
         }
     }
 }

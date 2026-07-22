@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="version" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">0.0.1325</Value>
+      <Value Profile="(Default)">0.0.1328</Value>
     </Setting>
     <Setting Name="lastselectedversion" Type="System.String" Scope="User">
       <Value Profile="(Default)">2017L</Value>
@@ -127,6 +127,9 @@
     </Setting>
     <Setting Name="RenderAvatarExperiment" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="CharactersList" Type="System.Collections.Specialized.StringCollection" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>
