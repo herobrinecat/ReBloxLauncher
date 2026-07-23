@@ -8823,6 +8823,7 @@ namespace ReBloxLauncher
             numericUpDown5.Visible = true;
             numericUpDown6.Visible = true;
             comboBox1.Visible = true;
+            comboBox4.Visible = Properties.Settings.Default.CharactersList != null && Properties.Settings.Default.CharactersList.Count > 0;
             label17.Visible = true;
             label18.Visible = true;
             label19.Visible = true;
@@ -8866,6 +8867,7 @@ namespace ReBloxLauncher
                         numericUpDown5.Visible = false;
                         numericUpDown6.Visible = false;
                         comboBox1.Visible = false;
+                        comboBox4.Visible = false;
                         label17.Visible = false;
                         label18.Visible = false;
                         label19.Visible = false;
@@ -8923,6 +8925,7 @@ namespace ReBloxLauncher
                     numericUpDown5.Visible = false;
                     numericUpDown6.Visible = false;
                     comboBox1.Visible = false;
+                    comboBox4.Visible = false;
                     label17.Visible = false;
                     label18.Visible = false;
                     label19.Visible = false;
@@ -8962,6 +8965,7 @@ namespace ReBloxLauncher
                 numericUpDown5.Visible = false;
                 numericUpDown6.Visible = false;
                 comboBox1.Visible = false;
+                comboBox4.Visible = false;
                 label17.Visible = false;
                 label18.Visible = false;
                 label19.Visible = false;
