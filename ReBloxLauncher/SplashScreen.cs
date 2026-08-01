@@ -16,7 +16,7 @@ namespace ReBloxLauncher
 
         string datafolder = Path.GetDirectoryName(Application.ExecutablePath) + @"\data";
         readonly object syncLock = new object();
-        Random random = new Random();
+        readonly Random random = new Random();
         public SplashScreen(string dfolder = null)
         {
             InitializeComponent();
@@ -78,7 +78,6 @@ namespace ReBloxLauncher
                             this.BackgroundImage = Properties.Resources.splashscreen;
                         }
                     }
-                    randomchoose = 0;
                 }
                 else
                 {
@@ -100,7 +99,6 @@ namespace ReBloxLauncher
                         this.BackgroundImage = Properties.Resources.splashscreen;
                     }
                 }
-                directories = null;
             }
             else
             {

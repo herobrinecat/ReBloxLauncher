@@ -536,5 +536,14 @@ namespace ReBloxLauncher.Properties {
                 this["CharactersList"] = value;
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool isBeta {
+            get {
+                return ((bool)(this["isBeta"]));
+            }
+        }
     }
 }

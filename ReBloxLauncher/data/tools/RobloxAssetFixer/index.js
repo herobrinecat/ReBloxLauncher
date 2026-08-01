@@ -13,7 +13,6 @@ const crypto = require("crypto")
 const readline = require("readline")
 const path = require("path")
 const jwt = require("jsonwebtoken");
-const e = require("express");
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 //Create express server
@@ -534,11 +533,133 @@ function getROBLOSECURITYfromLauncher(times) {
         }
     }
 }
+
+async function generateJoinScript(isTeleport) {
+    if (filesystem.existsSync("./joinscript.txt")) {
+        var oldjoinscript = filesystem.readFileSync("./joinscript.txt")
+        try {
+            var joinjson = JSON.parse(oldjoinscript);
+            const { Socket } = require("net")
+
+            const client = new Socket()
+
+            var options = {
+                host: "127.0.0.1",
+                port: 50355
+            }
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
+            }
+            client.connect(options, () => {
+                if (verbose == true) {
+                    if (debuglevel == 2) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
+                    }
+                    else {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+                    }
+                }
+                var dataresult = ""
+                var data = []
+                client.on("data", (chunk) => {
+                    data.push(chunk)
+                })
+
+                client.on("end", () => {
+                    dataresult = Buffer.concat(data).toString("utf-8")
+                    if (dataresult == "200") {
+                        if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully generated the joinscript for the client!");
+                    }
+                    else if (dataresult == "invalid") {
+                        console.log("\x1b[33m%s\x1b[0m", "<WARN> RobloxAssetFixer is unable to send a request to generate a new joinscript, your client may not be able to join an auth-required server.")
+                    }
+                    else {
+                        if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Unknown response from the server.")
+                    }
+                    return true;
+                })
+            })
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to the launcher to generate the new joinscript...")
+            }
+
+            client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("JSG\n" + joinjson["MachineAddress"] + "\n" + joinjson["ServerPort"] + "\n" + joinjson["UserId"] + "\n" + joinjson["UserName"] + "\n" + joinjson["PlaceId"] + "\n" + joinjson["MembershipType"] + "\n" + isTeleport, "utf8")]))
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
+            }
+            client.end()
+        }
+        catch (err) {
+            console.log("\x1b[33m%s\x1b[0m", "<WARN> Something went wrong while trying to generate a new joinscript, your client may not be able to join an auth-required server.")
+            if (verbose) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Exception will be shown here:\n" + err)
+            }
+            return false;
+        }
+    }
+    else {
+        try {
+            const { Socket } = require("net")
+
+            const client = new Socket()
+
+            var options = {
+                host: "127.0.0.1",
+                port: 50355
+            }
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
+            }
+            client.connect(options, () => {
+                if (verbose == true) {
+                    if (debuglevel == 2) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
+                    }
+                    else {
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+                    }
+                }
+                var dataresult = ""
+                var data = []
+                client.on("data", (chunk) => {
+                    data.push(chunk)
+                })
+
+                client.on("end", () => {
+                    dataresult = Buffer.concat(data).toString("utf-8")
+                    if (dataresult == "200") {
+                        if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully generated the joinscript for the client!");
+                    }
+                    else if (dataresult == "invalid") {
+                        console.log("\x1b[34m%s\x1b[0m", "<WARN> RobloxAssetFixer is unable to send a request to generate a new joinscript, your client may not be able to join a auth-required server.")
+                    }
+                    else {
+                        if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Unknown response from the server.")
+                    }
+                    return true;
+                })
+            })
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to the launcher to generate the new joinscript...")
+            }
+
+            client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("JSG\n" + (joining ? ip : "127.0.0.1") + "\n" + 53640 + "\n" + userId + "\n" + username + "\n" + 1818, "utf8")]))
+            if (debuglevel == 2 && verbose == true) {
+                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
+            }
+            client.end()
+        }
+        catch {
+            console.log("\x1b[34m%s\x1b[0m", "<WARN> RobloxAssetFixer is unable to send a request to generate a new joinscript, your client may not be able to join a auth-required server.")
+            return false;
+        }
+    }
+}
+
 function getTimestamp() {
     var date = new Date(Date.now())
 
     return date.getUTCFullYear().toString().padEnd(4, "0") + (date.getUTCMonth() + 1).toString().padStart(2, "0") + date.getUTCDate().toString().padStart(2, 0) + date.getUTCHours().toString().padStart(2, "0") + date.getUTCMinutes().toString().padStart(2, "0") + date.getUTCSeconds().toString().padStart(2, "0")
-
 }
 
 if (verbose) { app.use((req, res, next) => { console.log("\x1b[32m%s\x1b[0m", "<INFO> " + req.ip + " requested: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")"); next(); }) }
@@ -1141,7 +1262,17 @@ app.get("/asset", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -1166,7 +1297,17 @@ app.get("/asset", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -1178,7 +1319,17 @@ app.get("/asset", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -1277,7 +1428,17 @@ app.get("/asset", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -1302,7 +1463,17 @@ app.get("/asset", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -1314,7 +1485,17 @@ app.get("/asset", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -1405,7 +1586,17 @@ app.get("/asset", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -1429,7 +1620,17 @@ app.get("/asset", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -1441,7 +1642,17 @@ app.get("/asset", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -1542,7 +1753,17 @@ app.get("/asset/", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -1567,7 +1788,17 @@ app.get("/asset/", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -1579,7 +1810,17 @@ app.get("/asset/", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -1671,7 +1912,17 @@ app.get("/asset/", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -1696,7 +1947,17 @@ app.get("/asset/", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -1708,7 +1969,17 @@ app.get("/asset/", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -1799,7 +2070,17 @@ app.get("/asset/", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -1823,7 +2104,17 @@ app.get("/asset/", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -1835,7 +2126,17 @@ app.get("/asset/", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -1937,7 +2238,17 @@ app.get("//asset/", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -1962,7 +2273,17 @@ app.get("//asset/", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -1974,7 +2295,17 @@ app.get("//asset/", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -2065,7 +2396,17 @@ app.get("//asset/", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -2089,7 +2430,17 @@ app.get("//asset/", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -2101,7 +2452,17 @@ app.get("//asset/", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -2203,7 +2564,17 @@ app.get("/v1/asset", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -2228,7 +2599,17 @@ app.get("/v1/asset", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -2240,7 +2621,17 @@ app.get("/v1/asset", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -2331,7 +2722,17 @@ app.get("/v1/asset", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -2355,7 +2756,17 @@ app.get("/v1/asset", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -2367,7 +2778,17 @@ app.get("/v1/asset", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -2469,7 +2890,17 @@ app.get("/v1/asset/", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -2494,7 +2925,17 @@ app.get("/v1/asset/", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -2506,7 +2947,17 @@ app.get("/v1/asset/", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -2604,7 +3055,17 @@ app.get("/v1/asset/", (req, res) => {
                     res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
-                    res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                        }
+                        else {
+                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                        }
+                    }
+                    else {
+                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
+                    }
                 }
                 assetfound1 = true
                 return
@@ -2628,7 +3089,17 @@ app.get("/v1/asset/", (req, res) => {
                                 res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                    }
+                                    else {
+                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                    }
+                                }
+                                else {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
                             }
                             assetfound = true
                             return
@@ -2640,7 +3111,17 @@ app.get("/v1/asset/", (req, res) => {
                             res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
-                            res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                                }
+                                else {
+                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                }
+                            }
+                            else {
+                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
+                            }
                         }
                         assetfound = true
                         return
@@ -3885,6 +4366,7 @@ app.post("/AbuseReport/InGameChatHandler.ashx", (_, res) => {
 
 app.post("/game/join.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "text/plain; charset=utf-8")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2017 or earlier (or Player) detected, using join.ashx")
     if (filesystem.existsSync("./game/join.ashx")) {
         if (filesystem.existsSync(privateKey)) {
@@ -3895,11 +4377,24 @@ app.post("/game/join.ashx", (req, res) => {
         }
     }
     else {
-        if (filesystem.existsSync(privateKey)) {
-            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), filesystem.readFileSync("joinscript.txt")]), filesystem.readFileSync(privateKey, "utf8")).toString("base64") + "%\r\n" + filesystem.readFileSync("joinscript.txt", "utf8"))
+        if (req.query.isTeleport == "true") {
+            generateJoinScript(req.query.isTeleport != undefined ? req.query.isTeleport : "false").then(async (result) => {
+                await delay(300)
+                if (filesystem.existsSync(privateKey)) {
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), filesystem.readFileSync("joinscript.txt")]), filesystem.readFileSync(privateKey, "utf8")).toString("base64") + "%\r\n" + filesystem.readFileSync("joinscript.txt", "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("joinscript.txt"))
+                }
+            })
         }
         else {
-            res.status(200).send(filesystem.readFileSync("joinscript.txt"))
+            if (filesystem.existsSync(privateKey)) {
+                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), filesystem.readFileSync("joinscript.txt")]), filesystem.readFileSync(privateKey, "utf8")).toString("base64") + "%\r\n" + filesystem.readFileSync("joinscript.txt", "utf8"))
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync("joinscript.txt"))
+            }
         }
     }
 })
@@ -3907,17 +4402,30 @@ app.post("/game/join.ashx", (req, res) => {
 app.post("/game/placelauncher.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> 2018 or later (Player) detected, using placelauncher.ashx")
-    res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
+    res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx?isTeleport=" + (req.query.isTeleport != undefined ? req.query.isTeleport : "false") + "\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
+})
+
+app.post("//game/placelauncher.ashx", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> 2018 or later (Player) detected, using placelauncher.ashx")
+    res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx?isTeleport=" + (req.query.isTeleport != undefined ? req.query.isTeleport : "false") + "\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
 })
 
 app.get("/game/placelauncher.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> 2016 or later (Player) detected, using placelauncher.ashx")
-    res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
+    res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx?isTeleport=" + (req.query.isTeleport != undefined ? req.query.isTeleport : "false") + "\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
+})
+
+app.get("//game/placelauncher.ashx", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> 2016 or later (Player) detected, using placelauncher.ashx")
+    res.status(200).send("{\"jobId\": \"Test\", \"status\":2, \"joinScriptUrl\":\"http://reblox.zip/game/join.ashx?isTeleport=" + (req.query.isTeleport != undefined ? req.query.isTeleport : "false") + "\",\"authenticationUrl\":\"http://reblox.zip/Login/Negotiate.ashx\", \"authenticationTicket\": \"SomeTicketThatDoesntCrash\", \"message\": \"\"}")
 })
 
 app.get("/game/join.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "text/plain; charset=utf-8")
     if (verbose) console.log("\x1b[32m%s\x1b[0m", "<INFO> Mid-2017 or earlier (or Player) detected, using join.ashx")
     if (filesystem.existsSync("./game/join.ashx")) {
         if (filesystem.existsSync(privateKey)) {
@@ -3928,11 +4436,24 @@ app.get("/game/join.ashx", (req, res) => {
         }
     }
     else {
-        if (filesystem.existsSync(privateKey)) {
-            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), filesystem.readFileSync("joinscript.txt")]), filesystem.readFileSync(privateKey, "utf8")).toString("base64") + "%\r\n" + filesystem.readFileSync("joinscript.txt", "utf8"))
+        if (req.query.isTeleport == "true") {
+            generateJoinScript(req.query.isTeleport != undefined ? req.query.isTeleport : "false").then(async (result) => {
+                if (filesystem.existsSync(privateKey)) {
+                    await delay(300)
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), filesystem.readFileSync("joinscript.txt")]), filesystem.readFileSync(privateKey, "utf8")).toString("base64") + "%\r\n" + filesystem.readFileSync("joinscript.txt", "utf8"))
+                }
+                else {
+                    res.status(200).send(filesystem.readFileSync("joinscript.txt"))
+                }
+            })
         }
         else {
-            res.status(200).send(filesystem.readFileSync("joinscript.txt"))
+            if (filesystem.existsSync(privateKey)) {
+                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.concat([Buffer.from([0x0D, 0x0A]), filesystem.readFileSync("joinscript.txt")]), filesystem.readFileSync(privateKey, "utf8")).toString("base64") + "%\r\n" + filesystem.readFileSync("joinscript.txt", "utf8"))
+            }
+            else {
+                res.status(200).send(filesystem.readFileSync("joinscript.txt"))
+            }
         }
     }
 
@@ -6861,7 +7382,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
                         return
                     }
                     else {
-                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.UTC()).toISOString() + "\">\r\n")
+                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date().toISOString() + "\">\r\n")
                     }
 
                 }
@@ -6871,7 +7392,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
             }
             else {
                 filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
-                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date(Date.UTC()).toISOString() + "\">\r\n")
+                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.UserID + " badgeId=" + req.query.BadgeID + " awardDate=\"" + new Date().toISOString() + "\">\r\n")
             }
         }
         if (isNumeric(req.query.BadgeID)) {
@@ -6997,7 +7518,7 @@ app.post("/assets/award-badge", async (req, res) => {
                         return
                     }
                     else {
-                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId + " awardDate=\"" + new Date(Date.now()).toISOString() + "\">\r\n")
+                        filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId + " awardDate=\"" + new Date().toISOString() + "\">\r\n")
                     }
 
                 }
@@ -7007,7 +7528,7 @@ app.post("/assets/award-badge", async (req, res) => {
             }
             else {
                 filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
-                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId + " awardDate=\"" + new Date(Date.now()).toISOString() + "\">\r\n")
+                filesystem.appendFileSync(RBDFpath, "<Badge userId=" + req.query.userId + " badgeId=" + req.query.badgeId + " awardDate=\"" + new Date().toISOString() + "\">\r\n")
             }
         }
         if (isNumeric(req.query.badgeId)) {
@@ -7906,7 +8427,7 @@ app.post("/marketplace/purchase", async (req, res) => {
                 result += chunk
             })
             res1.on("end", () => {
-                if (result == "{\"success\": true, \"status\": \"Purchased\"}") {
+                if (result.startsWith("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"")) {
                     robux = robux - req.body["purchasePrice"]
                 }
                 res.status(200).send(result)
@@ -7945,8 +8466,7 @@ app.post("/marketplace/purchase", async (req, res) => {
                 rl.close()
                 if (verified == true) {
                     if (replacementtext != "") {
-                        res.status(500).send("{\"status\": \"error\",\"error\": \"Unable to purchase\"}")
-                        if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
+                        res.status(500).send("{\"success\": false, \"status\": \"AlreadyOwned\"}")
                         return
                     }
                     else {
@@ -7962,11 +8482,11 @@ app.post("/marketplace/purchase", async (req, res) => {
                 filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
                 filesystem.appendFileSync(RBDFpath, "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">\r\n")
             }
-            res.status(200).send("{\"success\": true, \"status\": \"Purchased\"}")
+            res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
             if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
         }
         else {
-            res.status(200).send("{\"success\": true, \"status\": \"Purchased\"}")
+            res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
             if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
         }
     }

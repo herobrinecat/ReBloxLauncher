@@ -11,15 +11,26 @@ using System.Globalization;
 using System.Windows.Forms;
 using System.IO;
 using System.IO.Compression;
+using System.Security.Cryptography;
 namespace ReBloxLauncher
 {
     public class ServerUtils
     {
+        static string datafolder = Path.GetDirectoryName(Application.ExecutablePath) + @"\data";
         static readonly UdpClient serverUdpClient = new UdpClient(50358);
         static readonly UdpClient clientUdpClient = new UdpClient();
         static TcpListener tcpListener;
         static bool serverOn = false;
         static bool serverComOn = false;
+        static readonly object syncLock = new object();
+
+        private static string GenerateUUID()
+        {
+            lock (syncLock)
+            {
+                return Guid.NewGuid().ToString();
+            }
+        }
 
         public static UdpClient GetClient(int clientType)
         {
@@ -70,6 +81,56 @@ namespace ReBloxLauncher
             }
         }
 
+        public static void SetDataFolder(string datafolderNew)
+        {
+            if (Directory.Exists(datafolderNew))
+            {
+                datafolder = datafolderNew;
+            }
+        }
+
+        public static void SetupJoinScriptEx(string ipaddr, int port, long userId, string username, ulong placeid, string membership, bool isTeleport = false)
+        {
+            if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer"))
+            {
+                Console.WriteLine("<INFO> Generating joinscript...");
+                string waitingForCharacterGuid = GenerateUUID().ToLower();
+                string sessionId = GenerateUUID().ToLower();
+                if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt");
+                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+                {
+                    if (File.Exists(datafolder + @"\private.txt"))
+                    {
+                        string currentUTCDate = DateTime.UtcNow.ToString("G");
+                        RSA.ImportCspBlob(Convert.FromBase64String(File.ReadAllText(datafolder + @"\private.txt")));
+
+                        string signature1Raw = userId + "\n" + (username != string.Empty ? username : Properties.Settings.Default.username) + "\n" + "http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + userId + "&placeId=" + placeid + "\nTest\n" + currentUTCDate;
+                        string signature2Raw = userId + "\nTest\n" + currentUTCDate;
+
+                        byte[] signedSignature1 = RSA.SignData(Encoding.UTF8.GetBytes(signature1Raw), SHA1.Create());
+                        byte[] signedSignature2 = RSA.SignData(Encoding.UTF8.GetBytes(signature2Raw), SHA1.Create());
+
+                        using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
+                        {
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + (ipaddr == string.Empty ? "127.0.0.1" : ipaddr) + @""",""ServerPort"":" + (port > 0 ? port : 53640) + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (username != string.Empty ? username : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + userId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + userId + @"&placeId=" + placeid + @""",""ClientTicket"":""" + currentUTCDate + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + placeid + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (membership != "" ? membership : Properties.Settings.Default.Membership.Replace(" ", "")) + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":" + isTeleport.ToString().ToLower() + @",""IsUnknownOrUnder13"":" +  Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                        }
+                    }
+                    else
+                    {
+                        using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
+                        {
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + (ipaddr == string.Empty ? "127.0.0.1" : ipaddr) + @""",""ServerPort"":" + (port > 0 ? port : 53640) + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (username != string.Empty ? username : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + userId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + userId + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + placeid + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (membership != "" ? membership : Properties.Settings.Default.Membership.Replace(" ", "")) + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":" + isTeleport.ToString().ToLower() + @",""IsUnknownOrUnder13"":" + Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                        }
+                    }
+                }
+
+            }
+            else
+            {
+                throw new DirectoryNotFoundException("It looks like the RobloxAssetFixer directory is missing, please reinstall ReBlox or use the source version of RobloxAssetFixer.");
+            }
+        }
+
         private static bool CallTryParse(string stringToConvert, NumberStyles styles)
         {
             CultureInfo provider;
@@ -79,10 +140,18 @@ namespace ReBloxLauncher
             else
                 provider = CultureInfo.InvariantCulture;
 
-            bool success = int.TryParse(stringToConvert, styles, provider, out int number);
+            bool success = long.TryParse(stringToConvert, styles, provider, out long number);
 
             return success;
         }
+
+        private static bool CallTryParseBool(string stringToConvert)
+        {
+            bool success = bool.TryParse(stringToConvert, out bool result);
+
+            return success;
+        }
+
         private static string getTimestamp(DateTime value)
         {
             return value.ToString("yyyyMMddHHmmss");
@@ -127,11 +196,11 @@ namespace ReBloxLauncher
                     {
                         Console.WriteLine("<INFO> Waiting for RobloxAssetFixer request...");
 
-                        var client = tcpListener.AcceptTcpClient();
+                        TcpClient client = tcpListener.AcceptTcpClient();
                         Console.WriteLine("<INFO> Potential RobloxAssetFixer server detected! Verifying...");
 
-                        var stream = client.GetStream();
-                        var buffer = new byte[2048];
+                        NetworkStream stream = client.GetStream();
+                        byte[] buffer = new byte[2048];
                         int bytesRead;
 
                         while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
@@ -142,11 +211,11 @@ namespace ReBloxLauncher
                                 {
                                     if (buffer[4] == 0x55 && buffer[5] == 0x52 && buffer[6] == 0x53)
                                     {
-                                        var newarray = new byte[buffer.Length - 7];
+                                        byte[] newarray = new byte[buffer.Length - 7];
                                         Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
 
                                         byte[] decompressedBuffer = GzipDecompress(newarray);
-                                        var roblosecurity = Encoding.UTF8.GetString(decompressedBuffer);
+                                        string roblosecurity = Encoding.UTF8.GetString(decompressedBuffer);
 
                                         if (roblosecurity.StartsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|"))
                                         {
@@ -173,7 +242,7 @@ namespace ReBloxLauncher
                                     else if (buffer[4] == 0x47 && buffer[5] == 0x52 && buffer[6] == 0x53)
                                     {
                                         string timestamp = getTimestamp(DateTime.UtcNow);
-                                        var newarray = new byte[buffer.Length - 7];
+                                        byte[] newarray = new byte[buffer.Length - 7];
                                         Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
                                         if (Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }) == timestamp)
                                         {
@@ -187,6 +256,23 @@ namespace ReBloxLauncher
                                         {
                                             stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
                                             Console.WriteLine("<ERROR> A server attempted to grab your ROBLOSECURITY! Server IP: " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " Expected time: " + timestamp + " Received time: " + Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }));
+                                        }
+                                    }
+                                    else if (buffer[4] == 0x4A && buffer[5] == 0x53 && buffer[6] == 0x47)
+                                    {
+                                        byte[] newarray = new byte[buffer.Length - 8];
+                                        Buffer.BlockCopy(buffer, 8, newarray, 0, newarray.Length);
+                                        string[] data = Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }).Split('\n');
+                                        if (data.Length == 7)
+                                        {
+                                            SetupJoinScriptEx(data[0], CallTryParse(data[1], NumberStyles.Integer) ? int.Parse(data[1]) : 53640, CallTryParse(data[2], NumberStyles.Integer) ? long.Parse(data[2]) : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId), data[3], CallTryParse(data[4], NumberStyles.Integer) ? ulong.Parse(data[4]) : 1818, data[5], CallTryParseBool(data[6]) ? bool.Parse(data[6]) : false);
+                                            stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
+                                            client.Close();
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine("<INFO> Invalid length sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " (Expected length of 7, received " + data.Length + ")");
+                                            stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
                                         }
                                     }
                                     else

@@ -97,7 +97,7 @@ namespace ReBloxLauncher
         bool useOldGuestAvatar = false;
         bool cancelAsset = false;
         readonly List<int> savedPort = new List<int>();
-        System.Timers.Timer ServerCheck = new System.Timers.Timer();
+        readonly System.Timers.Timer ServerCheck = new System.Timers.Timer();
         public string characterName = String.Empty;
         bool savingCharacter = false;
         //Functions
@@ -141,17 +141,13 @@ namespace ReBloxLauncher
 
         private int convertDateRangeToInt(string dateRange)
         {
-            switch (dateRange)
+            return dateRange switch
             {
-                case "E":
-                    return 1;
-                case "M":
-                    return 2;
-                case "L":
-                    return 3;
-                default:
-                    return 0;
-            }
+                "E" => 1,
+                "M" => 2,
+                "L" => 3,
+                _ => 0,
+            };
         }
 
         private string getFileSHA1(string filename)
@@ -1052,7 +1048,7 @@ namespace ReBloxLauncher
                         comboBox4.Visible = true;
                     }
                     label43.Text = Path.GetFileName(Properties.Settings.Default.RBDFPath);
-                    checkBox1.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) ? Properties.Settings.Default.useAuth : false;
+                    checkBox1.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) && Properties.Settings.Default.useAuth;
                     checkBox1.Enabled = !WineDetector.IsRunningOnWine();
                     textBox3.ReadOnly = !Properties.Settings.Default.useAuth && WineDetector.IsRunningOnWine();
                     textBox3.Text = Encoding.UTF8.GetString(Convert.FromBase64String(Properties.Settings.Default.ROBLOSECURITY));
@@ -1061,11 +1057,11 @@ namespace ReBloxLauncher
                     checkBox3.Checked = Properties.Settings.Default.ClearTemp;
                     checkBox5.Checked = guestMode == false && Properties.Settings.Default.AccountOver13;
                     checkBox6.Checked = Properties.Settings.Default.EnableDataStore;
-                    checkBox7.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) ? Properties.Settings.Default.DiscordRPC : false;
+                    checkBox7.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) && Properties.Settings.Default.DiscordRPC;
                     checkBox7.Enabled = !WineDetector.IsRunningOnWine();
                     checkBox8.Checked = Properties.Settings.Default.EnableBadges;
                     checkBox9.Checked = Properties.Settings.Default.EnableFollowing;
-                    checkBox10.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) ? Properties.Settings.Default.assetFromServer : false;
+                    checkBox10.Checked = (WineDetector.IsRunningOnWine() == false || linuxAsWindows == true) && Properties.Settings.Default.assetFromServer;
                     checkBox10.Enabled = !WineDetector.IsRunningOnWine();
                     checkBox11.Checked = Properties.Settings.Default.EnableFriendships;
                     checkBox12.Checked = Properties.Settings.Default.EnableOwnedAssets;
@@ -1216,6 +1212,7 @@ namespace ReBloxLauncher
                         }
                     }
                 }
+                ServerUtils.SetDataFolder(datafolder);
                 ServerUtils.StartServerCom();
                 if (Properties.Settings.Default.FullBodyBase64 != String.Empty)
                 {
@@ -1238,427 +1235,218 @@ namespace ReBloxLauncher
 
         private Color convertBrickColortoColor(uint brickcolor)
         {
-            switch (brickcolor)
+            return brickcolor switch
             {
-                case 1:
-                    return Color.FromArgb(242, 243, 243);
-                case 2:
-                    return Color.FromArgb(161, 165, 162);
-                case 3:
-                    return Color.FromArgb(249, 233, 153);
-                case 5:
-                    return Color.FromArgb(215, 197, 154);
-                case 6:
-                    return Color.FromArgb(194, 218, 184);
-                case 9:
-                    return Color.FromArgb(232, 186, 200);
-                case 11:
-                    return Color.FromArgb(128, 187, 219);
-                case 12:
-                    return Color.FromArgb(203, 132, 66);
-                case 18:
-                    return Color.FromArgb(204, 142, 105);
-                case 21:
-                    return Color.FromArgb(196, 40, 28);
-                case 22:
-                    return Color.FromArgb(196, 112, 160);
-                case 23:
-                    return Color.FromArgb(13, 105, 172);
-                case 24:
-                    return Color.FromArgb(245, 205, 48);
-                case 25:
-                    return Color.FromArgb(98, 71, 50);
-                case 26:
-                    return Color.FromArgb(27, 42, 53);
-                case 27:
-                    return Color.FromArgb(109, 110, 108);
-                case 28:
-                    return Color.FromArgb(40, 127, 71);
-                case 29:
-                    return Color.FromArgb(161, 196, 140);
-                case 36:
-                    return Color.FromArgb(243, 207, 155);
-                case 37:
-                    return Color.FromArgb(75, 151, 75);
-                case 38:
-                    return Color.FromArgb(160, 95, 53);
-                case 39:
-                    return Color.FromArgb(193, 202, 222);
-                case 40:
-                    return Color.FromArgb(236, 236, 236);
-                case 41:
-                    return Color.FromArgb(205, 84, 75);
-                case 42:
-                    return Color.FromArgb(193, 223, 240);
-                case 43:
-                    return Color.FromArgb(123, 182, 232);
-                case 44:
-                    return Color.FromArgb(247, 241, 141);
-                case 45:
-                    return Color.FromArgb(180, 210, 228);
-                case 47:
-                    return Color.FromArgb(217, 133, 108);
-                case 48:
-                    return Color.FromArgb(132, 182, 141);
-                case 49:
-                    return Color.FromArgb(248, 241, 132);
-                case 50:
-                    return Color.FromArgb(236, 232, 222);
-                case 100:
-                    return Color.FromArgb(238, 196, 182);
-                case 101:
-                    return Color.FromArgb(218, 134, 122);
-                case 102:
-                    return Color.FromArgb(110, 153, 202);
-                case 103:
-                    return Color.FromArgb(199, 193, 183);
-                case 104:
-                    return Color.FromArgb(107, 50, 124);
-                case 105:
-                    return Color.FromArgb(226, 155, 64);
-                case 106:
-                    return Color.FromArgb(218, 133, 65);
-                case 107:
-                    return Color.FromArgb(0, 143, 156);
-                case 108:
-                    return Color.FromArgb(104, 92, 67);
-                case 110:
-                    return Color.FromArgb(67, 84, 147);
-                case 111:
-                    return Color.FromArgb(191, 183, 177);
-                case 112:
-                    return Color.FromArgb(104, 116, 172);
-                case 113:
-                    return Color.FromArgb(229, 173, 200);
-                case 115:
-                    return Color.FromArgb(199, 210, 60);
-                case 116:
-                    return Color.FromArgb(85, 165, 175);
-                case 118:
-                    return Color.FromArgb(183, 215, 213);
-                case 119:
-                    return Color.FromArgb(164, 179, 71);
-                case 120:
-                    return Color.FromArgb(217, 228, 167);
-                case 121:
-                    return Color.FromArgb(231, 172, 88);
-                case 123:
-                    return Color.FromArgb(211, 111, 76);
-                case 124:
-                    return Color.FromArgb(146, 57, 120);
-                case 125:
-                    return Color.FromArgb(234, 184, 146);
-                case 126:
-                    return Color.FromArgb(165, 165, 203);
-                case 127:
-                    return Color.FromArgb(220, 188, 129);
-                case 128:
-                    return Color.FromArgb(174, 122, 89);
-                case 131:
-                    return Color.FromArgb(156, 163, 168);
-                case 133:
-                    return Color.FromArgb(213, 115, 61);
-                case 134:
-                    return Color.FromArgb(216, 221, 86);
-                case 135:
-                    return Color.FromArgb(116, 134, 157);
-                case 136:
-                    return Color.FromArgb(135, 124, 144);
-                case 137:
-                    return Color.FromArgb(224, 152, 100);
-                case 138:
-                    return Color.FromArgb(149, 138, 115);
-                case 140:
-                    return Color.FromArgb(32, 58, 86);
-                case 141:
-                    return Color.FromArgb(39, 70, 45);
-                case 143:
-                    return Color.FromArgb(207, 226, 247);
-                case 145:
-                    return Color.FromArgb(121, 136, 161);
-                case 146:
-                    return Color.FromArgb(149, 142, 163);
-                case 147:
-                    return Color.FromArgb(147, 135, 104);
-                case 148:
-                    return Color.FromArgb(87, 88, 87);
-                case 149:
-                    return Color.FromArgb(22, 29, 50);
-                case 150:
-                    return Color.FromArgb(171, 173, 172);
-                case 151:
-                    return Color.FromArgb(120, 144, 130);
-                case 153:
-                    return Color.FromArgb(149, 121, 119);
-                case 154:
-                    return Color.FromArgb(123, 46, 47);
-                case 157:
-                    return Color.FromArgb(255, 246, 123);
-                case 158:
-                    return Color.FromArgb(225, 164, 194);
-                case 168:
-                    return Color.FromArgb(117, 108, 98);
-                case 176:
-                    return Color.FromArgb(151, 105, 91);
-                case 178:
-                    return Color.FromArgb(180, 132, 85);
-                case 179:
-                    return Color.FromArgb(137, 135, 136);
-                case 180:
-                    return Color.FromArgb(215, 169, 75);
-                case 190:
-                    return Color.FromArgb(249, 214, 46);
-                case 191:
-                    return Color.FromArgb(232, 171, 45);
-                case 192:
-                    return Color.FromArgb(105, 64, 40);
-                case 193:
-                    return Color.FromArgb(207, 96, 36);
-                case 194:
-                    return Color.FromArgb(163, 162, 165);
-                case 195:
-                    return Color.FromArgb(70, 103, 164);
-                case 196:
-                    return Color.FromArgb(35, 71, 139);
-                case 198:
-                    return Color.FromArgb(142, 66, 133);
-                case 199:
-                    return Color.FromArgb(99, 95, 98);
-                case 200:
-                    return Color.FromArgb(130, 138, 93);
-                case 208:
-                    return Color.FromArgb(229, 228, 223);
-                case 209:
-                    return Color.FromArgb(176, 142, 68);
-                case 210:
-                    return Color.FromArgb(112, 149, 120);
-                case 211:
-                    return Color.FromArgb(121, 181, 181);
-                case 212:
-                    return Color.FromArgb(159, 195, 233);
-                case 213:
-                    return Color.FromArgb(108, 129, 183);
-                case 216:
-                    return Color.FromArgb(144, 76, 42);
-                case 217:
-                    return Color.FromArgb(124, 92, 70);
-                case 218:
-                    return Color.FromArgb(150, 112, 159);
-                case 219:
-                    return Color.FromArgb(107, 96, 155);
-                case 220:
-                    return Color.FromArgb(167, 169, 206);
-                case 221:
-                    return Color.FromArgb(205, 98, 152);
-                case 222:
-                    return Color.FromArgb(228, 173, 200);
-                case 223:
-                    return Color.FromArgb(220, 144, 149);
-                case 224:
-                    return Color.FromArgb(240, 213, 160);
-                case 225:
-                    return Color.FromArgb(235, 184, 127);
-                case 226:
-                    return Color.FromArgb(253, 234, 141);
-                case 232:
-                    return Color.FromArgb(125, 187, 221);
-                case 268:
-                    return Color.FromArgb(52, 43, 117);
-                case 301:
-                    return Color.FromArgb(80, 109, 84);
-                case 302:
-                    return Color.FromArgb(91, 93, 105);
-                case 303:
-                    return Color.FromArgb(0, 16, 176);
-                case 304:
-                    return Color.FromArgb(44, 101, 29);
-                case 305:
-                    return Color.FromArgb(82, 124, 174);
-                case 306:
-                    return Color.FromArgb(51, 88, 130);
-                case 307:
-                    return Color.FromArgb(16, 42, 220);
-                case 308:
-                    return Color.FromArgb(61, 21, 133);
-                case 309:
-                    return Color.FromArgb(52, 142, 64);
-                case 310:
-                    return Color.FromArgb(91, 154, 76);
-                case 311:
-                    return Color.FromArgb(159, 161, 172);
-                case 312:
-                    return Color.FromArgb(89, 34, 89);
-                case 313:
-                    return Color.FromArgb(31, 128, 29);
-                case 314:
-                    return Color.FromArgb(159, 173, 192);
-                case 315:
-                    return Color.FromArgb(9, 137, 207);
-                case 316:
-                    return Color.FromArgb(123, 0, 123);
-                case 317:
-                    return Color.FromArgb(124, 156, 107);
-                case 318:
-                    return Color.FromArgb(138, 171, 133);
-                case 319:
-                    return Color.FromArgb(185, 196, 177);
-                case 320:
-                    return Color.FromArgb(202, 203, 209);
-                case 321:
-                    return Color.FromArgb(167, 94, 155);
-                case 322:
-                    return Color.FromArgb(123, 47, 123);
-                case 323:
-                    return Color.FromArgb(148, 190, 129);
-                case 324:
-                    return Color.FromArgb(168, 189, 153);
-                case 325:
-                    return Color.FromArgb(223, 223, 222);
-                case 327:
-                    return Color.FromArgb(151, 0, 0);
-                case 328:
-                    return Color.FromArgb(177, 229, 166);
-                case 329:
-                    return Color.FromArgb(152, 194, 219);
-                case 330:
-                    return Color.FromArgb(255, 152, 220);
-                case 331:
-                    return Color.FromArgb(255, 89, 89);
-                case 332:
-                    return Color.FromArgb(117, 0, 0);
-                case 333:
-                    return Color.FromArgb(239, 184, 56);
-                case 334:
-                    return Color.FromArgb(248, 217, 190);
-                case 335:
-                    return Color.FromArgb(231, 231, 236);
-                case 336:
-                    return Color.FromArgb(199, 212, 228);
-                case 337:
-                    return Color.FromArgb(255, 148, 148);
-                case 338:
-                    return Color.FromArgb(190, 104, 98);
-                case 339:
-                    return Color.FromArgb(86, 36, 36);
-                case 340:
-                    return Color.FromArgb(241, 231, 199);
-                case 341:
-                    return Color.FromArgb(254, 243, 187);
-                case 342:
-                    return Color.FromArgb(224, 178, 208);
-                case 343:
-                    return Color.FromArgb(212, 144, 189);
-                case 344:
-                    return Color.FromArgb(150, 85, 85);
-                case 345:
-                    return Color.FromArgb(143, 76, 42);
-                case 346:
-                    return Color.FromArgb(211, 190, 150);
-                case 347:
-                    return Color.FromArgb(226, 220, 188);
-                case 348:
-                    return Color.FromArgb(237, 234, 234);
-                case 349:
-                    return Color.FromArgb(233, 218, 218);
-                case 350:
-                    return Color.FromArgb(136, 62, 62);
-                case 351:
-                    return Color.FromArgb(188, 155, 93);
-                case 352:
-                    return Color.FromArgb(199, 172, 120);
-                case 353:
-                    return Color.FromArgb(202, 191, 163);
-                case 354:
-                    return Color.FromArgb(187, 179, 178);
-                case 355:
-                    return Color.FromArgb(108, 88, 75);
-                case 356:
-                    return Color.FromArgb(160, 132, 79);
-                case 357:
-                    return Color.FromArgb(149, 137, 136);
-                case 358:
-                    return Color.FromArgb(171, 168, 158);
-                case 359:
-                    return Color.FromArgb(175, 148, 131);
-                case 360:
-                    return Color.FromArgb(150, 103, 102);
-                case 361:
-                    return Color.FromArgb(86, 66, 54);
-                case 362:
-                    return Color.FromArgb(126, 103, 63);
-                case 363:
-                    return Color.FromArgb(105, 102, 92);
-                case 364:
-                    return Color.FromArgb(90, 76, 66);
-                case 365:
-                    return Color.FromArgb(106, 57, 9);
-                case 1001:
-                    return Color.FromArgb(248, 248, 248);
-                case 1002:
-                    return Color.FromArgb(205, 205, 205);
-                case 1003:
-                    return Color.FromArgb(17, 17, 17);
-                case 1004:
-                    return Color.FromArgb(255, 0, 0);
-                case 1005:
-                    return Color.FromArgb(255, 176, 0);
-                case 1006:
-                    return Color.FromArgb(180, 128, 255);
-                case 1007:
-                    return Color.FromArgb(163, 75, 75);
-                case 1008:
-                    return Color.FromArgb(193, 190, 66);
-                case 1009:
-                    return Color.FromArgb(255, 255, 0);
-                case 1010:
-                    return Color.FromArgb(0, 0, 255);
-                case 1011:
-                    return Color.FromArgb(0, 32, 96);
-                case 1012:
-                    return Color.FromArgb(33, 84, 185);
-                case 1013:
-                    return Color.FromArgb(4, 175, 236);
-                case 1014:
-                    return Color.FromArgb(170, 85, 0);
-                case 1015:
-                    return Color.FromArgb(170, 0, 170);
-                case 1016:
-                    return Color.FromArgb(255, 102, 204);
-                case 1017:
-                    return Color.FromArgb(255, 175, 0);
-                case 1018:
-                    return Color.FromArgb(18, 238, 212);
-                case 1019:
-                    return Color.FromArgb(0, 255, 255);
-                case 1020:
-                    return Color.FromArgb(0, 255, 0);
-                case 1021:
-                    return Color.FromArgb(50, 125, 21);
-                case 1022:
-                    return Color.FromArgb(127, 142, 100);
-                case 1023:
-                    return Color.FromArgb(140, 91, 159);
-                case 1024:
-                    return Color.FromArgb(175, 221, 255);
-                case 1025:
-                    return Color.FromArgb(255, 201, 201);
-                case 1026:
-                    return Color.FromArgb(177, 167, 255);
-                case 1027:
-                    return Color.FromArgb(159, 243, 233);
-                case 1028:
-                    return Color.FromArgb(204, 255, 204);
-                case 1029:
-                    return Color.FromArgb(255, 255, 204);
-                case 1030:
-                    return Color.FromArgb(255, 204, 153);
-                case 1031:
-                    return Color.FromArgb(98, 37, 209);
-                case 1032:
-                    return Color.FromArgb(255, 0, 191);
-                default:
-                    return Color.Empty;
-            }
+                1 => Color.FromArgb(242, 243, 243),
+                2 => Color.FromArgb(161, 165, 162),
+                3 => Color.FromArgb(249, 233, 153),
+                5 => Color.FromArgb(215, 197, 154),
+                6 => Color.FromArgb(194, 218, 184),
+                9 => Color.FromArgb(232, 186, 200),
+                11 => Color.FromArgb(128, 187, 219),
+                12 => Color.FromArgb(203, 132, 66),
+                18 => Color.FromArgb(204, 142, 105),
+                21 => Color.FromArgb(196, 40, 28),
+                22 => Color.FromArgb(196, 112, 160),
+                23 => Color.FromArgb(13, 105, 172),
+                24 => Color.FromArgb(245, 205, 48),
+                25 => Color.FromArgb(98, 71, 50),
+                26 => Color.FromArgb(27, 42, 53),
+                27 => Color.FromArgb(109, 110, 108),
+                28 => Color.FromArgb(40, 127, 71),
+                29 => Color.FromArgb(161, 196, 140),
+                36 => Color.FromArgb(243, 207, 155),
+                37 => Color.FromArgb(75, 151, 75),
+                38 => Color.FromArgb(160, 95, 53),
+                39 => Color.FromArgb(193, 202, 222),
+                40 => Color.FromArgb(236, 236, 236),
+                41 => Color.FromArgb(205, 84, 75),
+                42 => Color.FromArgb(193, 223, 240),
+                43 => Color.FromArgb(123, 182, 232),
+                44 => Color.FromArgb(247, 241, 141),
+                45 => Color.FromArgb(180, 210, 228),
+                47 => Color.FromArgb(217, 133, 108),
+                48 => Color.FromArgb(132, 182, 141),
+                49 => Color.FromArgb(248, 241, 132),
+                50 => Color.FromArgb(236, 232, 222),
+                100 => Color.FromArgb(238, 196, 182),
+                101 => Color.FromArgb(218, 134, 122),
+                102 => Color.FromArgb(110, 153, 202),
+                103 => Color.FromArgb(199, 193, 183),
+                104 => Color.FromArgb(107, 50, 124),
+                105 => Color.FromArgb(226, 155, 64),
+                106 => Color.FromArgb(218, 133, 65),
+                107 => Color.FromArgb(0, 143, 156),
+                108 => Color.FromArgb(104, 92, 67),
+                110 => Color.FromArgb(67, 84, 147),
+                111 => Color.FromArgb(191, 183, 177),
+                112 => Color.FromArgb(104, 116, 172),
+                113 => Color.FromArgb(229, 173, 200),
+                115 => Color.FromArgb(199, 210, 60),
+                116 => Color.FromArgb(85, 165, 175),
+                118 => Color.FromArgb(183, 215, 213),
+                119 => Color.FromArgb(164, 179, 71),
+                120 => Color.FromArgb(217, 228, 167),
+                121 => Color.FromArgb(231, 172, 88),
+                123 => Color.FromArgb(211, 111, 76),
+                124 => Color.FromArgb(146, 57, 120),
+                125 => Color.FromArgb(234, 184, 146),
+                126 => Color.FromArgb(165, 165, 203),
+                127 => Color.FromArgb(220, 188, 129),
+                128 => Color.FromArgb(174, 122, 89),
+                131 => Color.FromArgb(156, 163, 168),
+                133 => Color.FromArgb(213, 115, 61),
+                134 => Color.FromArgb(216, 221, 86),
+                135 => Color.FromArgb(116, 134, 157),
+                136 => Color.FromArgb(135, 124, 144),
+                137 => Color.FromArgb(224, 152, 100),
+                138 => Color.FromArgb(149, 138, 115),
+                140 => Color.FromArgb(32, 58, 86),
+                141 => Color.FromArgb(39, 70, 45),
+                143 => Color.FromArgb(207, 226, 247),
+                145 => Color.FromArgb(121, 136, 161),
+                146 => Color.FromArgb(149, 142, 163),
+                147 => Color.FromArgb(147, 135, 104),
+                148 => Color.FromArgb(87, 88, 87),
+                149 => Color.FromArgb(22, 29, 50),
+                150 => Color.FromArgb(171, 173, 172),
+                151 => Color.FromArgb(120, 144, 130),
+                153 => Color.FromArgb(149, 121, 119),
+                154 => Color.FromArgb(123, 46, 47),
+                157 => Color.FromArgb(255, 246, 123),
+                158 => Color.FromArgb(225, 164, 194),
+                168 => Color.FromArgb(117, 108, 98),
+                176 => Color.FromArgb(151, 105, 91),
+                178 => Color.FromArgb(180, 132, 85),
+                179 => Color.FromArgb(137, 135, 136),
+                180 => Color.FromArgb(215, 169, 75),
+                190 => Color.FromArgb(249, 214, 46),
+                191 => Color.FromArgb(232, 171, 45),
+                192 => Color.FromArgb(105, 64, 40),
+                193 => Color.FromArgb(207, 96, 36),
+                194 => Color.FromArgb(163, 162, 165),
+                195 => Color.FromArgb(70, 103, 164),
+                196 => Color.FromArgb(35, 71, 139),
+                198 => Color.FromArgb(142, 66, 133),
+                199 => Color.FromArgb(99, 95, 98),
+                200 => Color.FromArgb(130, 138, 93),
+                208 => Color.FromArgb(229, 228, 223),
+                209 => Color.FromArgb(176, 142, 68),
+                210 => Color.FromArgb(112, 149, 120),
+                211 => Color.FromArgb(121, 181, 181),
+                212 => Color.FromArgb(159, 195, 233),
+                213 => Color.FromArgb(108, 129, 183),
+                216 => Color.FromArgb(144, 76, 42),
+                217 => Color.FromArgb(124, 92, 70),
+                218 => Color.FromArgb(150, 112, 159),
+                219 => Color.FromArgb(107, 96, 155),
+                220 => Color.FromArgb(167, 169, 206),
+                221 => Color.FromArgb(205, 98, 152),
+                222 => Color.FromArgb(228, 173, 200),
+                223 => Color.FromArgb(220, 144, 149),
+                224 => Color.FromArgb(240, 213, 160),
+                225 => Color.FromArgb(235, 184, 127),
+                226 => Color.FromArgb(253, 234, 141),
+                232 => Color.FromArgb(125, 187, 221),
+                268 => Color.FromArgb(52, 43, 117),
+                301 => Color.FromArgb(80, 109, 84),
+                302 => Color.FromArgb(91, 93, 105),
+                303 => Color.FromArgb(0, 16, 176),
+                304 => Color.FromArgb(44, 101, 29),
+                305 => Color.FromArgb(82, 124, 174),
+                306 => Color.FromArgb(51, 88, 130),
+                307 => Color.FromArgb(16, 42, 220),
+                308 => Color.FromArgb(61, 21, 133),
+                309 => Color.FromArgb(52, 142, 64),
+                310 => Color.FromArgb(91, 154, 76),
+                311 => Color.FromArgb(159, 161, 172),
+                312 => Color.FromArgb(89, 34, 89),
+                313 => Color.FromArgb(31, 128, 29),
+                314 => Color.FromArgb(159, 173, 192),
+                315 => Color.FromArgb(9, 137, 207),
+                316 => Color.FromArgb(123, 0, 123),
+                317 => Color.FromArgb(124, 156, 107),
+                318 => Color.FromArgb(138, 171, 133),
+                319 => Color.FromArgb(185, 196, 177),
+                320 => Color.FromArgb(202, 203, 209),
+                321 => Color.FromArgb(167, 94, 155),
+                322 => Color.FromArgb(123, 47, 123),
+                323 => Color.FromArgb(148, 190, 129),
+                324 => Color.FromArgb(168, 189, 153),
+                325 => Color.FromArgb(223, 223, 222),
+                327 => Color.FromArgb(151, 0, 0),
+                328 => Color.FromArgb(177, 229, 166),
+                329 => Color.FromArgb(152, 194, 219),
+                330 => Color.FromArgb(255, 152, 220),
+                331 => Color.FromArgb(255, 89, 89),
+                332 => Color.FromArgb(117, 0, 0),
+                333 => Color.FromArgb(239, 184, 56),
+                334 => Color.FromArgb(248, 217, 190),
+                335 => Color.FromArgb(231, 231, 236),
+                336 => Color.FromArgb(199, 212, 228),
+                337 => Color.FromArgb(255, 148, 148),
+                338 => Color.FromArgb(190, 104, 98),
+                339 => Color.FromArgb(86, 36, 36),
+                340 => Color.FromArgb(241, 231, 199),
+                341 => Color.FromArgb(254, 243, 187),
+                342 => Color.FromArgb(224, 178, 208),
+                343 => Color.FromArgb(212, 144, 189),
+                344 => Color.FromArgb(150, 85, 85),
+                345 => Color.FromArgb(143, 76, 42),
+                346 => Color.FromArgb(211, 190, 150),
+                347 => Color.FromArgb(226, 220, 188),
+                348 => Color.FromArgb(237, 234, 234),
+                349 => Color.FromArgb(233, 218, 218),
+                350 => Color.FromArgb(136, 62, 62),
+                351 => Color.FromArgb(188, 155, 93),
+                352 => Color.FromArgb(199, 172, 120),
+                353 => Color.FromArgb(202, 191, 163),
+                354 => Color.FromArgb(187, 179, 178),
+                355 => Color.FromArgb(108, 88, 75),
+                356 => Color.FromArgb(160, 132, 79),
+                357 => Color.FromArgb(149, 137, 136),
+                358 => Color.FromArgb(171, 168, 158),
+                359 => Color.FromArgb(175, 148, 131),
+                360 => Color.FromArgb(150, 103, 102),
+                361 => Color.FromArgb(86, 66, 54),
+                362 => Color.FromArgb(126, 103, 63),
+                363 => Color.FromArgb(105, 102, 92),
+                364 => Color.FromArgb(90, 76, 66),
+                365 => Color.FromArgb(106, 57, 9),
+                1001 => Color.FromArgb(248, 248, 248),
+                1002 => Color.FromArgb(205, 205, 205),
+                1003 => Color.FromArgb(17, 17, 17),
+                1004 => Color.FromArgb(255, 0, 0),
+                1005 => Color.FromArgb(255, 176, 0),
+                1006 => Color.FromArgb(180, 128, 255),
+                1007 => Color.FromArgb(163, 75, 75),
+                1008 => Color.FromArgb(193, 190, 66),
+                1009 => Color.FromArgb(255, 255, 0),
+                1010 => Color.FromArgb(0, 0, 255),
+                1011 => Color.FromArgb(0, 32, 96),
+                1012 => Color.FromArgb(33, 84, 185),
+                1013 => Color.FromArgb(4, 175, 236),
+                1014 => Color.FromArgb(170, 85, 0),
+                1015 => Color.FromArgb(170, 0, 170),
+                1016 => Color.FromArgb(255, 102, 204),
+                1017 => Color.FromArgb(255, 175, 0),
+                1018 => Color.FromArgb(18, 238, 212),
+                1019 => Color.FromArgb(0, 255, 255),
+                1020 => Color.FromArgb(0, 255, 0),
+                1021 => Color.FromArgb(50, 125, 21),
+                1022 => Color.FromArgb(127, 142, 100),
+                1023 => Color.FromArgb(140, 91, 159),
+                1024 => Color.FromArgb(175, 221, 255),
+                1025 => Color.FromArgb(255, 201, 201),
+                1026 => Color.FromArgb(177, 167, 255),
+                1027 => Color.FromArgb(159, 243, 233),
+                1028 => Color.FromArgb(204, 255, 204),
+                1029 => Color.FromArgb(255, 255, 204),
+                1030 => Color.FromArgb(255, 204, 153),
+                1031 => Color.FromArgb(98, 37, 209),
+                1032 => Color.FromArgb(255, 0, 191),
+                _ => Color.Empty,
+            };
         }
         private string GenerateUUID()
         {
@@ -1699,19 +1487,43 @@ namespace ReBloxLauncher
                 return false;
             }
         }
+
         private void SetupJoinScript(string ipaddr, int port)
         {
             if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer"))
             {
-                Console.WriteLine("<INFO> Setting up join script for " + Properties.Settings.Default.lastselectedversion);
+                Console.WriteLine("<INFO> Generating joinscript for " + Properties.Settings.Default.lastselectedversion);
                 statusText.Invoke(new Action(() => { statusText.Text = "Setting up join script..."; }));
                 string waitingForCharacterGuid = GenerateUUID().ToLower();
                 string sessionId = GenerateUUID().ToLower();
                 if (File.Exists(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt")) File.Delete(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt");
-                using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
+                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
                 {
-                    writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (guestMode ? guestUsername : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (guestMode ? "None" : Properties.Settings.Default.Membership).Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!guestMode == false && Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                    if (File.Exists(datafolder + @"\private.txt"))
+                    {
+                        string currentUTCDate = DateTime.UtcNow.ToString("G");
+                        RSA.ImportCspBlob(Convert.FromBase64String(File.ReadAllText(datafolder + @"\private.txt")));
+
+                        string signature1Raw = (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + "\n" + (guestMode ? guestUsername : Properties.Settings.Default.username) + "\n" + "http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + "&placeId=1818\nTest\n" + currentUTCDate;
+                        string signature2Raw = (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + "\nTest\n" + currentUTCDate;
+
+                        byte[] signedSignature1 = RSA.SignData(Encoding.UTF8.GetBytes(signature1Raw), SHA1.Create());
+                        byte[] signedSignature2 = RSA.SignData(Encoding.UTF8.GetBytes(signature2Raw), SHA1.Create());
+
+                        using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
+                        {
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (guestMode ? guestUsername : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G")  + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (guestMode ? "None" : Properties.Settings.Default.Membership).Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!guestMode == false && Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                        }
+                    }
+                    else
+                    {
+                        using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
+                        {
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (guestMode ? guestUsername : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (guestMode ? "None" : Properties.Settings.Default.Membership).Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!guestMode == false && Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                        }
+                    }
                 }
+                
             }
             else
             {
@@ -2161,7 +1973,7 @@ namespace ReBloxLauncher
                     string rawJSON = client.DownloadString(updateurl + @"/updates/version.json");
                     Newtonsoft.Json.Linq.JObject jObject = Newtonsoft.Json.Linq.JObject.Parse(rawJSON);
 
-                    if ((string)jObject["launcherVersion"] != Properties.Settings.Default.version)
+                    if ((Properties.Settings.Default.isBeta ? (string)jObject["betaLauncherVersion"] : (string)jObject["launcherVersion"]) != Properties.Settings.Default.version)
                     {
                         Console.WriteLine("<INFO> Update is available for the ReBlox Launcher!");
                         return true;
@@ -2643,6 +2455,34 @@ namespace ReBloxLauncher
             else
             {
                 return true;
+            }
+        }
+
+        public bool smartHostDetectorAny()
+        {
+            string[] urls = new string[] { "api.roblox.com", "assetgame.roblox.com", "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip" };
+            string[] hosts = File.ReadAllLines(@"C:\Windows\System32\drivers\etc\hosts");
+
+            List<string> neededEdits = new List<string>();
+            neededEdits.AddRange(urls);
+            for (int i = 0; i < hosts.Length; i++)
+            {
+                for (int x = 0; x < urls.Length; x++)
+                {
+                    if (hosts[i] == "127.0.0.1 " + urls[x])
+                    {
+                        neededEdits.Remove(urls[x]);
+                    }
+                }
+            }
+
+            if (neededEdits.Count < urls.Length)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -3528,7 +3368,7 @@ namespace ReBloxLauncher
 
         private void button7_Click(object sender, EventArgs e)
         {
-            if (smartHostDetector())
+            if (smartHostDetectorAny())
             {
                 if (IsAdministrator())
                 {
@@ -3550,7 +3390,7 @@ namespace ReBloxLauncher
             }
             else
             {
-                MessageBox.Show("It looks like either you reverted it before or never edited it!", "hosts File", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("It looks like either you reverted it before or never applied it!", "hosts File", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -6654,7 +6494,7 @@ namespace ReBloxLauncher
         {
             if (comboBox1.SelectedIndex != -1)
             {
-                Properties.Settings.Default.avatarR15 = (comboBox1.Items[comboBox1.SelectedIndex].ToString() == "R6") ? false : true;
+                Properties.Settings.Default.avatarR15 = comboBox1.Items[comboBox1.SelectedIndex].ToString() != "R6";
                 Properties.Settings.Default.Save();
                 setupAvatarOnServer();
             }
@@ -7548,10 +7388,9 @@ namespace ReBloxLauncher
             }
             if (previousIndexAsset > -1) if (listBox3.GetSelected(previousIndexAsset)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox3.BackColor.R + 26, listBox3.BackColor.G + 26, listBox3.BackColor.B + 26)), new Rectangle(0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox3.BackColor), new Rectangle(0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight));
             if (listBox3.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox3.BackColor.R + 26, listBox3.BackColor.G + 26, listBox3.BackColor.B + 26)), new Rectangle(0, (e.Index - listBox3.TopIndex) * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox3.BackColor), new Rectangle(0, (e.Index - listBox3.TopIndex) * listBox3.ItemHeight, listBox3.Width, listBox3.ItemHeight));
-            AssetPackItem item = listBox3.Items[e.Index] as AssetPackItem;
             if (e.Index >= listBox3.TopIndex)
             {
-                if (item != null)
+                if (listBox3.Items[e.Index] is AssetPackItem item)
                 {
                     e.Graphics.DrawString(item.AssetPackName, listBox3.Font, new SolidBrush(item.ItemColor), 0, (e.Index - listBox3.TopIndex) * listBox3.ItemHeight);
                     if (previousIndexAsset > -1 && previousIndexAsset != e.Index) if (listBox3.Items[previousIndexAsset] as AssetPackItem != null) e.Graphics.DrawString((listBox3.Items[previousIndexAsset] as AssetPackItem).AssetPackName, listBox3.Font, new SolidBrush((listBox3.Items[previousIndexAsset] as AssetPackItem).ItemColor), 0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight); else e.Graphics.DrawString(listBox3.Items[previousIndexAsset].ToString(), listBox3.Font, new SolidBrush(Color.White), 0, (previousIndexAsset - listBox3.TopIndex) * listBox3.ItemHeight);
@@ -7616,7 +7455,7 @@ namespace ReBloxLauncher
                         label33.Invoke(new Action(() => { label33.Text = "Please check your internet."; }));
                         label33.Invoke(new Action(() => { label33.Visible = true; }));
                         button6.Invoke(new Action(() => { button6.Visible = false; }));
-                        Console.WriteLine("<INFO> No internet detected.");
+                        Console.WriteLine("<INFO> No internet detected. Skipping update check.");
                         await Task.Delay(3000);
                         label33.Invoke(new Action(() => { label33.Visible = false; }));
                     }
@@ -7760,7 +7599,7 @@ namespace ReBloxLauncher
                                                             {
 
                                                                 setupAvatarOnServer();
-
+                                                                launchingClient = false;
                                                                 statusText.Invoke(new Action(() => { statusText.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
                                                                 Process roblox = Process.Start(ps);
                                                                 roblox.EnableRaisingEvents = true;
@@ -8420,10 +8259,9 @@ namespace ReBloxLauncher
                 }
                 if (previousIndexMap > -1) if (listBox2.GetSelected(previousIndexMap)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox2.BackColor.R + 26, listBox2.BackColor.G + 26, listBox2.BackColor.B + 26)), new Rectangle(0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox2.BackColor), new Rectangle(0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight));
                 if (listBox2.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox2.BackColor.R + 26, listBox2.BackColor.G + 26, listBox2.BackColor.B + 26)), new Rectangle(0, (e.Index - listBox2.TopIndex) * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox2.BackColor), new Rectangle(0, (e.Index - listBox2.TopIndex) * listBox2.ItemHeight, listBox2.Width, listBox2.ItemHeight));
-                AssetPackItem item = listBox2.Items[e.Index] as AssetPackItem;
                 if (e.Index >= listBox2.TopIndex)
                 {
-                    if (item != null)
+                    if (listBox2.Items[e.Index] is AssetPackItem item)
                     {
                         e.Graphics.DrawString(item.AssetPackName, listBox2.Font, new SolidBrush(item.ItemColor), 0, (e.Index - listBox2.TopIndex) * listBox2.ItemHeight);
                         if (previousIndexMap > -1 && previousIndexMap != e.Index) if (listBox2.Items[previousIndexMap] as AssetPackItem != null) e.Graphics.DrawString((listBox2.Items[previousIndexMap] as AssetPackItem).AssetPackName, listBox2.Font, new SolidBrush((listBox2.Items[previousIndexMap] as AssetPackItem).ItemColor), 0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight); else e.Graphics.DrawString(listBox2.Items[previousIndexMap].ToString(), listBox2.Font, new SolidBrush(Color.White), 0, (previousIndexMap - listBox2.TopIndex) * listBox2.ItemHeight);
@@ -8450,10 +8288,9 @@ namespace ReBloxLauncher
                 }
                 if (previousIndexClient > -1) if (listBox1.GetSelected(previousIndexClient)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox1.BackColor.R + 26, listBox1.BackColor.G + 26, listBox1.BackColor.B + 26)), new Rectangle(0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox1.BackColor), new Rectangle(0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight));
                 if (listBox1.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox1.BackColor.R + 26, listBox1.BackColor.G + 26, listBox1.BackColor.B + 26)), new Rectangle(0, (e.Index - listBox1.TopIndex) * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox1.BackColor), new Rectangle(0, (e.Index - listBox1.TopIndex) * listBox1.ItemHeight, listBox1.Width, listBox1.ItemHeight));
-                AssetPackItem item = listBox1.Items[e.Index] as AssetPackItem;
                 if (e.Index >= listBox1.TopIndex)
                 {
-                    if (item != null)
+                    if (listBox1.Items[e.Index] is AssetPackItem item)
                     {
                         e.Graphics.DrawString(item.AssetPackName, listBox1.Font, new SolidBrush(item.ItemColor), 0, (e.Index - listBox1.TopIndex) * listBox1.ItemHeight);
                         if (previousIndexClient > -1 && previousIndexClient != e.Index) if (listBox1.Items[previousIndexClient] as AssetPackItem != null) e.Graphics.DrawString((listBox1.Items[previousIndexClient] as AssetPackItem).AssetPackName, listBox1.Font, new SolidBrush((listBox1.Items[previousIndexClient] as AssetPackItem).ItemColor), 0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight); else e.Graphics.DrawString(listBox1.Items[previousIndexClient].ToString(), listBox1.Font, new SolidBrush(Color.White), 0, (previousIndexClient - listBox1.TopIndex) * listBox1.ItemHeight);
@@ -8481,10 +8318,9 @@ namespace ReBloxLauncher
                     }
                     if (previousIndexAvatar > -1) if (listBox4.GetSelected(previousIndexAvatar)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox4.BackColor.R + 26, listBox4.BackColor.G + 26, listBox4.BackColor.B + 26)), new Rectangle(0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox4.BackColor), new Rectangle(0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight));
                     if (listBox4.GetSelected(e.Index)) e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(listBox4.BackColor.R + 26, listBox4.BackColor.G + 26, listBox4.BackColor.B + 26)), new Rectangle(0, (e.Index - listBox4.TopIndex) * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight)); else e.Graphics.FillRectangle(new SolidBrush(listBox4.BackColor), new Rectangle(0, (e.Index - listBox4.TopIndex) * listBox4.ItemHeight, listBox4.Width, listBox4.ItemHeight));
-                    AssetPackItem item = listBox4.Items[e.Index] as AssetPackItem;
                     if (e.Index >= listBox4.TopIndex)
                     {
-                        if (item != null)
+                        if (listBox4.Items[e.Index] is AssetPackItem item)
                         {
                             e.Graphics.DrawString(item.AssetPackName, listBox4.Font, new SolidBrush(item.ItemColor), 0, (e.Index - listBox4.TopIndex) * listBox4.ItemHeight);
                             if (previousIndexAvatar > -1 && previousIndexAvatar != e.Index) if (listBox4.Items[previousIndexAvatar] as AssetPackItem != null) e.Graphics.DrawString((listBox4.Items[previousIndexAvatar] as AssetPackItem).AssetPackName, listBox4.Font, new SolidBrush((listBox4.Items[previousIndexAvatar] as AssetPackItem).ItemColor), 0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight); else e.Graphics.DrawString(listBox4.Items[previousIndexAvatar].ToString(), listBox4.Font, new SolidBrush(Color.White), 0, (previousIndexAvatar - listBox4.TopIndex) * listBox4.ItemHeight);
@@ -8653,15 +8489,12 @@ namespace ReBloxLauncher
             if (fadeImage && listBox1.SelectedIndex > -1)
             {
                 float[][] matrixItems = new[] { new float[] { 1, 0, 0, 0, 0 }, new float[] { 0, 1, 0, 0, 0 }, new float[] { 0, 0, 1, 0, 0 }, new float[] { 0, 0, 0, opacity, 0 }, new float[] { 0, 0, 0, 0, 1 } };
-
                 ColorMatrix colorMatrix = new ColorMatrix(matrixItems);
-
                 ImageAttributes imageAtt = new ImageAttributes();
 
                 imageAtt.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
 
                 e.Graphics.DrawImage(imageFromFade, new Rectangle(0, 0, panel7.Width, panel7.Height));
-
                 e.Graphics.DrawImage(imageToFade, new Rectangle(0, 0, panel7.Width, panel7.Height), 0F, 0F, imageToFade.Width, imageToFade.Height, GraphicsUnit.Pixel, imageAtt);
 
                 opacity += 0.005F;
@@ -8678,7 +8511,6 @@ namespace ReBloxLauncher
                     e.Graphics.DrawImage(image, new Rectangle(0, 0, panel7.Width, panel7.Height));
 
                     image.Dispose();
-
                     e.Dispose();
                 }
             }
@@ -8823,6 +8655,7 @@ namespace ReBloxLauncher
             numericUpDown5.Visible = true;
             numericUpDown6.Visible = true;
             comboBox1.Visible = true;
+            comboBox4.Visible = Properties.Settings.Default.CharactersList != null && Properties.Settings.Default.CharactersList.Count > 0;
             label17.Visible = true;
             label18.Visible = true;
             label19.Visible = true;
@@ -8866,6 +8699,7 @@ namespace ReBloxLauncher
                         numericUpDown5.Visible = false;
                         numericUpDown6.Visible = false;
                         comboBox1.Visible = false;
+                        comboBox4.Visible = false;
                         label17.Visible = false;
                         label18.Visible = false;
                         label19.Visible = false;
@@ -8923,6 +8757,7 @@ namespace ReBloxLauncher
                     numericUpDown5.Visible = false;
                     numericUpDown6.Visible = false;
                     comboBox1.Visible = false;
+                    comboBox4.Visible = false;
                     label17.Visible = false;
                     label18.Visible = false;
                     label19.Visible = false;
@@ -8962,6 +8797,7 @@ namespace ReBloxLauncher
                 numericUpDown5.Visible = false;
                 numericUpDown6.Visible = false;
                 comboBox1.Visible = false;
+                comboBox4.Visible = false;
                 label17.Visible = false;
                 label18.Visible = false;
                 label19.Visible = false;
@@ -9308,7 +9144,7 @@ namespace ReBloxLauncher
         }
 
         int thumbnailgeneratorchecker = 0;
-        Regex successDetector = new Regex(@"ThumbnailGenerator::click\(\) success");
+        readonly Regex successDetector = new Regex(@"ThumbnailGenerator::click\(\) success");
         private async void Roblox_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (String.IsNullOrEmpty(e.Data) == false)
@@ -9508,6 +9344,7 @@ namespace ReBloxLauncher
             {
                 ServerCheck.Interval = 5000;
             }
+
             if (savedPort.Count == 1)
             {
                 if (ServerUtils.checkPortUdp(savedPort[0]) == false)
@@ -9590,6 +9427,7 @@ namespace ReBloxLauncher
                     Properties.Settings.Default.CharactersList = firstCharacter;
                 }
                 else Properties.Settings.Default.CharactersList.Add(JsonConvert.SerializeObject(jsondata));
+
                 characterName = "";
                 Properties.Settings.Default.Save();
                 savingCharacter = false;
@@ -9603,6 +9441,7 @@ namespace ReBloxLauncher
                 listBox4.Items.Clear();
                 SaveAvatarType avatar = JsonConvert.DeserializeObject<SaveAvatarType>(Properties.Settings.Default.CharactersList[comboBox4.SelectedIndex]);
                 Properties.Settings.Default.ClothesArray = "";
+
                 if (avatar.asset != null && avatar.asset.Count > 0)
                 {
                     for (int i = 0; i < avatar.asset.Count; i++)
@@ -9611,6 +9450,7 @@ namespace ReBloxLauncher
                         listBox4.Items.Add(avatar.asset[i].id);
                     }
                 }
+
                 comboBox1.SelectedItem = avatar.bodyType;
                 Properties.Settings.Default.avatarR15 = avatar.bodyType == "R15";
                 Properties.Settings.Default.TorsoColor = avatar.colors.torsoColor;
@@ -9634,6 +9474,53 @@ namespace ReBloxLauncher
                 RightLegPanel.BackColor = convertBrickColortoColor(avatar.colors.rightLegColor);
 
                 Properties.Settings.Default.Save();
+            }
+        }
+
+        private void listBox2_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control == true && e.KeyCode == Keys.C)
+            {
+                if (listBox2.SelectedIndex > -1)
+                {
+                    if (File.Exists(datafolder + @"\maps\" + listBox2.SelectedItem))
+                    {
+                        System.Collections.Specialized.StringCollection filePath = new System.Collections.Specialized.StringCollection();
+                        filePath.Add(datafolder + @"\maps\" + listBox2.SelectedItem);
+                        Clipboard.SetFileDropList(filePath);
+                    }
+                }
+            }
+            else if (e.KeyCode == Keys.Delete)
+            {
+                if (listBox2.SelectedIndex > -1)
+                {
+                    if (File.Exists(datafolder + @"\maps\" + listBox2.SelectedItem))
+                    {
+                        if (MessageBox.Show("Are you sure you wanna delete " + listBox2.SelectedItem + "?", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
+                        {
+                            try
+                            {
+                                File.Delete(datafolder + @"\maps\" + listBox2.SelectedItem);
+                                if (Properties.Settings.Default.lastselectedmap == listBox2.SelectedItem.ToString())
+                                {
+                                    Properties.Settings.Default.lastselectedmap = "";
+                                    Properties.Settings.Default.Save();
+                                }
+                                listBox2.Items.RemoveAt(listBox2.SelectedIndex);
+                            }
+                            catch (Exception err)
+                            {
+                                Console.WriteLine("<ERROR> Something went wrong while trying to delete a map! Please look in the error below for more details:\r\n" + err);
+                                MessageBox.Show("Something went wrong while trying to delete the map! Please look in log.log for more details.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        listBox2.Items.RemoveAt(listBox2.SelectedIndex);
+                    }
+                }
             }
         }
     }
