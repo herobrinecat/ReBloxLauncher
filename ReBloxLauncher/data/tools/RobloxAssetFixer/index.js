@@ -1700,7 +1700,7 @@ app.get("/asset", (req, res) => {
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
                                 if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.ID, (result) => {
+                                    getAsset(req.query.assetversionid, (result) => {
                                         if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                         res.send(result)
                                     })
@@ -2184,7 +2184,7 @@ app.get("/asset/", (req, res) => {
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
                                 if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.id, (result) => {
+                                    getAsset(req.query.assetversionid, (result) => {
                                         if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                         res.send(result)
                                     })
@@ -2511,7 +2511,7 @@ app.get("//asset/", (req, res) => {
                                 var buffer = Buffer.concat(data)
 
                                 if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.id, (result) => {
+                                    getAsset(req.query.assetversionid, (result) => {
                                         if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                         res.send(result)
                                     })
@@ -2837,7 +2837,7 @@ app.get("/v1/asset", (req, res) => {
                                 var buffer = Buffer.concat(data)
 
                                 if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.id, (result) => {
+                                    getAsset(req.query.assetversionid, (result) => {
                                         if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                         res.send(result)
                                     })
@@ -3169,7 +3169,7 @@ app.get("/v1/asset/", (req, res) => {
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
                                 if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.id, (result) => {
+                                    getAsset(req.query.assetversionid, (result) => {
                                         if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                         res.send(result)
                                     })
