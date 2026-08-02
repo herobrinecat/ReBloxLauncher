@@ -1869,14 +1869,24 @@ function translateAssetTypeIdToAssetType(assetTypeId) {
 async function createBatchResponse(request) {
     var edit = ""
     if (filesystem.existsSync("./assettype.json")) assetTypeJSON = JSON.parse(filesystem.readFileSync("./assettype.json", "utf8"))
-    request.forEach((requestAsset) => {
-        if (filesystem.existsSync("./assettype.json") || requestAsset["assetType"] != undefined) {
-            if (requestAsset["assetType"] != undefined) {
-                if (requestAsset != request[request.length - 1]) {
-                    edit = edit + "{\"location\": \"" + ((requestAsset["assetType"] == "Image") ? "http://reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + requestAsset["assetId"] + "&wd=700&ht=700&fmt=png" : "http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"]) + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + translateAssetTypeToAssetTypeId(requestAsset["assetType"]).toString() + ", \"isRecordable\": true }, "
+    if (Array.isArray(request)) {
+        request.forEach((requestAsset) => {
+            if (filesystem.existsSync("./assettype.json") || requestAsset["assetType"] != undefined) {
+                if (requestAsset["assetType"] != undefined) {
+                    if (requestAsset != request[request.length - 1]) {
+                        edit = edit + "{\"location\": \"" + ((requestAsset["assetType"] == "Image") ? "http://reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + requestAsset["assetId"] + "&wd=700&ht=700&fmt=png" : "http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"]) + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + translateAssetTypeToAssetTypeId(requestAsset["assetType"]).toString() + ", \"isRecordable\": true }, "
+                    }
+                    else {
+                        edit += "{\"location\": \"" + ((requestAsset["assetType"] == "Image") ? "http://reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + requestAsset["assetId"] + "&wd=700&ht=700&fmt=png" : "http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"]) + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + translateAssetTypeToAssetTypeId(requestAsset["assetType"]).toString() + ", \"isRecordable\": true }"
+                    }
                 }
                 else {
-                    edit += "{\"location\": \"" + ((requestAsset["assetType"] == "Image") ? "http://reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + requestAsset["assetId"] + "&wd=700&ht=700&fmt=png" : "http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"]) + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + translateAssetTypeToAssetTypeId(requestAsset["assetType"]).toString() + ", \"isRecordable\": true }"
+                    if (requestAsset != request[request.length - 1]) {
+                        edit += "{\"location\": \"" + ((getAssetType(requestAsset["assetId"]) == 1) ? "http://reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + requestAsset["assetId"] + "&wd=700&ht=700&fmt=png" : "http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"]) + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + getAssetType(requestAsset["assetId"]).toString() + ", \"isRecordable\": true }, "
+                    }
+                    else {
+                        edit += "{\"location\": \"" + ((getAssetType(requestAsset["assetId"]) == 1) ? "http://reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + requestAsset["assetId"] + "&wd=700&ht=700&fmt=png" : "http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"]) + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + getAssetType(requestAsset["assetId"]).toString() + ", \"isRecordable\": true }"
+                    }
                 }
             }
             else {
@@ -1887,16 +1897,8 @@ async function createBatchResponse(request) {
                     edit += "{\"location\": \"" + ((getAssetType(requestAsset["assetId"]) == 1) ? "http://reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + requestAsset["assetId"] + "&wd=700&ht=700&fmt=png" : "http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"]) + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + getAssetType(requestAsset["assetId"]).toString() + ", \"isRecordable\": true }"
                 }
             }
-        }
-        else {
-            if (requestAsset != request[request.length - 1]) {
-                edit += "{\"location\": \"" + ((getAssetType(requestAsset["assetId"]) == 1) ? "http://reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + requestAsset["assetId"] + "&wd=700&ht=700&fmt=png" : "http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"]) + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + getAssetType(requestAsset["assetId"]).toString() + ", \"isRecordable\": true }, "
-            }
-            else {
-                edit += "{\"location\": \"" + ((getAssetType(requestAsset["assetId"]) == 1) ? "http://reblox.zip/Game/Tools/ThumbnailAsset.ashx?aid=" + requestAsset["assetId"] + "&wd=700&ht=700&fmt=png" : "http://assetdelivery.reblox.zip/v1/asset/?id=" + requestAsset["assetId"]) + "\", \"requestId\": \"" + requestAsset["requestId"] + "\", \"isArchived\":false, \"assetTypeId\": " + getAssetType(requestAsset["assetId"]).toString() + ", \"isRecordable\": true }"
-            }
-        }
-    })
+        })
+    }
 
     return "[" + edit + "]"
 }
