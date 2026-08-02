@@ -1273,18 +1273,19 @@ app.get("/asset", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
     var assetfound1 = false
-    if (isNumeric(req.query.id)) {
+    var targetId = req.query.id || req.query.ID || req.query.assetversionid
+    if (isNumeric(targetId)) {
         var duplicatecount = 0
         filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
-            if (splitted[0] == req.query.id.toString().trim()) {
+            if (splitted[0] == targetId.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from uploads folder (Asset)")
                 }
 
                 res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                 if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
                     if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
@@ -1306,9 +1307,9 @@ app.get("/asset", (req, res) => {
         if (assetfound1 == false) {
             filesystem.readdirSync(assetfolder).forEach(file => {
                 var splitted = file.split('.')
-                if (splitted[0] == req.query.id.toString().trim()) {
+                if (splitted[0] == targetId.toString().trim()) {
                     if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from asset folder (Asset)")
                     }
 
                     if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
@@ -1319,7 +1320,7 @@ app.get("/asset", (req, res) => {
                         else {
                             res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                             if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
                                 if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
@@ -1341,7 +1342,7 @@ app.get("/asset", (req, res) => {
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                         if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
                             if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
@@ -1363,13 +1364,13 @@ app.get("/asset", (req, res) => {
                 }
             })
             if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
+                res.setHeader("Content-disposition", "attachment; filename=\"" + targetId + "\"")
                 if (assetsFromServer && joining) {
                     try {
                         var options = {
                             host: ip,
                             port: 80,
-                            path: "/asset?id=" + req.query.id,
+                            path: "/asset?id=" + targetId,
                             method: "GET"
                         }
 
@@ -1377,7 +1378,7 @@ app.get("/asset", (req, res) => {
                             var data = [], output
                             if (res1.headers["content-encoding"] == 'gzip') {
                                 if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from local server (Asset) [gzip compression]")
                                 }
                                 var gzip = zlib.createGunzip()
                                 res1.pipe(gzip)
@@ -1385,7 +1386,7 @@ app.get("/asset", (req, res) => {
                             }
                             else if (res1.headers["content-encoding"] == 'deflate') {
                                 if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from local server (Asset) [deflate compression]")
                                 }
                                 var deflate = zlib.createDeflate()
                                 res1.pipe(deflate)
@@ -1393,7 +1394,7 @@ app.get("/asset", (req, res) => {
                             }
                             else {
                                 if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from local server (Asset)")
                                 }
                                 output = res1
                             }
@@ -1404,7 +1405,7 @@ app.get("/asset", (req, res) => {
                                 var buffer = Buffer.concat(data)
                                 if (buffer.length < 60) {
                                     if (buffer.toString().startsWith("{\"errors\"")) {
-                                        getAsset(req.query.id, (result) => {
+                                        getAsset(targetId, (result) => {
                                             if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                             res.send(result)
                                         })
@@ -1430,7 +1431,7 @@ app.get("/asset", (req, res) => {
                     }
                 }
                 else {
-                    getAsset(req.query.id, (result) => {
+                    getAsset(targetId, (result) => {
                         if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
@@ -1438,806 +1439,6 @@ app.get("/asset", (req, res) => {
                 }
             }
         }
-    }
-    else if (isNumeric(req.query.ID)) {
-        var duplicatecount = 0
-        filesystem.readdirSync("./uploads").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.ID.toString().trim()) {
-                if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from uploads folder (Asset)")
-                }
-
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
-                }
-                else {
-                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                        }
-                        else {
-                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                        }
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    }
-                }
-                assetfound1 = true
-                return
-            }
-        })
-        if (assetfound1 == false) {
-            filesystem.readdirSync(assetfolder).forEach(file => {
-                var splitted = file.split('.')
-                if (splitted[0] == req.query.ID.toString().trim()) {
-                    if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from asset folder (Asset)")
-                    }
-
-                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                            duplicatecount++
-                            //do nothing for christ sake
-                        }
-                        else {
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                            if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                            }
-                            else {
-                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                    }
-                                    else {
-                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                    }
-                                }
-                                else {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                            }
-                            assetfound = true
-                            return
-                        }
-                    }
-                    else {
-                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                        }
-                        else {
-                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                                else {
-                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                }
-                            }
-                            else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                            }
-                        }
-                        assetfound = true
-                        return
-                    }
-
-                }
-            })
-            if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.ID + "\"")
-                if (assetsFromServer && joining) {
-                    try {
-                        var options = {
-                            host: ip,
-                            port: 80,
-                            path: "/asset?id=" + req.query.ID,
-                            method: "GET"
-                        }
-
-                        http.get(options, (res1) => {
-                            var data = [], output
-                            if (res1.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res1.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res1.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res1.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset)")
-                                }
-                                output = res1
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.ID, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
-                                }
-                                else {
-                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                    res.status(res1.statusCode).send(buffer)
-                                    return
-                                }
-                            })
-                        })
-
-                    } catch {
-                        res.status(500).end()
-                        return
-                    }
-                }
-                else {
-                    getAsset(req.query.ID, (result) => {
-                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                        res.send(result)
-                        return
-                    })
-                }
-            }
-        }
-    }
-    else if (isNumeric(req.query.assetversionid)) {
-        var duplicatecount = 0
-        filesystem.readdirSync("./uploads").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.assetversionid.toString().trim()) {
-                if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
-                }
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
-                }
-                else {
-                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                        }
-                        else {
-                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                        }
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    }
-                }
-                assetfound1 = true
-                return
-            }
-        })
-        if (assetfound1 == false) {
-            filesystem.readdirSync(assetfolder).forEach(file => {
-                var splitted = file.split('.')
-                if (splitted[0] == req.query.assetversionid.toString().trim()) {
-                    if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
-                    }
-                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                            duplicatecount++
-                            //do nothing for christ sake
-                        }
-                        else {
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                            if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                            }
-                            else {
-                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                    }
-                                    else {
-                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                    }
-                                }
-                                else {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                            }
-                            assetfound = true
-                            return
-                        }
-                    }
-                    else {
-                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                        }
-                        else {
-                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                                else {
-                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                }
-                            }
-                            else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                            }
-                        }
-                        assetfound = true
-                        return
-                    }
-                }
-            })
-            if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
-                if (assetsFromServer && joining) {
-                    try {
-                        var options = {
-                            host: ip,
-                            port: 80,
-                            path: "/asset?id=" + req.query.assetversionid,
-                            method: "GET"
-                        }
-
-                        http.get(options, (res1) => {
-                            var data = [], output
-                            if (res1.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res1.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res1.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res1.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
-                                }
-                                output = res1
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.assetversionid, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
-                                }
-                                else {
-                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                    res.status(res1.statusCode).send(buffer)
-                                    return
-                                }
-                            })
-                        })
-
-                    } catch {
-                        res.status(500).end()
-                        return
-                    }
-                }
-                else {
-                    getAsset(req.query.assetversionid, (result) => {
-                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                        res.send(result)
-                        return
-                    })
-                }
-            }
-        }
-
-    }
-    else {
-        res.status(404).end()
-    }
-})
-
-app.get("/asset/", (req, res) => {
-    res.setHeader("cache-control", "no-cache")
-    var assetfound = false
-    var assetfound1 = false
-    if (isNumeric(req.query.id)) {
-        var duplicatecount = 0
-        filesystem.readdirSync("./uploads").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.id.toString().trim()) {
-                if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
-                }
-
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
-                }
-                else {
-                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                        }
-                        else {
-                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                        }
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    }
-                }
-                assetfound1 = true
-                return
-            }
-        })
-        if (assetfound1 == false) {
-            filesystem.readdirSync(assetfolder).forEach(file => {
-                var splitted = file.split('.')
-                if (splitted[0] == req.query.id.toString().trim()) {
-                    if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
-                    }
-
-                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                            duplicatecount++
-                            //do nothing for christ sake
-                        }
-                        else {
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                            if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                            }
-                            else {
-                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                    }
-                                    else {
-                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                    }
-                                }
-                                else {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                            }
-                            assetfound = true
-                            return
-                        }
-                    }
-                    else {
-                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                        }
-                        else {
-                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                                else {
-                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                }
-                            }
-                            else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                            }
-                        }
-                        assetfound = true
-                        return
-                    }
-
-                }
-            })
-            if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
-                if (assetsFromServer && joining) {
-                    try {
-                        var options = {
-                            host: ip,
-                            port: 80,
-                            path: "/asset?id=" + req.query.id,
-                            method: "GET"
-                        }
-
-                        http.get(options, (res1) => {
-                            var data = [], output
-                            if (res1.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res1.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res1.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res1.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
-                                }
-                                output = res1
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.ID, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
-                                }
-                                else {
-                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                    res.status(res1.statusCode).send(buffer)
-                                    return
-                                }
-                            })
-                        })
-
-                    } catch {
-                        res.status(500).end()
-                        return
-                    }
-                }
-                else {
-                    getAsset(req.query.id, (result) => {
-                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                        res.send(result)
-                        return
-                    })
-                }
-            }
-        }
-    }
-    else if (isNumeric(req.query.ID)) {
-        var duplicatecount = 0
-        filesystem.readdirSync("./uploads").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.ID.toString().trim()) {
-                if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from uploads folder (Asset)")
-                }
-
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
-                }
-                else {
-                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                        }
-                        else {
-                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                        }
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    }
-                }
-                assetfound1 = true
-                return
-            }
-        })
-        if (assetfound1 == false) {
-            filesystem.readdirSync(assetfolder).forEach(file => {
-                var splitted = file.split('.')
-                if (splitted[0] == req.query.ID.toString().trim()) {
-                    if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from asset folder (Asset)")
-                    }
-
-                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                            duplicatecount++
-                            //do nothing for christ sake
-                        }
-                        else {
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                            if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                            }
-                            else {
-                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                    }
-                                    else {
-                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                    }
-                                }
-                                else {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                            }
-                            assetfound = true
-                            return
-                        }
-                    }
-                    else {
-                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%" + req.query.ID + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.ID + "%\r\n" : "%\r\n%" + req.query.ID + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                        }
-                        else {
-                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                                else {
-                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                }
-                            }
-                            else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                            }
-                        }
-                        assetfound = true
-                        return
-                    }
-
-                }
-            })
-            if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.ID + "\"")
-                if (assetsFromServer && joining) {
-                    try {
-                        var options = {
-                            host: ip,
-                            port: 80,
-                            path: "/asset?id=" + req.query.ID,
-                            method: "GET"
-                        }
-
-                        http.get(options, (res1) => {
-                            var data = [], output
-                            if (res1.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res1.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res1.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res1.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.ID + " from local server (Asset)")
-                                }
-                                output = res1
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.ID, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
-                                }
-                                else {
-                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                    res.status(res1.statusCode).send(buffer)
-                                    return
-                                }
-                            })
-                        })
-
-                    } catch {
-                        res.status(500).end()
-                        return
-                    }
-                }
-                else {
-                    getAsset(req.query.ID, (result) => {
-                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                        res.send(result)
-                        return
-                    })
-                }
-            }
-        }
-    }
-    else if (isNumeric(req.query.assetversionid)) {
-        var duplicatecount = 0
-        filesystem.readdirSync("./uploads").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.assetversionid.toString().trim()) {
-                if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
-                }
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
-                }
-                else {
-                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                        }
-                        else {
-                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                        }
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    }
-                }
-                assetfound1 = true
-                return
-            }
-        })
-        if (assetfound1 == false) {
-            filesystem.readdirSync(assetfolder).forEach(file => {
-                var splitted = file.split('.')
-                if (splitted[0] == req.query.assetversionid.toString().trim()) {
-                    if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
-                    }
-                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                            duplicatecount++
-                            //do nothing for christ sake
-                        }
-                        else {
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                            if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                            }
-                            else {
-                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                    }
-                                    else {
-                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                    }
-                                }
-                                else {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                            }
-                            assetfound = true
-                            return
-                        }
-                    }
-                    else {
-                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                        }
-                        else {
-                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                                else {
-                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                }
-                            }
-                            else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                            }
-                        }
-                        assetfound = true
-                        return
-                    }
-                }
-            })
-            if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
-                if (assetsFromServer && joining) {
-                    try {
-                        var options = {
-                            host: ip,
-                            port: 80,
-                            path: "/asset?id=" + req.query.assetversionid,
-                            method: "GET"
-                        }
-
-                        http.get(options, (res1) => {
-                            var data = [], output
-                            if (res1.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res1.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res1.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res1.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
-                                }
-                                output = res1
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.assetversionid, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
-                                }
-                                else {
-                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                    res.status(res1.statusCode).send(buffer)
-                                    return
-                                }
-                            })
-                        })
-
-                    } catch {
-                        res.status(500).end()
-                        return
-                    }
-                }
-                else {
-                    getAsset(req.query.assetversionid, (result) => {
-                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                        res.send(result)
-                        return
-                    })
-                }
-            }
-        }
-
     }
     else {
         res.status(404).end()
@@ -2245,22 +1446,23 @@ app.get("/asset/", (req, res) => {
 })
 
 
-app.get("//asset/", (req, res) => {
+app.get("//asset", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
     var assetfound1 = false
-    if (isNumeric(req.query.id)) {
+    var targetId = req.query.id || req.query.ID || req.query.assetversionid
+    if (isNumeric(targetId)) {
         var duplicatecount = 0
         filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
-            if (splitted[0] == req.query.id.toString().trim()) {
+            if (splitted[0] == targetId.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from uploads folder (Asset)")
                 }
 
                 res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                 if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
                     if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
@@ -2282,9 +1484,9 @@ app.get("//asset/", (req, res) => {
         if (assetfound1 == false) {
             filesystem.readdirSync(assetfolder).forEach(file => {
                 var splitted = file.split('.')
-                if (splitted[0] == req.query.id.toString().trim()) {
+                if (splitted[0] == targetId.toString().trim()) {
                     if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from asset folder (Asset)")
                     }
 
                     if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
@@ -2295,7 +1497,7 @@ app.get("//asset/", (req, res) => {
                         else {
                             res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                             if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
                                 if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
@@ -2317,7 +1519,7 @@ app.get("//asset/", (req, res) => {
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                         if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
                             if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
@@ -2339,13 +1541,13 @@ app.get("//asset/", (req, res) => {
                 }
             })
             if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
+                res.setHeader("Content-disposition", "attachment; filename=\"" + targetId + "\"")
                 if (assetsFromServer && joining) {
                     try {
                         var options = {
                             host: ip,
                             port: 80,
-                            path: "/asset?id=" + req.query.id,
+                            path: "/asset?id=" + targetId,
                             method: "GET"
                         }
 
@@ -2353,7 +1555,7 @@ app.get("//asset/", (req, res) => {
                             var data = [], output
                             if (res1.headers["content-encoding"] == 'gzip') {
                                 if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from local server (Asset) [gzip compression]")
                                 }
                                 var gzip = zlib.createGunzip()
                                 res1.pipe(gzip)
@@ -2361,7 +1563,7 @@ app.get("//asset/", (req, res) => {
                             }
                             else if (res1.headers["content-encoding"] == 'deflate') {
                                 if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from local server (Asset) [deflate compression]")
                                 }
                                 var deflate = zlib.createDeflate()
                                 res1.pipe(deflate)
@@ -2369,659 +1571,7 @@ app.get("//asset/", (req, res) => {
                             }
                             else {
                                 if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
-                                }
-                                output = res1
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.id, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
-                                }
-                                else {
-                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                    res.status(res1.statusCode).send(buffer)
-                                    return
-                                }
-                            })
-                        })
-
-                    } catch {
-                        res.status(500).end()
-                        return
-                    }
-                }
-                else {
-                    getAsset(req.query.id, (result) => {
-                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                        res.send(result)
-                        return
-                    })
-                }
-            }
-        }
-    }
-    else if (isNumeric(req.query.assetversionid)) {
-        var duplicatecount = 0
-        filesystem.readdirSync("./uploads").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.assetversionid.toString().trim()) {
-                if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
-                }
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
-                }
-                else {
-                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                        }
-                        else {
-                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                        }
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    }
-                }
-                assetfound1 = true
-                return
-            }
-        })
-        if (assetfound1 == false) {
-            filesystem.readdirSync(assetfolder).forEach(file => {
-                var splitted = file.split('.')
-                if (splitted[0] == req.query.assetversionid.toString().trim()) {
-                    if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
-                    }
-                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                            duplicatecount++
-                            //do nothing for christ sake
-                        }
-                        else {
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                            if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                            }
-                            else {
-                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                    }
-                                    else {
-                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                    }
-                                }
-                                else {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                            }
-                            assetfound = true
-                            return
-                        }
-                    }
-                    else {
-                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                        }
-                        else {
-                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                                else {
-                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                }
-                            }
-                            else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                            }
-                        }
-                        assetfound = true
-                        return
-                    }
-                }
-            })
-            if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
-                if (assetsFromServer && joining) {
-                    try {
-                        var options = {
-                            host: ip,
-                            port: 80,
-                            path: "/asset?id=" + req.query.assetversionid,
-                            method: "GET"
-                        }
-
-                        http.get(options, (res1) => {
-                            var data = [], output
-                            if (res1.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res1.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res1.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res1.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
-                                }
-                                output = res1
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.assetversionid, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
-                                }
-                                else {
-                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                    res.status(res1.statusCode).send(buffer)
-                                    return
-                                }
-                            })
-                        })
-
-                    } catch {
-                        res.status(500).end()
-                        return
-                    }
-                }
-                else {
-                    getAsset(req.query.assetversionid, (result) => {
-                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                        res.send(result)
-                        return
-                    })
-                }
-            }
-        }
-
-    }
-    else {
-        res.status(404).end()
-    }
-})
-
-app.get("/v1/asset", (req, res) => {
-    res.setHeader("cache-control", "no-cache")
-    var assetfound = false
-    var assetfound1 = false
-    if (isNumeric(req.query.id)) {
-        var duplicatecount = 0
-        filesystem.readdirSync("./uploads").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.id.toString().trim()) {
-                if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
-                }
-
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
-                }
-                else {
-                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                        }
-                        else {
-                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                        }
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    }
-                }
-                assetfound1 = true
-                return
-            }
-        })
-        if (assetfound1 == false) {
-            filesystem.readdirSync(assetfolder).forEach(file => {
-                var splitted = file.split('.')
-                if (splitted[0] == req.query.id.toString().trim()) {
-                    if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
-                    }
-
-                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                            duplicatecount++
-                            //do nothing for christ sake
-                        }
-                        else {
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                            if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                            }
-                            else {
-                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                    }
-                                    else {
-                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                    }
-                                }
-                                else {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                            }
-                            assetfound = true
-                            return
-                        }
-                    }
-                    else {
-                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                        }
-                        else {
-                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                                else {
-                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                }
-                            }
-                            else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                            }
-                        }
-                        assetfound = true
-                        return
-                    }
-
-                }
-            })
-            if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
-                if (assetsFromServer && joining) {
-                    try {
-                        var options = {
-                            host: ip,
-                            port: 80,
-                            path: "/asset?id=" + req.query.id,
-                            method: "GET"
-                        }
-
-                        http.get(options, (res1) => {
-                            var data = [], output
-                            if (res1.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res1.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res1.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res1.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
-                                }
-                                output = res1
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.id, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
-                                }
-                                else {
-                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                    res.status(res1.statusCode).send(buffer)
-                                    return
-                                }
-                            })
-                        })
-
-                    } catch {
-                        res.status(500).end()
-                        return
-                    }
-                }
-                else {
-                    getAsset(req.query.id, (result) => {
-                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                        res.send(result)
-                        return
-                    })
-                }
-            }
-        }
-    }
-    else if (isNumeric(req.query.assetversionid)) {
-        var duplicatecount = 0
-        filesystem.readdirSync("./uploads").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.assetversionid.toString().trim()) {
-                if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
-                }
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
-                }
-                else {
-                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                        }
-                        else {
-                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                        }
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    }
-                }
-                assetfound1 = true
-                return
-            }
-        })
-        if (assetfound1 == false) {
-            filesystem.readdirSync(assetfolder).forEach(file => {
-                var splitted = file.split('.')
-                if (splitted[0] == req.query.assetversionid.toString().trim()) {
-                    if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
-                    }
-                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                            duplicatecount++
-                            //do nothing for christ sake
-                        }
-                        else {
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                            if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                            }
-                            else {
-                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                    }
-                                    else {
-                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                    }
-                                }
-                                else {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                            }
-                            assetfound = true
-                            return
-                        }
-                    }
-                    else {
-                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                        }
-                        else {
-                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                                else {
-                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                }
-                            }
-                            else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                            }
-                        }
-                        assetfound = true
-                        return
-                    }
-                }
-            })
-            if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
-                if (assetsFromServer && joining) {
-                    try {
-                        var options = {
-                            host: ip,
-                            port: 80,
-                            path: "/asset?id=" + req.query.assetversionid,
-                            method: "GET"
-                        }
-
-                        http.get(options, (res1) => {
-                            var data = [], output
-                            if (res1.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res1.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res1.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res1.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
-                                }
-                                output = res1
-                            }
-                            output.on("data", (chunk) => {
-                                data.push(chunk)
-                            })
-                            output.on("end", () => {
-                                var buffer = Buffer.concat(data)
-
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.assetversionid, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
-                                }
-                                else {
-                                    if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                    res.status(res1.statusCode).send(buffer)
-                                    return
-                                }
-                            })
-                        })
-
-                    } catch {
-                        res.status(500).end()
-                        return
-                    }
-                }
-                else {
-                    getAsset(req.query.assetversionid, (result) => {
-                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                        res.send(result)
-                        return
-                    })
-                }
-            }
-        }
-
-    }
-    else {
-        res.status(404).end()
-    }
-})
-
-app.get("/v1/asset/", (req, res) => {
-    res.setHeader("cache-control", "no-cache")
-    var assetfound = false
-    var assetfound1 = false
-    if (isNumeric(req.query.id)) {
-        var duplicatecount = 0
-        filesystem.readdirSync("./uploads").forEach(file => {
-            var splitted = file.split('.')
-            if (splitted[0] == req.query.id.toString().trim()) {
-                if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from uploads folder (Asset)")
-                }
-
-                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
-                }
-                else {
-                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                            res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                        }
-                        else {
-                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                        }
-                    }
-                    else {
-                        res.status(200).send(filesystem.readFileSync("./uploads/" + file))
-                    }
-                }
-                assetfound1 = true
-                return
-            }
-        })
-        if (assetfound1 == false) {
-            filesystem.readdirSync(assetfolder).forEach(file => {
-                var splitted = file.split('.')
-                if (splitted[0] == req.query.id.toString().trim()) {
-                    if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from asset folder (Asset)")
-                    }
-
-                    if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
-                        if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
-                            duplicatecount++
-                            //do nothing for christ sake
-                        }
-                        else {
-                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                            if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                            }
-                            else {
-                                if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                    if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                        res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                    }
-                                    else {
-                                        res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                    }
-                                }
-                                else {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                            }
-                            assetfound = true
-                            return
-                        }
-                    }
-                    else {
-                        res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
-                        if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%" + req.query.id + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.id + "%\r\n" : "%\r\n%" + req.query.id + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
-                        }
-                        else {
-                            if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
-                                if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
-                                    res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                                }
-                                else {
-                                    res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
-                                }
-                            }
-                            else {
-                                res.status(200).send(filesystem.readFileSync(assetfolder + "/" + file))
-                            }
-                        }
-                        assetfound = true
-                        return
-                    }
-
-                }
-            })
-            if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.id + "\"")
-                if (assetsFromServer && joining) {
-                    try {
-                        var options = {
-                            host: ip,
-                            port: 80,
-                            path: "/asset?id=" + req.query.id,
-                            method: "GET"
-                        }
-
-                        http.get(options, (res1) => {
-                            var data = [], output
-                            if (res1.headers["content-encoding"] == 'gzip') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [gzip compression]")
-                                }
-                                var gzip = zlib.createGunzip()
-                                res1.pipe(gzip)
-                                output = gzip
-                            }
-                            else if (res1.headers["content-encoding"] == 'deflate') {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset) [deflate compression]")
-                                }
-                                var deflate = zlib.createDeflate()
-                                res1.pipe(deflate)
-                                output = deflate
-                            }
-                            else {
-                                if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.id + " from local server (Asset)")
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from local server (Asset)")
                                 }
                                 output = res1
                             }
@@ -3031,9 +1581,9 @@ app.get("/v1/asset/", (req, res) => {
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
                                 if (buffer.length < 60) {
-                                    if (buffer.toString().startsWith("{\"errors\":")) {
-                                        getAsset(req.query.id, (result) => {
-                                            if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; statusCode = 400; }
+                                    if (buffer.toString().startsWith("{\"errors\"")) {
+                                        getAsset(targetId, (result) => {
+                                            if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                                             res.send(result)
                                         })
                                         return
@@ -3058,7 +1608,7 @@ app.get("/v1/asset/", (req, res) => {
                     }
                 }
                 else {
-                    getAsset(req.query.id, (result) => {
+                    getAsset(targetId, (result) => {
                         if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
@@ -3067,17 +1617,28 @@ app.get("/v1/asset/", (req, res) => {
             }
         }
     }
-    else if (isNumeric(req.query.assetversionid)) {
+    else {
+        res.status(404).end()
+    }
+})
+
+app.get("/v1/asset", (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    var assetfound = false
+    var assetfound1 = false
+    var targetId = req.query.id || req.query.assetversionid
+    if (isNumeric(targetId)) {
         var duplicatecount = 0
         filesystem.readdirSync("./uploads").forEach(file => {
             var splitted = file.split('.')
-            if (splitted[0] == req.query.assetversionid.toString().trim()) {
+            if (splitted[0] == targetId.toString().trim()) {
                 if (verbose) {
-                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from uploads folder (Asset)")
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from uploads folder (Asset)")
                 }
+
                 res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                 if (file.endsWith(".lua")) {
-                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
+                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync("./uploads/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync("./uploads/" + file, "utf8"))
                 }
                 else {
                     if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
@@ -3099,10 +1660,11 @@ app.get("/v1/asset/", (req, res) => {
         if (assetfound1 == false) {
             filesystem.readdirSync(assetfolder).forEach(file => {
                 var splitted = file.split('.')
-                if (splitted[0] == req.query.assetversionid.toString().trim()) {
+                if (splitted[0] == targetId.toString().trim()) {
                     if (verbose) {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from asset folder (Asset)")
+                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from asset folder (Asset)")
                     }
+
                     if (calculateDuplicateFiles(splitted[0], assetfolder) > 1) {
                         if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
                             duplicatecount++
@@ -3111,7 +1673,7 @@ app.get("/v1/asset/", (req, res) => {
                         else {
                             res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                             if (file.endsWith(".lua")) {
-                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                                res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                             }
                             else {
                                 if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
@@ -3133,7 +1695,7 @@ app.get("/v1/asset/", (req, res) => {
                     else {
                         res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
                         if (file.endsWith(".lua")) {
-                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%" + req.query.assetversionid + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + req.query.assetversionid + "%\r\n" : "%\r\n%" + req.query.assetversionid + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
+                            res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(assetfolder + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(assetfolder + "/" + file, "utf8"))
                         }
                         else {
                             if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
@@ -3151,16 +1713,17 @@ app.get("/v1/asset/", (req, res) => {
                         assetfound = true
                         return
                     }
+
                 }
             })
             if (assetfound == false) {
-                res.setHeader("Content-disposition", "attachment; filename=\"" + req.query.assetversionid + "\"")
+                res.setHeader("Content-disposition", "attachment; filename=\"" + targetId + "\"")
                 if (assetsFromServer && joining) {
                     try {
                         var options = {
                             host: ip,
                             port: 80,
-                            path: "/asset?id=" + req.query.assetversionid,
+                            path: "/asset?id=" + targetId,
                             method: "GET"
                         }
 
@@ -3168,7 +1731,7 @@ app.get("/v1/asset/", (req, res) => {
                             var data = [], output
                             if (res1.headers["content-encoding"] == 'gzip') {
                                 if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [gzip compression]")
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from local server (Asset) [gzip compression]")
                                 }
                                 var gzip = zlib.createGunzip()
                                 res1.pipe(gzip)
@@ -3176,7 +1739,7 @@ app.get("/v1/asset/", (req, res) => {
                             }
                             else if (res1.headers["content-encoding"] == 'deflate') {
                                 if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset) [deflate compression]")
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from local server (Asset) [deflate compression]")
                                 }
                                 var deflate = zlib.createDeflate()
                                 res1.pipe(deflate)
@@ -3184,7 +1747,7 @@ app.get("/v1/asset/", (req, res) => {
                             }
                             else {
                                 if (verbose) {
-                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + req.query.assetversionid + " from local server (Asset)")
+                                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from local server (Asset)")
                                 }
                                 output = res1
                             }
@@ -3193,12 +1756,19 @@ app.get("/v1/asset/", (req, res) => {
                             })
                             output.on("end", () => {
                                 var buffer = Buffer.concat(data)
-                                if (buffer.toString("utf8").startsWith("{\"errors\":")) {
-                                    getAsset(req.query.assetversionid, (result) => {
-                                        if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
-                                        res.send(result)
-                                    })
-                                    return
+                                if (buffer.length < 60) {
+                                    if (buffer.toString().startsWith("{\"errors\"")) {
+                                        getAsset(targetId, (result) => {
+                                            if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                            res.send(result)
+                                        })
+                                        return
+                                    }
+                                    else {
+                                        if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
+                                        res.status(res1.statusCode).send(buffer)
+                                        return
+                                    }
                                 }
                                 else {
                                     if (buffer.toString("utf8").startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
@@ -3214,7 +1784,7 @@ app.get("/v1/asset/", (req, res) => {
                     }
                 }
                 else {
-                    getAsset(req.query.assetversionid, (result) => {
+                    getAsset(targetId, (result) => {
                         if (typeof (result) == "string" && result.startsWith("{\"errors\":")) { res.removeHeader("Content-disposition"); res.setHeader("content-type", "application/json; charset=utf-8"); res.statusCode = 400; }
                         res.send(result)
                         return
@@ -3222,7 +1792,6 @@ app.get("/v1/asset/", (req, res) => {
                 }
             }
         }
-
     }
     else {
         res.status(404).end()
