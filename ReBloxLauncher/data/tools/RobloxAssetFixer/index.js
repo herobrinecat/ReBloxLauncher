@@ -13,6 +13,7 @@ const crypto = require("crypto")
 const readline = require("readline")
 const path = require("path")
 const jwt = require("jsonwebtoken");
+const os = require("os")
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 //Create express server
@@ -303,6 +304,12 @@ function parseISOString(s) {
     return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]))
 }
 
+function checkIp(ip) {
+    const ipv4 = 
+        /^(\d{1,3}\.){3}\d{1,3}$/;
+    return ipv4.test(ip);
+}
+
 process.on('uncaughtException', (err) => {
     console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong while trying to process a request, this is usually due to the malformed request that the server can't handle or a bug, please check the error stack below!\n", err)
 })
@@ -365,7 +372,25 @@ process.argv.forEach(function (val) {
         }
     }
     else if (val.startsWith("-ip=")) {
-        ip = val.slice(4)
+        if (checkIp(val.slice(4))) {
+            var interfaces = os.networkInterfaces()
+            var addresses = []
+            for (var k in interfaces) {
+                for (var k2 in interfaces[k]) {
+                    var address = interfaces[k][k2]
+                    if (address.family === 'IPv4' && !address.internal) {
+                        if (address.address == val.slice(4)) {
+                            console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't set the IP to yourself! If you're joining, then type the IP address that is not your own.")
+                            return
+                        }
+                    }
+                }
+            }
+            ip = val.slice(4)
+        }
+        else {
+            console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't set an invalid IP address, please type a valid IP address and try again.")
+        }
     }
     else if (val == "-joining") {
         if (ip != "") {
