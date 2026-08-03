@@ -1973,7 +1973,7 @@ namespace ReBloxLauncher
                     string rawJSON = client.DownloadString(updateurl + @"/updates/version.json");
                     Newtonsoft.Json.Linq.JObject jObject = Newtonsoft.Json.Linq.JObject.Parse(rawJSON);
 
-                    if ((Properties.Settings.Default.isBeta ? (string)jObject["betaLauncherVersion"] : (string)jObject["launcherVersion"]) != Properties.Settings.Default.version)
+                    if ((Properties.Settings.Default.isBeta ? (string)jObject["betaLauncherVersion"] : (string)jObject["launcherVersion"]) != Properties.Settings.Default.version && (int)jObject["minorVersion"] > Properties.Settings.Default.minorVersion)
                     {
                         Console.WriteLine("<INFO> Update is available for the ReBlox Launcher!");
                         return true;

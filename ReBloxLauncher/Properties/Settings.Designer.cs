@@ -545,5 +545,14 @@ namespace ReBloxLauncher.Properties {
                 return ((bool)(this["isBeta"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int minorVersion {
+            get {
+                return ((int)(this["minorVersion"]));
+            }
+        }
     }
 }

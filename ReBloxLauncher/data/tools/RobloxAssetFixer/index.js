@@ -14,6 +14,7 @@ const readline = require("readline")
 const path = require("path")
 const jwt = require("jsonwebtoken");
 const os = require("os")
+
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 //Create express server
@@ -305,9 +306,9 @@ function parseISOString(s) {
 }
 
 function checkIp(ip) {
-    const ipv4 = 
+    const ipv4 =
         /^(\d{1,3}\.){3}\d{1,3}$/;
-    return ipv4.test(ip);
+    return ipv4.test(ip)
 }
 
 process.on('uncaughtException', (err) => {
@@ -1898,9 +1899,13 @@ async function createBatchResponse(request) {
                 }
             }
         })
+        return "[" + edit + "]"
+    }
+    else {
+        return "{\"errors\": [{\"code\": 400, \"message\": \"Request was not in correct format\"}]}"
     }
 
-    return "[" + edit + "]"
+    
 }
 
 app.post("/v1/assets/batch", (req, res) => {
@@ -1908,7 +1913,9 @@ app.post("/v1/assets/batch", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
 
     createBatchResponse(req.body).then((result) => {
-        res.status(200).send(result)
+        if (result.startsWith("{\"errors\": [{")) {
+            res.status(JSON.parse(result)["errors"][0]["code"]).send(result)
+        }
     })
 })
 
