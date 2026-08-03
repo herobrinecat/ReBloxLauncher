@@ -1969,6 +1969,7 @@ namespace ReBloxLauncher
                 try
                 {
                     WebClient client = new WebClient();
+                    client.Headers.Add("User-Agent", "ReBlox/" + Properties.Settings.Default.version + (Properties.Settings.Default.minorVersion > 0 ? "-" + Properties.Settings.Default.minorVersion : "") + " (Windows NT " + WineDetector.getOSVersion() + (WineDetector.IsRunningOnWine() ? "; WINE " + WineDetector.getWineVersion() + ")" : ")"));
                     Console.WriteLine("<INFO> Checking the version of the client and the server reports...");
                     string rawJSON = client.DownloadString(updateurl + @"/updates/version.json");
                     Newtonsoft.Json.Linq.JObject jObject = Newtonsoft.Json.Linq.JObject.Parse(rawJSON);
@@ -1995,6 +1996,7 @@ namespace ReBloxLauncher
                 try
                 {
                     WebClient client = new WebClient();
+                    client.Headers.Add("User-Agent", "ReBlox/" + Properties.Settings.Default.version + (Properties.Settings.Default.minorVersion > 0 ? "-" + Properties.Settings.Default.minorVersion : "") + " (Windows NT " + WineDetector.getOSVersion() + (WineDetector.IsRunningOnWine() ? "; WINE " + WineDetector.getWineVersion() + ")" : ")"));
                     Console.WriteLine("<INFO> Checking the version of the client and the server reports...");
                     if (client.DownloadString(updateurl + @"/version.txt") != Properties.Settings.Default.version)
                     {
@@ -2007,8 +2009,9 @@ namespace ReBloxLauncher
                         return false;
                     }
                 }
-                catch
+                catch (Exception e)
                 {
+                    Console.WriteLine("<WARN> Something went wrong when trying to check for updates! The error can be seen below:\r\n" + e);
                     return false;
                 }
             }
