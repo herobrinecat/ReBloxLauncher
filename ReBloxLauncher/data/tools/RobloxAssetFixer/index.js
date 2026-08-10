@@ -1916,6 +1916,9 @@ app.post("/v1/assets/batch", (req, res) => {
         if (result.startsWith("{\"errors\": [{")) {
             res.status(JSON.parse(result)["errors"][0]["code"]).send(result)
         }
+        else {
+            res.status(200).send(result)
+        }
     })
 })
 
