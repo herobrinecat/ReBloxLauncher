@@ -21,4 +21,4 @@ You can download the latest stable release in the [download server](http://reblo
 The application supports Windows 7 and above since it's made with .NET Framework 4.8, even though Windows 7 is supported, older version of the server dependencies and Node.js are required in order to run on Windows 7 properly.
 
 ## Contributing
-You can contribute to this project by making a pull request with the changes you want to be on the master branch. You could also make an issue telling us a bug and we may fix it! However, use common sense when writing your pull request and issues, as we may ignore or close them if you are a problem. We also accept bug reports from our Discord server.
+You can contribute to this project by making a pull request with the changes you want to be on the master branch. You could also make an issue telling us a bug and we may fix it! However, use common sense when writing your pull request and issues, as we may ignore or close them if you are a problem. We also accept bug reports from our Discord server. AI-generated code are handled more strictly as they are extensively tested.
