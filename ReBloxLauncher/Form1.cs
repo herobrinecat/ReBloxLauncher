@@ -6673,7 +6673,7 @@ namespace ReBloxLauncher
         {
             if (onetime == false)
             {
-                e.Graphics.FillRectangle(new SolidBrush(this.BackColor), new Rectangle(0, 0, 547, 412));
+                e.Graphics.Clear(this.BackColor);
                 onetime = true;
             }
             TabPage page = tabControl1.TabPages[e.Index];
