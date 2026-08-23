@@ -1209,7 +1209,7 @@ namespace ReBloxLauncher
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine("<ERROR> " + e.Message + "\nStack Trace: " + e.StackTrace);
+                            Console.WriteLine("<ERROR> " + e.Message + "\nStack Trace: " + e.StackTrace + (e.InnerException != null ? "\n\nInner Exception: " + e.InnerException : ""));
                         }
                     }
                 }
@@ -1225,7 +1225,7 @@ namespace ReBloxLauncher
             }
             catch (Exception e)
             {
-                Console.WriteLine("<ERROR> " + e.Message + "\nStack Trace: " + e.StackTrace);
+                Console.WriteLine("<ERROR> " + e.Message + "\nStack Trace: " + e.StackTrace + (e.InnerException != null ? "\n\nInner Exception: " + e.InnerException : ""));
                 MessageBox.Show("Something when wrong while trying to initialize the launcher! Please look into log.log in the logs folder for more details!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.Close();
             }
