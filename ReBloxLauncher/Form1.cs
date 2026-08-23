@@ -1145,6 +1145,7 @@ namespace ReBloxLauncher
                                 try
                                 {
                                     WebClient client = new WebClient();
+                                    client.Headers.Add("User-Agent", "ReBlox/" + Properties.Settings.Default.version + (Properties.Settings.Default.minorVersion > 0 ? "-" + Properties.Settings.Default.minorVersion : "") + " (Windows NT " + WineDetector.getOSVersion() + (WineDetector.IsRunningOnWine() ? "; WINE " + WineDetector.getWineVersion() + ")" : ")"));
                                     button1.Invoke(new Action(() => { button1.Enabled = false; }));
                                     button2.Invoke(new Action(() => { button2.Enabled = false; }));
                                     button3.Invoke(new Action(() => { button3.Enabled = false; }));
