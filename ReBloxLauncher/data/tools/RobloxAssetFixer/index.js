@@ -376,6 +376,10 @@ process.argv.forEach(function (val) {
         if (checkIp(val.slice(4))) {
             var interfaces = os.networkInterfaces()
             var addresses = []
+            if (val.slice(4) == "127.0.0.1") {
+                console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't set the IP to yourself! If you're joining, then type the IP address that is not your own.")
+                return
+            }
             for (var k in interfaces) {
                 for (var k2 in interfaces[k]) {
                     var address = interfaces[k][k2]
