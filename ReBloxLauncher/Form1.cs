@@ -27,7 +27,7 @@ namespace ReBloxLauncher
 {
     public partial class Form1 : Form
     {
-        //Only download from our official discord server or rebloxfileserver.servehttp.com:81! If you downloaded it from somewhere else, there's a chance you might've got hacked!
+        //Only download from our official discord server or rebloxfileserver.servehttp.com! If you downloaded it from somewhere else, there's a chance you might've got hacked!
         public Form1()
         {
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
