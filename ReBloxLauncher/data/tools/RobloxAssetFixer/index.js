@@ -7046,58 +7046,63 @@ app.post("/marketplace/purchase", async (req, res) => {
         req1.write(JSON.stringify(req.body))
         req1.end()
     } else {
-        var verified = false
-        var replacementtext = ""
-
-        if (enableOwnedAssets == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Checking if " + RBDFpath + " exists...")
-            }
-            if (filesystem.existsSync(RBDFpath)) {
-                const stream = filesystem.createReadStream(RBDFpath)
-
-                const rl = readline.createInterface({
-                    input: stream,
-                    crlfDelay: Infinity
-                })
-
-                for await (const line of rl) {
-                    if (line == "RBDF==") {
-                        if (debuglevel == 2 && verbose == true) {
-                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Text-format RBDF verified")
-                        }
-                        verified = true
-                    }
-                    else if (line == "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">") {
-                        replacementtext = line
-                    }
+        try {
+            var verified = false
+            var replacementtext = ""
+    
+            if (enableOwnedAssets == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Checking if " + RBDFpath + " exists...")
                 }
-                stream.destroy()
-                rl.close()
-                if (verified == true) {
-                    if (replacementtext != "") {
-                        res.status(500).send("{\"success\": false, \"status\": \"AlreadyOwned\"}")
-                        return
+                if (filesystem.existsSync(RBDFpath)) {
+                    const stream = filesystem.createReadStream(RBDFpath)
+    
+                    const rl = readline.createInterface({
+                        input: stream,
+                        crlfDelay: Infinity
+                    })
+    
+                    for await (const line of rl) {
+                        if (line == "RBDF==") {
+                            if (debuglevel == 2 && verbose == true) {
+                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Text-format RBDF verified")
+                            }
+                            verified = true
+                        }
+                        else if (line == "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">") {
+                            replacementtext = line
+                        }
+                    }
+                    stream.destroy()
+                    rl.close()
+                    if (verified == true) {
+                        if (replacementtext != "") {
+                            res.status(500).send("{\"success\": false, \"status\": \"AlreadyOwned\"}")
+                            return
+                        }
+                        else {
+                            filesystem.appendFileSync(RBDFpath, "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">\r\n")
+                        }
+    
                     }
                     else {
-                        filesystem.appendFileSync(RBDFpath, "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">\r\n")
+                        res.status(500).end()
                     }
-
                 }
                 else {
-                    res.status(500).end()
+                    filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
+                    filesystem.appendFileSync(RBDFpath, "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">\r\n")
                 }
+                res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
+                if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
             }
             else {
-                filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
-                filesystem.appendFileSync(RBDFpath, "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">\r\n")
+                res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
+                if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
             }
-            res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
-            if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
         }
-        else {
-            res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
-            if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
+        catch {
+            res.status(500).send("{\"success\": false, \"status\": \"SomethingWentWrong\"}")
         }
     }
 })
