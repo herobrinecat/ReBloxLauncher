@@ -2343,6 +2343,7 @@ namespace ReBloxLauncher
                                 ProcessStartInfo ps = new ProcessStartInfo() { UseShellExecute = true, FileName = Application.ExecutablePath, Verb = "runas", Arguments = "--installCA" };
                                 Process.Start(ps);
                                 Application.Exit();
+                                return;
                             }
                             catch
                             {
@@ -2381,6 +2382,7 @@ namespace ReBloxLauncher
                 }
             });
             thread.TrySetApartmentState(ApartmentState.STA);
+            thread.IsBackground = true;
             thread.Start();
             if (launchershortcut == false) Initialize();
         }
