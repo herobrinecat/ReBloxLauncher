@@ -972,6 +972,13 @@ namespace ReBloxLauncher
                 }
                 if (launchershortcut == false)
                 {
+                    bool hasInternet = CheckForInternetConnection();
+
+                    if (hasInternet)
+                    {
+                        Properties.Settings.Default.launchTime++;
+                        Properties.Settings.Default.Save();
+                    }
                     if (WineDetector.IsRunningOnWine() && linuxAsWindows == false)
                     {
                         Console.WriteLine("<WARN> Wine detected, Wine version: " + WineDetector.getWineVersion());
@@ -1032,6 +1039,10 @@ namespace ReBloxLauncher
                             listBox2.SetSelected(listBox2.Items.IndexOf(Properties.Settings.Default.lastselectedmap), true);
                         }
                     }
+                    if (Properties.Settings.Default.launchTime >= 5 && Properties.Settings.Default.firstTime == true && hasInternet)
+                    {
+                        new TelemetryConfirm().ShowDialog();
+                    }
                     Console.WriteLine("<INFO> Adding asset packs to the list");
                     RefreshAssetPacks();
                     Console.WriteLine("<INFO> Setting up UI...");
@@ -1071,6 +1082,7 @@ namespace ReBloxLauncher
                     checkBox17.Checked = Properties.Settings.Default.EnableDataPersistence;
                     checkBox19.Checked = Properties.Settings.Default.LongUserIdExperiment;
                     checkBox20.Checked = Properties.Settings.Default.RenderAvatarExperiment;
+                    checkBox21.Checked = Properties.Settings.Default.TelemetryEnabled;
                     comboBox1.SelectedIndex = Properties.Settings.Default.avatarR15 ? 1 : 0;
                     textBox4.Text = (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString();
                     textBox5.Text = (guestMode ? guestUsername : Properties.Settings.Default.username);
@@ -1134,8 +1146,7 @@ namespace ReBloxLauncher
                         label16.Text = "Choose Your Character";
                     }
 
-                    directories = null;
-                    directories2 = null;
+                    
                     if (WineDetector.getOSVersion() == 6.1 && getFileSHA1(datafolder + @"\tools\node\node.exe") != "A536A811395223D610EE80F8C287A3D632EC6D2F")
                     {
                         if (MessageBox.Show(aprilFools ? "It looks like you're running on Windows 7, you must download the patch for ReBlox in order for Sodikm to be usable on Windows 7, do you wanna apply the patch? (This node/its dependencies patch may contain security vulnerabilities, please be cautious when running the server, especially with public servers.)" : "It looks like you're running on Windows 7, you must download the patch for ReBlox in order for ReBlox to be usable on Windows 7, do you wanna apply the patch? (This node/its dependencies patch may contain security vulnerabilities, please be cautious when running the server, especially with public servers.)", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
@@ -1176,6 +1187,7 @@ namespace ReBloxLauncher
                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                     Console.WriteLine("<ERROR> Failed to download/extract the Windows 7 Server Patch, please look in the error below for description:\r\n" + e.ToString());
+                                    ServerUtils.UploadTelemetry(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log");
                                     statusText.Invoke(new Action(() => { statusText.Text = "Server patch failed."; }));
                                     await Task.Delay(3000);
                                     statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -1227,6 +1239,7 @@ namespace ReBloxLauncher
             {
                 Console.WriteLine("<ERROR> " + e.Message + "\nStack Trace: " + e.StackTrace + (e.InnerException != null ? "\n\nInner Exception: " + e.InnerException : ""));
                 MessageBox.Show("Something when wrong while trying to initialize the launcher! Please look into log.log in the logs folder for more details!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ServerUtils.UploadTelemetry(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log", "initialize");
                 this.Close();
             }
 
@@ -1476,7 +1489,6 @@ namespace ReBloxLauncher
                 request.Timeout = timeoutMs;
                 using (var response = (HttpWebResponse)request.GetResponse())
                 {
-                    Console.WriteLine("<INFO> Internet test successful!");
                     internetConnected = true;
                     return true;
                 }
@@ -1997,7 +2009,7 @@ namespace ReBloxLauncher
                 try
                 {
                     WebClient client = new WebClient();
-                    client.Headers.Add("User-Agent", "ReBlox/" + Properties.Settings.Default.version + (Properties.Settings.Default.minorVersion > 0 ? "-" + Properties.Settings.Default.minorVersion : "") + " (Windows NT " + WineDetector.getOSVersion() + (WineDetector.IsRunningOnWine() ? "; WINE " + WineDetector.getWineVersion() + ")" : ")"));
+                    client.Headers.Add("User-Agent", "ReBlox/" + Properties.Settings.Default.version + (Properties.Settings.Default.minorVersion > 0 ? "-" + Properties.Settings.Default.minorVersion : "")  + " (Windows NT " + WineDetector.getOSVersion() + (WineDetector.IsRunningOnWine() ? "; WINE " + WineDetector.getWineVersion() + ")" : ")"));
                     Console.WriteLine("<INFO> Checking the version of the client and the server reports...");
                     if (client.DownloadString(updateurl + @"/version.txt") != Properties.Settings.Default.version)
                     {
@@ -2138,8 +2150,9 @@ namespace ReBloxLauncher
                         }
                         catch (Exception err)
                         {
-                            MessageBox.Show("An error has occurred while editing the hosts file, please look in logs for more details.");
+                            MessageBox.Show("An error has occurred while editing the hosts file, please look in logs for more details.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             Console.WriteLine("<ERROR> An error has occurred while attempting to edit the hosts file:" + err);
+                            ServerUtils.UploadTelemetry(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log", "hostsedit");
                         }
                     }
                     else
@@ -2839,6 +2852,7 @@ namespace ReBloxLauncher
                             button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                             launchingClient = false;
+                            ServerUtils.UploadTelemetry(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log", "studio");
                             await Task.Delay(3000);
                             statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                             statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -3163,61 +3177,74 @@ namespace ReBloxLauncher
                                     useOldGuestAvatar = true;
                                 }
                             }
-                            string[] images = Directory.GetFiles(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images");
-                            if (images.Length > 0)
+                            if (Directory.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images"))
                             {
-                                int randomchoose = RandomNumber(1, images.Length + 1);
-                                currentImage = randomchoose;
-                                Size sizecheck = ImageSize.GetDimensions(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png");
-                                if (sizecheck.Width > 4000 && sizecheck.Height > 4000)
+                                string[] images = Directory.GetFiles(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images");
+                                if (images.Length > 0)
                                 {
-                                    dirtyImageMain = true;
-                                    do
+                                    int randomchoose = RandomNumber(1, images.Length + 1);
+                                    currentImage = randomchoose;
+                                    Size sizecheck = ImageSize.GetDimensions(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png");
+                                    if (sizecheck.Width > 4000 && sizecheck.Height > 4000)
                                     {
-                                        Console.WriteLine("<INFO> Skipping " + currentImage + ".png, illegal size!");
-                                        currentImage++;
-                                        if (File.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png") == false) currentImage = 1;
-                                        sizecheck = ImageSize.GetDimensions(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png");
-                                        if (sizecheck.Width <= 4000 && sizecheck.Height <= 4000)
+                                        dirtyImageMain = true;
+                                        do
                                         {
-                                            dirtyImageMain = false;
-                                        }
-                                    } while (dirtyImageMain);
+                                            Console.WriteLine("<INFO> Skipping " + currentImage + ".png, illegal size!");
+                                            currentImage++;
+                                            if (File.Exists(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png") == false) currentImage = 1;
+                                            sizecheck = ImageSize.GetDimensions(datafolder + @"\clients\" + listBox1.GetItemText(listBox1.SelectedItem) + @"\images\" + currentImage + ".png");
+                                            if (sizecheck.Width <= 4000 && sizecheck.Height <= 4000)
+                                            {
+                                                dirtyImageMain = false;
+                                            }
+                                        } while (dirtyImageMain);
+                                    }
+                                    if (useNewImageFadeForClients == false)
+                                    {
+                                        pictureBox1.Visible = true;
+                                        pictureBox1.ImageLocation = images[randomchoose - 1];
+                                        pictureBox1.Image = Image.FromFile(images[randomchoose - 1]);
+                                    }
+                                    else
+                                    {
+                                        panel7.Visible = true;
+                                    }
                                 }
-                                if (useNewImageFadeForClients == false)
+                                else
                                 {
-                                    pictureBox1.Visible = true;
-                                    pictureBox1.ImageLocation = images[randomchoose - 1];
-                                    pictureBox1.Image = Image.FromFile(images[randomchoose - 1]);
+                                    pictureBox1.Visible = false;
+                                    panel7.Visible = false;
                                 }
-                                randomchoose = 0;
-
                             }
                             else
                             {
                                 pictureBox1.Visible = false;
+                                panel7.Visible = false;
                             }
                             if (useNewImageFadeForClients)
                             {
-                                fadeImage = false;
-                                fadeImageTimer.Stop();
-                                fadeImageTimer.Interval = 5000;
-                                opacity = 0.0F;
-                                if (imageFromFade != null) imageFromFade.Dispose();
-                                if (imageToFade != null) imageToFade.Dispose();
-                                panel7.Invalidate();
-                                fadeImageTimer.Start();
+                                if (panel7.Visible)
+                                {
+                                    fadeImage = false;
+                                    fadeImageTimer.Stop();
+                                    fadeImageTimer.Interval = 5000;
+                                    opacity = 0.0F;
+                                    if (imageFromFade != null) imageFromFade.Dispose();
+                                    if (imageToFade != null) imageToFade.Dispose();
+                                    panel7.Invalidate();
+                                    fadeImageTimer.Start();
+                                }
                             }
                             else
                             {
                                 timer1.Stop();
                                 timer1.Start();
                             }
-                            images = null;
                         }
                         else
                         {
-                            MessageBox.Show("Config file failed to load!", "Config Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("Config file failed to load!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
 
                     }
@@ -3225,7 +3252,7 @@ namespace ReBloxLauncher
             }
             catch
             {
-                Console.WriteLine(e);
+                Console.WriteLine("<ERROR> Something went wrong while trying to get the client, please review the error below for details:\r\n" + e);
                 MessageBox.Show("Something went wrong while trying to get the client or the client you are trying to pick doesn't exist.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -3396,7 +3423,7 @@ namespace ReBloxLauncher
             }
             else
             {
-                MessageBox.Show("It looks like either you reverted it before or never applied it!", "hosts File", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("It looks like either you reverted it before or never applied it!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -4359,6 +4386,7 @@ namespace ReBloxLauncher
                             button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                             launchingClient = false;
+                            ServerUtils.UploadTelemetry(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log", "join");
                             await Task.Delay(3000);
                             statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                             statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -6103,6 +6131,7 @@ namespace ReBloxLauncher
                                 button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                                 button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                 launchingClient = false;
+                                ServerUtils.UploadTelemetry(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log", "host");
                                 await Task.Delay(3000);
                                 statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                                 statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -6251,28 +6280,43 @@ namespace ReBloxLauncher
         {
             if (e.KeyCode == Keys.Enter && guestMode == false)
             {
-                if (Properties.Settings.Default.LongUserIdExperiment == false)
+                if (IsDigitsOnly(textBox4.Text) && textBox4.Text != "")
                 {
-                    if (ulong.Parse(textBox4.Text) > int.MaxValue)
+                    if (Properties.Settings.Default.LongUserIdExperiment == false)
                     {
-                        textBox4.Text = int.MaxValue.ToString();
-                    }
-                    Properties.Settings.Default.UserId = int.Parse(textBox4.Text);
-                    Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
-                    Properties.Settings.Default.Save();
-                }
-                else
-                {
-                    if (ulong.Parse(textBox4.Text) > int.MaxValue)
-                    {
+                        if (long.Parse(textBox4.Text) > int.MaxValue)
+                        {
+                            textBox4.Text = int.MaxValue.ToString();
+                        }
+                        Properties.Settings.Default.UserId = int.Parse(textBox4.Text);
                         Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
                         Properties.Settings.Default.Save();
                     }
                     else
                     {
-                        Properties.Settings.Default.UserId = int.Parse(textBox4.Text);
-                        Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
-                        Properties.Settings.Default.Save();
+                        if (long.Parse(textBox4.Text) > int.MaxValue)
+                        {
+                            Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
+                            Properties.Settings.Default.Save();
+                        }
+                        else
+                        {
+                            Properties.Settings.Default.UserId = int.Parse(textBox4.Text);
+                            Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
+                            Properties.Settings.Default.Save();
+                        }
+                    }
+                }
+                else
+                {
+                    if (textBox4.Text == "")
+                    {
+                        textBox4.Text = Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong.ToString() : Properties.Settings.Default.UserId.ToString();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Only numbers is accepted in the UserId field.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        textBox4.Text = Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong.ToString() : Properties.Settings.Default.UserId.ToString();
                     }
                 }
             }
@@ -6645,28 +6689,43 @@ namespace ReBloxLauncher
         {
             if (guestMode == false)
             {
-                if (Properties.Settings.Default.LongUserIdExperiment == false)
+                if (IsDigitsOnly(textBox4.Text) && textBox4.Text != "")
                 {
-                    if (long.Parse(textBox4.Text) > int.MaxValue)
+                    if (Properties.Settings.Default.LongUserIdExperiment == false)
                     {
-                        textBox4.Text = int.MaxValue.ToString();
-                    }
-                    Properties.Settings.Default.UserId = int.Parse(textBox4.Text);
-                    Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
-                    Properties.Settings.Default.Save();
-                }
-                else
-                {
-                    if (long.Parse(textBox4.Text) > int.MaxValue)
-                    {
+                        if (long.Parse(textBox4.Text) > int.MaxValue)
+                        {
+                            textBox4.Text = int.MaxValue.ToString();
+                        }
+                        Properties.Settings.Default.UserId = int.Parse(textBox4.Text);
                         Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
                         Properties.Settings.Default.Save();
                     }
                     else
                     {
-                        Properties.Settings.Default.UserId = int.Parse(textBox4.Text);
-                        Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
-                        Properties.Settings.Default.Save();
+                        if (long.Parse(textBox4.Text) > int.MaxValue)
+                        {
+                            Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
+                            Properties.Settings.Default.Save();
+                        }
+                        else
+                        {
+                            Properties.Settings.Default.UserId = int.Parse(textBox4.Text);
+                            Properties.Settings.Default.UserIdLong = long.Parse(textBox4.Text);
+                            Properties.Settings.Default.Save();
+                        }
+                    }
+                }
+                else
+                {
+                    if (textBox4.Text == "")
+                    {
+                        textBox4.Text = Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong.ToString() : Properties.Settings.Default.UserId.ToString();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Only numbers is accepted in the UserId field.", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        textBox4.Text = Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong.ToString() : Properties.Settings.Default.UserId.ToString();
                     }
                 }
             }
@@ -6694,7 +6753,14 @@ namespace ReBloxLauncher
             {
                 if (tabControl1.SelectedTab != tabControl1.TabPages[0])
                 {
-                    if (fadeImageTimer.Enabled) fadeImageTimer.Stop(); fadeImage = false; opacity = 0.0F; imageFromFade.Dispose(); imageToFade.Dispose();
+                    if (fadeImageTimer.Enabled)
+                    {
+                        fadeImageTimer.Stop();
+                        fadeImage = false; 
+                        opacity = 0.0F; 
+                        if (imageFromFade != null) imageFromFade.Dispose(); 
+                        if (imageToFade != null) imageToFade.Dispose();
+                    }
                 }
                 else
                 {
@@ -6799,6 +6865,7 @@ namespace ReBloxLauncher
             {
                 Console.WriteLine("<ERROR> " + ex.Message + "\nStack Trace: " + ex.StackTrace);
             }
+
             if (tabControl1.SelectedTab == tabControl1.TabPages[4])
             {
                 if (searchingNetwork == false)
@@ -7423,7 +7490,15 @@ namespace ReBloxLauncher
 
         private void button6_Click_1(object sender, EventArgs e)
         {
-            Process.Start(new WebClient().DownloadString(updateurl + "/updatelink.txt"));
+            if (File.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\ReBloxUpdater.exe"))
+            {
+                Process.Start(new ProcessStartInfo { FileName = Path.GetDirectoryName(Application.ExecutablePath) + @"\ReBloxUpdater.exe", UseShellExecute = false });
+                Application.Exit();
+            }
+            else
+            {
+                Process.Start(new WebClient().DownloadString(updateurl + "/updatelink.txt"));
+            }
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -8212,6 +8287,7 @@ namespace ReBloxLauncher
                             button8.Invoke(new Action(() => { button8.Enabled = listView1.SelectedIndices.Count > 0; }));
                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                             launchingClient = false;
+                            ServerUtils.UploadTelemetry(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs\log.log", "serverlistjoin");
                             await Task.Delay(3000);
                             statusText.Invoke(new Action(() => { statusText.Visible = false; }));
                             statusText.Invoke(new Action(() => { statusText.Text = ""; }));
@@ -9527,6 +9603,23 @@ namespace ReBloxLauncher
                         listBox2.Items.RemoveAt(listBox2.SelectedIndex);
                     }
                 }
+            }
+        }
+
+        private void checkBox21_CheckedChanged(object sender, EventArgs e)
+        {
+            if (starting == false)
+            {
+                if (Properties.Settings.Default.firstTime)
+                {
+                    Properties.Settings.Default.firstTime = false;
+                }
+                if (Properties.Settings.Default.uuid == Guid.Empty)
+                {
+                    Properties.Settings.Default.uuid = Guid.NewGuid();
+                }
+                Properties.Settings.Default.TelemetryEnabled = true;
+                Properties.Settings.Default.Save();
             }
         }
     }

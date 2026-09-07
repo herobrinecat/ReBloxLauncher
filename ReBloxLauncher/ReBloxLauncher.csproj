@@ -106,6 +106,12 @@
     <Compile Include="SteamDeckUI.Designer.cs">
       <DependentUpon>SteamDeckUI.cs</DependentUpon>
     </Compile>
+	<Compile Include="TelemetryConfirm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TelemetryConfirm.Designer.cs">
+      <DependentUpon>TelemetryConfirm.cs</DependentUpon>
+    </Compile>
     <Compile Include="WineDetector.cs" />
     <EmbeddedResource Include="CharacterName.resx">
       <DependentUpon>CharacterName.cs</DependentUpon>
@@ -134,6 +140,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="SteamDeckUI.resx">
       <DependentUpon>SteamDeckUI.cs</DependentUpon>
+    </EmbeddedResource>
+	<EmbeddedResource Include="TelemetryConfirm.resx">
+      <DependentUpon>TelemetryConfirm.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\app.manifest" />

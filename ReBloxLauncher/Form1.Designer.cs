@@ -73,6 +73,7 @@
             this.button17 = new System.Windows.Forms.Button();
             this.checkBox10 = new System.Windows.Forms.CheckBox();
             this.GeneralPage = new System.Windows.Forms.Panel();
+            this.checkBox21 = new System.Windows.Forms.CheckBox();
             this.label37 = new System.Windows.Forms.Label();
             this.checkBox3 = new System.Windows.Forms.CheckBox();
             this.checkBox2 = new System.Windows.Forms.CheckBox();
@@ -746,6 +747,7 @@
             // GeneralPage
             // 
             this.GeneralPage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.GeneralPage.Controls.Add(this.checkBox21);
             this.GeneralPage.Controls.Add(this.label37);
             this.GeneralPage.Controls.Add(this.checkBox3);
             this.GeneralPage.Controls.Add(this.checkBox2);
@@ -755,6 +757,20 @@
             this.GeneralPage.Name = "GeneralPage";
             this.GeneralPage.Size = new System.Drawing.Size(520, 259);
             this.GeneralPage.TabIndex = 29;
+            // 
+            // checkBox21
+            // 
+            this.checkBox21.AutoSize = true;
+            this.checkBox21.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.checkBox21.ForeColor = System.Drawing.Color.White;
+            this.checkBox21.Location = new System.Drawing.Point(20, 154);
+            this.checkBox21.Name = "checkBox21";
+            this.checkBox21.Size = new System.Drawing.Size(133, 21);
+            this.checkBox21.TabIndex = 31;
+            this.checkBox21.Text = "Enable telemetry";
+            this.toolTip1.SetToolTip(this.checkBox21, "You can help improve the launcher by turning this on!");
+            this.checkBox21.UseVisualStyleBackColor = true;
+            this.checkBox21.CheckedChanged += new System.EventHandler(this.checkBox21_CheckedChanged);
             // 
             // label37
             // 
@@ -2408,6 +2424,7 @@
         private System.Windows.Forms.Button button28;
         private System.Windows.Forms.ComboBox comboBox4;
         private System.Windows.Forms.Button button29;
+        private System.Windows.Forms.CheckBox checkBox21;
     }
 }
 

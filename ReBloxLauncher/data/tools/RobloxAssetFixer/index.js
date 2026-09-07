@@ -7051,7 +7051,8 @@ app.post("/marketplace/purchase", async (req, res) => {
             var replacementtext = ""
     
             if (enableOwnedAssets == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
-                if (debuglevel == 2 && verbose == true) {
+                try {
+					if (debuglevel == 2 && verbose == true) {
                     console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Checking if " + RBDFpath + " exists...")
                 }
                 if (filesystem.existsSync(RBDFpath)) {
@@ -7095,6 +7096,10 @@ app.post("/marketplace/purchase", async (req, res) => {
                 }
                 res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
                 if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
+				}
+				catch {
+					res.status(500).send("{\"success\": false, \"status\": \"SomethingWentWrong\"}")
+				}
             }
             else {
                 res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
