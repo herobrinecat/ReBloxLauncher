@@ -174,14 +174,16 @@ namespace ReBloxLauncher
             request.ContentType = "application/json";
             request.UserAgent = "ReBlox/" + Properties.Settings.Default.version + (Properties.Settings.Default.minorVersion > 0 ? "-" + Properties.Settings.Default.minorVersion : "") + " (Windows NT " + WineDetector.getOSVersion() + (WineDetector.IsRunningOnWine() ? "; WINE " + WineDetector.getWineVersion() + ")" : ")");
 
-            if (File.Exists(logFilePath) && logFilePath.EndsWith(".txt"))
+            if (File.Exists(logFilePath) && logFilePath.EndsWith(".log"))
             {
+                Program.stopLogging();
                 data = new telemetryData
                 {
                     uuid = Properties.Settings.Default.uuid.ToString(),
                     logFile = Convert.ToBase64String(GzipCompress(File.ReadAllBytes(logFilePath))),
                     eventText = eventText != "" ? eventText : ""
                 };
+                Program.startLogging();
             }
             else
             {
