@@ -9618,7 +9618,7 @@ namespace ReBloxLauncher
                 {
                     Properties.Settings.Default.uuid = Guid.NewGuid();
                 }
-                Properties.Settings.Default.TelemetryEnabled = true;
+                Properties.Settings.Default.TelemetryEnabled = checkBox21.Checked;
                 Properties.Settings.Default.Save();
             }
         }
