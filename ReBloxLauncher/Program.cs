@@ -24,6 +24,41 @@ namespace ReBloxLauncher
             }
         }
 
+        static public void stopLogging()
+        {
+            Console.SetOut(oldOut);
+            writer.Close();
+        }
+
+        static public void startLogging()
+        {
+            if (Directory.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs"))
+            {
+                DirectoryInfo di = new DirectoryInfo(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs");
+                if (di.Attributes.HasFlag(FileAttributes.ReadOnly))
+                {
+                    MessageBox.Show("It appears that the logs folder is read-only! Please check your drive and/or logs folder to ensure that it's writable.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    bool success = false;
+                    try
+                    {
+                        writer = File.AppendText("./logs/log.log");
+                        writer.AutoFlush = true;
+                        success = true;
+                    }
+                    catch
+                    {
+                        //ignore, just to get rid of annoying moments
+                    }
+                    if (success)
+                    {
+                        Console.SetOut(writer);
+                    }
+                }
+            }
+        }
         
         [STAThread]
         static void Main()
