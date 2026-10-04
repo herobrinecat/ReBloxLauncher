@@ -71,7 +71,7 @@ namespace ReBloxLauncher
             this.webBrowser1.Name = "webBrowser1";
             this.webBrowser1.Size = new System.Drawing.Size(477, 309);
             this.webBrowser1.TabIndex = 2;
-            this.webBrowser1.Url = new System.Uri("https://rebloxfileserver.servehttp.com/privacypolicy-embed", System.UriKind.Absolute);
+            this.webBrowser1.Url = new System.Uri("http://rebloxfileserver.servehttp.com:81/privacypolicy-embed", System.UriKind.Absolute);
             this.webBrowser1.WebBrowserShortcutsEnabled = false;
             // 
             // label3

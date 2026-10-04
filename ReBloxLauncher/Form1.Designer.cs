@@ -41,6 +41,7 @@
             this.button3 = new System.Windows.Forms.Button();
             this.listBox1 = new System.Windows.Forms.ListBox();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.button30 = new System.Windows.Forms.Button();
             this.panel7 = new System.Windows.Forms.Panel();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
             this.label27 = new System.Windows.Forms.Label();
@@ -50,6 +51,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
             this.ExperimentsPanel = new System.Windows.Forms.Panel();
+            this.checkBox23 = new System.Windows.Forms.CheckBox();
             this.checkBox20 = new System.Windows.Forms.CheckBox();
             this.checkBox19 = new System.Windows.Forms.CheckBox();
             this.checkBox18 = new System.Windows.Forms.CheckBox();
@@ -72,6 +74,7 @@
             this.checkBox13 = new System.Windows.Forms.CheckBox();
             this.button17 = new System.Windows.Forms.Button();
             this.checkBox10 = new System.Windows.Forms.CheckBox();
+            this.button19 = new System.Windows.Forms.Button();
             this.GeneralPage = new System.Windows.Forms.Panel();
             this.checkBox21 = new System.Windows.Forms.CheckBox();
             this.label37 = new System.Windows.Forms.Label();
@@ -79,7 +82,6 @@
             this.checkBox2 = new System.Windows.Forms.CheckBox();
             this.checkBox4 = new System.Windows.Forms.CheckBox();
             this.checkBox7 = new System.Windows.Forms.CheckBox();
-            this.button19 = new System.Windows.Forms.Button();
             this.button18 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
             this.button7 = new System.Windows.Forms.Button();
@@ -106,6 +108,9 @@
             this.listBox3 = new System.Windows.Forms.ListBox();
             this.label12 = new System.Windows.Forms.Label();
             this.panel5 = new System.Windows.Forms.Panel();
+            this.pictureBox7 = new System.Windows.Forms.PictureBox();
+            this.pictureBox6 = new System.Windows.Forms.PictureBox();
+            this.checkBox24 = new System.Windows.Forms.CheckBox();
             this.comboBox4 = new System.Windows.Forms.ComboBox();
             this.button29 = new System.Windows.Forms.Button();
             this.pictureBox5 = new System.Windows.Forms.PictureBox();
@@ -150,6 +155,7 @@
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.tabPage4 = new System.Windows.Forms.TabPage();
             this.tabPage7 = new System.Windows.Forms.TabPage();
+            this.checkBox22 = new System.Windows.Forms.CheckBox();
             this.checkBox16 = new System.Windows.Forms.CheckBox();
             this.label35 = new System.Windows.Forms.Label();
             this.label34 = new System.Windows.Forms.Label();
@@ -186,6 +192,9 @@
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.button28 = new System.Windows.Forms.Button();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
+            this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
+            this.openFileDialog2 = new System.Windows.Forms.OpenFileDialog();
+            this.checkBox25 = new System.Windows.Forms.CheckBox();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -196,6 +205,8 @@
             this.panel3.SuspendLayout();
             this.panel4.SuspendLayout();
             this.panel5.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox7)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox6)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
@@ -349,6 +360,7 @@
             // panel1
             // 
             this.panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.panel1.Controls.Add(this.button30);
             this.panel1.Controls.Add(this.panel7);
             this.panel1.Controls.Add(this.comboBox2);
             this.panel1.Controls.Add(this.label27);
@@ -360,6 +372,19 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(257, 372);
             this.panel1.TabIndex = 14;
+            // 
+            // button30
+            // 
+            this.button30.BackColor = System.Drawing.Color.White;
+            this.button30.ForeColor = System.Drawing.Color.Black;
+            this.button30.Location = new System.Drawing.Point(189, 339);
+            this.button30.Name = "button30";
+            this.button30.Size = new System.Drawing.Size(58, 23);
+            this.button30.TabIndex = 7;
+            this.button30.Text = "Features";
+            this.button30.UseVisualStyleBackColor = false;
+            this.button30.Visible = false;
+            this.button30.Click += new System.EventHandler(this.button30_Click);
             // 
             // panel7
             // 
@@ -441,8 +466,8 @@
             this.panel2.Controls.Add(this.UpdatePage);
             this.panel2.Controls.Add(this.button20);
             this.panel2.Controls.Add(this.SecurityPage);
-            this.panel2.Controls.Add(this.GeneralPage);
             this.panel2.Controls.Add(this.button19);
+            this.panel2.Controls.Add(this.GeneralPage);
             this.panel2.Controls.Add(this.button18);
             this.panel2.Controls.Add(this.button5);
             this.panel2.Controls.Add(this.button7);
@@ -456,6 +481,7 @@
             // 
             this.ExperimentsPanel.AutoScroll = true;
             this.ExperimentsPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.ExperimentsPanel.Controls.Add(this.checkBox23);
             this.ExperimentsPanel.Controls.Add(this.checkBox20);
             this.ExperimentsPanel.Controls.Add(this.checkBox19);
             this.ExperimentsPanel.Controls.Add(this.checkBox18);
@@ -469,11 +495,24 @@
             this.ExperimentsPanel.TabIndex = 33;
             this.ExperimentsPanel.Visible = false;
             // 
+            // checkBox23
+            // 
+            this.checkBox23.AutoSize = true;
+            this.checkBox23.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.checkBox23.Location = new System.Drawing.Point(20, 241);
+            this.checkBox23.Name = "checkBox23";
+            this.checkBox23.Size = new System.Drawing.Size(204, 21);
+            this.checkBox23.TabIndex = 37;
+            this.checkBox23.Text = "Enable RBDF Binary Format";
+            this.toolTip1.SetToolTip(this.checkBox23, "Switches from text-based RBDF to binary-based RBDF");
+            this.checkBox23.UseVisualStyleBackColor = true;
+            this.checkBox23.Visible = false;
+            // 
             // checkBox20
             // 
             this.checkBox20.AutoSize = true;
             this.checkBox20.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.checkBox20.Location = new System.Drawing.Point(20, 208);
+            this.checkBox20.Location = new System.Drawing.Point(20, 193);
             this.checkBox20.Name = "checkBox20";
             this.checkBox20.Size = new System.Drawing.Size(234, 21);
             this.checkBox20.TabIndex = 36;
@@ -486,7 +525,7 @@
             // 
             this.checkBox19.AutoSize = true;
             this.checkBox19.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.checkBox19.Location = new System.Drawing.Point(20, 181);
+            this.checkBox19.Location = new System.Drawing.Point(20, 169);
             this.checkBox19.Name = "checkBox19";
             this.checkBox19.Size = new System.Drawing.Size(273, 21);
             this.checkBox19.TabIndex = 35;
@@ -498,21 +537,23 @@
             // checkBox18
             // 
             this.checkBox18.AutoSize = true;
+            this.checkBox18.Checked = true;
+            this.checkBox18.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBox18.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.checkBox18.Location = new System.Drawing.Point(20, 235);
+            this.checkBox18.Location = new System.Drawing.Point(20, 217);
             this.checkBox18.Name = "checkBox18";
-            this.checkBox18.Size = new System.Drawing.Size(204, 21);
+            this.checkBox18.Size = new System.Drawing.Size(186, 21);
             this.checkBox18.TabIndex = 34;
-            this.checkBox18.Text = "Enable RBDF Binary Format";
+            this.checkBox18.Text = "Enable new asset system";
             this.toolTip1.SetToolTip(this.checkBox18, "Switches from text-based RBDF to binary-based RBDF");
             this.checkBox18.UseVisualStyleBackColor = true;
-            this.checkBox18.Visible = false;
+            this.checkBox18.CheckedChanged += new System.EventHandler(this.checkBox18_CheckedChanged);
             // 
             // checkBox15
             // 
             this.checkBox15.AutoSize = true;
             this.checkBox15.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.checkBox15.Location = new System.Drawing.Point(20, 154);
+            this.checkBox15.Location = new System.Drawing.Point(20, 145);
             this.checkBox15.Name = "checkBox15";
             this.checkBox15.Size = new System.Drawing.Size(221, 21);
             this.checkBox15.TabIndex = 33;
@@ -526,7 +567,7 @@
             // 
             this.checkBox14.AutoSize = true;
             this.checkBox14.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.checkBox14.Location = new System.Drawing.Point(20, 127);
+            this.checkBox14.Location = new System.Drawing.Point(20, 121);
             this.checkBox14.Name = "checkBox14";
             this.checkBox14.Size = new System.Drawing.Size(186, 21);
             this.checkBox14.TabIndex = 32;
@@ -744,9 +785,22 @@
             this.checkBox10.UseVisualStyleBackColor = true;
             this.checkBox10.CheckedChanged += new System.EventHandler(this.checkBox10_CheckedChanged);
             // 
+            // button19
+            // 
+            this.button19.BackColor = System.Drawing.Color.White;
+            this.button19.ForeColor = System.Drawing.Color.Black;
+            this.button19.Location = new System.Drawing.Point(175, 20);
+            this.button19.Name = "button19";
+            this.button19.Size = new System.Drawing.Size(75, 23);
+            this.button19.TabIndex = 27;
+            this.button19.Text = "Security";
+            this.button19.UseVisualStyleBackColor = false;
+            this.button19.Click += new System.EventHandler(this.button19_Click);
+            // 
             // GeneralPage
             // 
             this.GeneralPage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.GeneralPage.Controls.Add(this.checkBox25);
             this.GeneralPage.Controls.Add(this.checkBox21);
             this.GeneralPage.Controls.Add(this.label37);
             this.GeneralPage.Controls.Add(this.checkBox3);
@@ -763,7 +817,7 @@
             this.checkBox21.AutoSize = true;
             this.checkBox21.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.checkBox21.ForeColor = System.Drawing.Color.White;
-            this.checkBox21.Location = new System.Drawing.Point(20, 154);
+            this.checkBox21.Location = new System.Drawing.Point(20, 166);
             this.checkBox21.Name = "checkBox21";
             this.checkBox21.Size = new System.Drawing.Size(133, 21);
             this.checkBox21.TabIndex = 31;
@@ -791,7 +845,7 @@
             this.checkBox3.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBox3.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.checkBox3.ForeColor = System.Drawing.Color.White;
-            this.checkBox3.Location = new System.Drawing.Point(20, 73);
+            this.checkBox3.Location = new System.Drawing.Point(20, 70);
             this.checkBox3.Name = "checkBox3";
             this.checkBox3.Size = new System.Drawing.Size(319, 21);
             this.checkBox3.TabIndex = 18;
@@ -819,7 +873,7 @@
             this.checkBox4.AutoSize = true;
             this.checkBox4.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.checkBox4.ForeColor = System.Drawing.Color.White;
-            this.checkBox4.Location = new System.Drawing.Point(20, 100);
+            this.checkBox4.Location = new System.Drawing.Point(20, 118);
             this.checkBox4.Name = "checkBox4";
             this.checkBox4.Size = new System.Drawing.Size(210, 21);
             this.checkBox4.TabIndex = 19;
@@ -834,25 +888,13 @@
             this.checkBox7.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBox7.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.checkBox7.ForeColor = System.Drawing.Color.White;
-            this.checkBox7.Location = new System.Drawing.Point(20, 127);
+            this.checkBox7.Location = new System.Drawing.Point(20, 142);
             this.checkBox7.Name = "checkBox7";
             this.checkBox7.Size = new System.Drawing.Size(310, 21);
             this.checkBox7.TabIndex = 20;
             this.checkBox7.Text = "Share your activity on Discord (Discord RPC)";
             this.checkBox7.UseVisualStyleBackColor = true;
             this.checkBox7.CheckedChanged += new System.EventHandler(this.checkBox7_CheckedChanged);
-            // 
-            // button19
-            // 
-            this.button19.BackColor = System.Drawing.Color.White;
-            this.button19.ForeColor = System.Drawing.Color.Black;
-            this.button19.Location = new System.Drawing.Point(175, 20);
-            this.button19.Name = "button19";
-            this.button19.Size = new System.Drawing.Size(75, 23);
-            this.button19.TabIndex = 27;
-            this.button19.Text = "Security";
-            this.button19.UseVisualStyleBackColor = false;
-            this.button19.Click += new System.EventHandler(this.button19_Click);
             // 
             // button18
             // 
@@ -1181,6 +1223,9 @@
             // panel5
             // 
             this.panel5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.panel5.Controls.Add(this.pictureBox7);
+            this.panel5.Controls.Add(this.pictureBox6);
+            this.panel5.Controls.Add(this.checkBox24);
             this.panel5.Controls.Add(this.comboBox4);
             this.panel5.Controls.Add(this.button29);
             this.panel5.Controls.Add(this.pictureBox5);
@@ -1222,6 +1267,43 @@
             this.panel5.Name = "panel5";
             this.panel5.Size = new System.Drawing.Size(526, 372);
             this.panel5.TabIndex = 31;
+            // 
+            // pictureBox7
+            // 
+            this.pictureBox7.BackColor = System.Drawing.Color.Transparent;
+            this.pictureBox7.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox7.Image")));
+            this.pictureBox7.Location = new System.Drawing.Point(262, 52);
+            this.pictureBox7.Name = "pictureBox7";
+            this.pictureBox7.Size = new System.Drawing.Size(30, 30);
+            this.pictureBox7.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox7.TabIndex = 39;
+            this.pictureBox7.TabStop = false;
+            this.pictureBox7.Visible = false;
+            this.pictureBox7.Click += new System.EventHandler(this.pictureBox7_Click);
+            // 
+            // pictureBox6
+            // 
+            this.pictureBox6.BackColor = System.Drawing.Color.Transparent;
+            this.pictureBox6.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox6.Image")));
+            this.pictureBox6.Location = new System.Drawing.Point(299, 53);
+            this.pictureBox6.Name = "pictureBox6";
+            this.pictureBox6.Size = new System.Drawing.Size(30, 30);
+            this.pictureBox6.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox6.TabIndex = 38;
+            this.pictureBox6.TabStop = false;
+            this.pictureBox6.Click += new System.EventHandler(this.pictureBox6_Click);
+            // 
+            // checkBox24
+            // 
+            this.checkBox24.AutoSize = true;
+            this.checkBox24.Location = new System.Drawing.Point(19, 349);
+            this.checkBox24.Name = "checkBox24";
+            this.checkBox24.Size = new System.Drawing.Size(72, 17);
+            this.checkBox24.TabIndex = 37;
+            this.checkBox24.Text = "Headshot";
+            this.checkBox24.UseVisualStyleBackColor = true;
+            this.checkBox24.Visible = false;
+            this.checkBox24.CheckedChanged += new System.EventHandler(this.checkBox24_CheckedChanged);
             // 
             // comboBox4
             // 
@@ -1786,6 +1868,7 @@
             // tabPage7
             // 
             this.tabPage7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
+            this.tabPage7.Controls.Add(this.checkBox22);
             this.tabPage7.Controls.Add(this.checkBox16);
             this.tabPage7.Controls.Add(this.label35);
             this.tabPage7.Controls.Add(this.label34);
@@ -1799,10 +1882,23 @@
             this.tabPage7.TabIndex = 6;
             this.tabPage7.Text = "Servers";
             // 
+            // checkBox22
+            // 
+            this.checkBox22.AutoSize = true;
+            this.checkBox22.Location = new System.Drawing.Point(129, 23);
+            this.checkBox22.Name = "checkBox22";
+            this.checkBox22.Size = new System.Drawing.Size(59, 17);
+            this.checkBox22.TabIndex = 41;
+            this.checkBox22.Text = "Private";
+            this.toolTip1.SetToolTip(this.checkBox22, "By enabling this, you can make your server hidden from the list for your next lau" +
+        "nch!");
+            this.checkBox22.UseVisualStyleBackColor = true;
+            this.checkBox22.CheckedChanged += new System.EventHandler(this.checkBox22_CheckedChanged);
+            // 
             // checkBox16
             // 
             this.checkBox16.AutoSize = true;
-            this.checkBox16.Location = new System.Drawing.Point(383, 18);
+            this.checkBox16.Location = new System.Drawing.Point(383, 23);
             this.checkBox16.Name = "checkBox16";
             this.checkBox16.Size = new System.Drawing.Size(148, 17);
             this.checkBox16.TabIndex = 40;
@@ -1866,6 +1962,7 @@
             // listView1
             // 
             this.listView1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.listView1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.listView1.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1,
             this.columnHeader2,
@@ -1876,11 +1973,15 @@
             this.listView1.HideSelection = false;
             this.listView1.Location = new System.Drawing.Point(8, 53);
             this.listView1.Name = "listView1";
+            this.listView1.OwnerDraw = true;
             this.listView1.Size = new System.Drawing.Size(523, 299);
             this.listView1.TabIndex = 0;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
             this.listView1.ColumnWidthChanging += new System.Windows.Forms.ColumnWidthChangingEventHandler(this.listView1_ColumnWidthChanging);
+            this.listView1.DrawColumnHeader += new System.Windows.Forms.DrawListViewColumnHeaderEventHandler(this.listView1_DrawColumnHeader);
+            this.listView1.DrawItem += new System.Windows.Forms.DrawListViewItemEventHandler(this.listView1_DrawItem);
+            this.listView1.DrawSubItem += new System.Windows.Forms.DrawListViewSubItemEventHandler(this.listView1_DrawSubItem);
             this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged);
             // 
             // columnHeader1
@@ -1891,17 +1992,20 @@
             // columnHeader2
             // 
             this.columnHeader2.Text = "Version";
+            this.columnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.columnHeader2.Width = 72;
             // 
             // columnHeader3
             // 
             this.columnHeader3.Text = "Map";
+            this.columnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.columnHeader3.Width = 149;
             // 
             // columnHeader4
             // 
             this.columnHeader4.Text = "Launcher Version";
-            this.columnHeader4.Width = 101;
+            this.columnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.columnHeader4.Width = 106;
             // 
             // tabPage5
             // 
@@ -2177,6 +2281,32 @@
             this.pictureBox2.TabStop = false;
             this.pictureBox2.Visible = false;
             // 
+            // saveFileDialog1
+            // 
+            this.saveFileDialog1.DefaultExt = "rbcf";
+            this.saveFileDialog1.Filter = "RBCF files|*.rbcf";
+            this.saveFileDialog1.Title = "Export your character at";
+            // 
+            // openFileDialog2
+            // 
+            this.openFileDialog2.DefaultExt = "rbcf";
+            this.openFileDialog2.FileName = "openFileDialog2";
+            this.openFileDialog2.Filter = "RBCF files|*.rbcf";
+            this.openFileDialog2.Title = "Import a character form";
+            // 
+            // checkBox25
+            // 
+            this.checkBox25.AutoSize = true;
+            this.checkBox25.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.checkBox25.ForeColor = System.Drawing.Color.White;
+            this.checkBox25.Location = new System.Drawing.Point(20, 94);
+            this.checkBox25.Name = "checkBox25";
+            this.checkBox25.Size = new System.Drawing.Size(258, 21);
+            this.checkBox25.TabIndex = 32;
+            this.checkBox25.Text = "Keep the avatar when leaving clients";
+            this.checkBox25.UseVisualStyleBackColor = true;
+            this.checkBox25.CheckedChanged += new System.EventHandler(this.checkBox25_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -2239,6 +2369,8 @@
             this.panel4.PerformLayout();
             this.panel5.ResumeLayout(false);
             this.panel5.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox7)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox6)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
@@ -2425,6 +2557,15 @@
         private System.Windows.Forms.ComboBox comboBox4;
         private System.Windows.Forms.Button button29;
         private System.Windows.Forms.CheckBox checkBox21;
+        private System.Windows.Forms.CheckBox checkBox22;
+        private System.Windows.Forms.Button button30;
+        private System.Windows.Forms.CheckBox checkBox23;
+        private System.Windows.Forms.CheckBox checkBox24;
+        private System.Windows.Forms.PictureBox pictureBox7;
+        private System.Windows.Forms.PictureBox pictureBox6;
+        private System.Windows.Forms.SaveFileDialog saveFileDialog1;
+        private System.Windows.Forms.OpenFileDialog openFileDialog2;
+        private System.Windows.Forms.CheckBox checkBox25;
     }
 }
 

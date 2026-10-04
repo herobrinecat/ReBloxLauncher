@@ -8,10 +8,11 @@ using System.Threading.Tasks;
 
 namespace ReBloxLauncher
 {
-    public static class ImageSize
+    public static class ImageUtils
     {
         const string errorMessage = "Could not recognize image format.";
 
+        //Size
         private static Dictionary<byte[], Func<BinaryReader, Size>> imageFormatDecoders = new Dictionary<byte[], Func<BinaryReader, Size>>()
         {
             { new byte[]{ 0x42, 0x4D }, DecodeBitmap},
@@ -53,7 +54,7 @@ namespace ReBloxLauncher
             {
                 magicBytes[i] = binaryReader.ReadByte();
 
-                foreach(var kvPair in imageFormatDecoders)
+                foreach (var kvPair in imageFormatDecoders)
                 {
                     if (magicBytes.StartsWith(kvPair.Key))
                     {
@@ -139,6 +140,37 @@ namespace ReBloxLauncher
             }
 
             throw new ArgumentException(errorMessage);
+        }
+
+        //Validation check
+
+        private static byte[][] imageHeaders = new byte[][]
+        {
+            new byte[]{ 0xFF, 0xD8 }, // .jpg, .jpeg, .jfif, .jif
+            new byte[]{ 0x42, 0x4D }, // .bmp
+            new byte[]{ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }, // .png
+            new byte[]{ 0x47, 0x49, 0x46 } // .gif
+        };
+
+        public static bool isValidImage(Stream imageStream)
+        {
+            if (imageStream.Length > 0)
+            {
+                byte[] header = new byte[8];
+                imageStream.Read(header, 0, header.Length);
+
+                bool hasImageHeader = imageHeaders.Count(magic =>
+                {
+                    int i = 0;
+                    if (magic.Length > header.Length)
+                        return false;
+                    return magic.Count(b => { return b == header[i++]; }) == magic.Length;
+                }) > 0;
+
+                return hasImageHeader;
+            }
+
+            return false;
         }
     }
 }

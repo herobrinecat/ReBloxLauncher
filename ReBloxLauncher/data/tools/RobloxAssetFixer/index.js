@@ -50,7 +50,6 @@ var debuglevel = 1 // 1: Normal Verbose, 2: Extra Verbose
 var useAuth = false //ROBLOSECURITY is needed to be filled out to use this, can get other assets apart from Decals (can be set with -useAuth)
 var ROBLOSECURITY = "" //This is required to tell the difference between Decal and Image due to assetdelivery update (if useAuth is enabled) (can be set with -ROBLOSECURITY [please put this before -useAuth])
 var saveFile = false //Saves the file that's not part of the file assets to the saved folder
-var localClothes = true //Enables -clothes as argument to support multiple user ids (enabled by default)
 var assetsFromServer = false //Makes the asset load from the server instead of emulating if joining (Asset packs for the server you're joining is no longer required!)
 var useNewSignatureFormat = true //Uses the rbxsig format when signing scripts
 var privateKey = "./../../private.pem" //A path to the private key for signing joinscripts/gameserver/etc.
@@ -73,7 +72,11 @@ var enableTextFilter = true //Experimental text filter
 var checkROBLOSECURITY = false //A mark for checking ROBLOSECURITY from launcher
 var enableHTTPS = true //Enable support for HTTPS (Recommended!)
 var proxyUrl = "" //Url to replace roblox.com
-
+var getAssetViaTCP = false //experimental new asset system to replace the old asset system
+var assetPackList = []
+var secretKey = "thisisarebloxprivatekeyforjwtchange" //A signature for .ROBLOSECURITY
+var renderAvatar = false //Allows a endpoint meant for setting headshot and full-body images
+var clientVersion = "2021E"
 if (filesystem.existsSync(privateKey)) {
     publicKeyObj = crypto.createPublicKey({
         key: filesystem.readFileSync(privateKey),
@@ -98,54 +101,7 @@ async function readBinaryRBDF(path, index) {
         if (path.endsWith(".rbdf")) {
             if (filesystem.existsSync(path)) {
                 if (index > -1) {
-                    try {
-                        var data = filesystem.readFileSync(path)
-                        var headerverified = false
-                        if (Buffer.from([data[0], data[1], data[2], data[3]]).toString("utf8") == "RBDF") {
-                            if (Buffer.from([data[4], data[5], data[6], data[7]]).readInt32BE() == 293712399) {
-                                headerverified = true
-                                const itemcount = Buffer.from([data[13], data[14], data[15], data[16]]).readInt32LE()
-                                if (itemcount > 0) {
-                                    if (index < itemcount) {
-                                        var itemindex = 17
-                                        var realindex = 0
-                                        for (var i = 0; i < itemcount; i++) {
-                                            if (realindex != index) {
-                                                itemindex += 17
-                                                const gzipsize = Buffer.from([data[itemindex], data[itemindex + 1], data[itemindex + 2], data[itemindex + 3]]).readInt32BE()
-                                                itemindex += (4 + gzipsize)
-                                                realindex += 1
-                                            }
-                                            else {
-                                                var md5hexcombined = []
-                                                for (var x = 0; x < 16; x++) {
-                                                    md5hexcombined.push(data[itemindex + x])
-                                                }
-                                                itemindex += 17
-                                                const gzipsize = Buffer.from([data[itemindex], data[itemindex + 1], data[itemindex + 2], data[itemindex + 3]]).readInt32BE()
-                                                itemindex += 4
-                                                var dataTarget = Buffer.alloc(gzipsize)
-                                                data.copy(dataTarget, 0, itemindex, itemindex + gzipsize)
-                                                var hash = crypto.createHash("md5").update(zlib.gunzipSync(dataTarget)).digest("hex")
-                                                if (Buffer.from(md5hexcombined).toString("hex") == hash) {
-                                                    return zlib.gunzipSync(dataTarget)
-                                                }
-                                                else {
-                                                    return Buffer.alloc(1)
-                                                }
-                                            }
-                                        }
-                                    }
-                                    else {
 
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    catch {
-
-                    }
                 }
             }
         }
@@ -174,110 +130,58 @@ function removeBinaryRBDF(path, index) {
 async function writeBinaryRBDF(path, content, index) {
     if (path.endsWith(".rbdf")) {
         if (filesystem.existsSync(path)) {
-            if (content != undefined && typeof (content) == "string") {
-                checkRBDFFormat(path).then((result) => {
-                    if (result == "binary") {
-                        var data = filesystem.readFileSync(path)
-                        var hash = crypto.createHash("md5").update(content).digest("hex")
-                        var itemcount = Buffer.from([data[13], data[14], data[15], data[16]]).readInt32LE()
-                        var totalLengthOld = Buffer.from([data[8], data[9], data[10], data[11], data[12]]).readInt32BE()
-                        var split = content.split(' ', 2)
+            checkRBDFFormat(path).then((result) => {
+                if (result == "binary") {
+                    if (content != undefined && typeof (content) == "string") {
+                        if (index != undefined && index > -1) {
+                            //Any index that's above the length will be added as a next item
+                            var filebuffer = filesystem.readFileSync(path)
 
-                        const dataByte = getByteFromDataType(split[0].slice(1))
-
-                        if (itemcount > 0) {
-                            if (index != undefined) {
-
-                            } else {
-                                var dataWithoutHeader = Buffer.alloc(data.length - 17)
-                                data.copy(dataWithoutHeader, 0, 18, data.length)
-                                var contentcompressed = zlib.gzipSync(Buffer.from(content, "utf8"))
-                                var magicNumber = Buffer.alloc(4)
-                                magicNumber.writeInt32BE(293712399)
-                                var totalLength = Buffer.alloc(5)
-                                totalLength.writeInt32BE(contentcompressed.length + 21 + totalLengthOld)
-                                var contentLength = Buffer.alloc(4)
-                                itemcount++
-                                contentLength.writeInt32BE(contentcompressed.length)
-                                var totalItems = Buffer.alloc(4)
-                                totalItems.writeInt32LE(itemcount)
-                                var item = Buffer.concat([Buffer.from(hash, "hex"), Buffer.from([dataByte]), contentLength, contentcompressed])
-                                var headerBuffer = Buffer.concat([Buffer.from("RBDF", "utf8"), magicNumber, totalLength, totalItems])
-                                var combined = Buffer.concat([headerBuffer, dataWithoutHeader, item])
-                                filesystem.writeFileSync(path, combined)
-
-                                contentcompressed = null
-                                totalLength = null
-                                contentLength = null
-                                headerBuffer = null
-                                item = null
-                                combined = null
-                            }
-                        }
-                        else {
-                            var contentcompressed = zlib.gzipSync(Buffer.from(content, "utf8"))
-                            var magicNumber = Buffer.alloc(4)
-                            magicNumber.writeInt32BE(293712399)
-                            var totalLength = Buffer.alloc(5)
-                            totalLength.writeInt32BE(contentcompressed.length + 21)
-                            var contentLength = Buffer.alloc(4)
-                            contentLength.writeInt32BE(contentcompressed.length)
-                            var headerBuffer = Buffer.concat([Buffer.from("RBDF", "utf8"), magicNumber, totalLength, Buffer.from([0x01, 0x00, 0x00, 0x00])])
-                            var item = Buffer.concat([Buffer.from(hash, "hex"), Buffer.from([dataByte]), contentLength, contentcompressed])
-
-                            var combined = Buffer.concat([headerBuffer, item])
-
-                            filesystem.writeFileSync(path, combined)
-
-                            contentcompressed = null
-                            totalLength = null
-                            contentLength = null
-                            headerBuffer = null
-                            item = null
-                            combined = null
                         }
                     }
                     else {
-                        console.log("\x1b[31m%s\x1b[0m", "<ERROR> This appears to be a text-based version of RBDF or an invalid file, please try a different RBDF!")
+                        //why no content
+                        return
                     }
-                })
-
-            }
+                }
+                else if (result == "text") {
+                    //RBDF text-format to binary is not supported as of right now...
+                    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<DEBUG> Text-format RBDF detected, ignoring...")
+                }
+                else {
+                    if (verbose) console.log("\x1b[32m%s\x1b[0m", "<DEBUG> Unknown RBDF file, ignoring...")
+                }
+            })
         }
         else {
-            var hash = crypto.createHash("md5").update(content).digest("hex")
-
-            var split = content.split(' ', 2)
-            var contentcompressed = zlib.gzipSync(Buffer.from(content, "utf8"))
-            const dataByte = getByteFromDataType(split[0].slice(1))
+            var contentType = Buffer.alloc(1)
+            contentType.writeInt8(getByteFromDataType(content.slice(1).split(' ')[0]))
+            var signatureText = Buffer.from("RBDF", "utf8")
             var magicNumber = Buffer.alloc(4)
             magicNumber.writeInt32BE(293712399)
-            var totalLength = Buffer.alloc(5)
-            totalLength.writeInt32BE(contentcompressed.length + 21)
+            var totalNumData = Buffer.alloc(4)
+            totalNumData.writeInt32LE(1)
+            var hash = crypto.createHash("md5").update(content).digest()
+            var compressedContent = zlib.gzipSync(Buffer.from(content, "utf8"))
+            var dataLength = Buffer.alloc(5)
+            dataLength.writeUInt32BE(compressedContent.length + hash.length)
             var contentLength = Buffer.alloc(4)
-            contentLength.writeInt32BE(contentcompressed.length)
-            var headerBuffer = Buffer.concat([Buffer.from("RBDF", "utf8"), magicNumber, totalLength, Buffer.from([0x01, 0x00, 0x00, 0x00])])
-            var item = Buffer.concat([Buffer.from(hash, "hex"), Buffer.from([dataByte]), contentLength, contentcompressed])
+            contentLength.writeUint32BE(compressedContent.length)
 
-            var combined = Buffer.concat([headerBuffer, item])
+            //This is seperated to two buffers to make it be easier to read.
+            var headerBuffer = Buffer.concat([signatureText, magicNumber, dataLength, totalNumData])
+            var finalBuffer = Buffer.concat([headerBuffer, hash, contentType, contentLength, compressedContent])
 
-            filesystem.writeFileSync(path, combined)
-
-            contentcompressed = null
-            totalLength = null
-            contentLength = null
-            headerBuffer = null
-            item = null
-            combined = null
+            filesystem.writeFileSync(path, finalBuffer)
         }
     }
 }
 
-//writeBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", "<Badge userId=1038712 badgeId=58278772>").then(() => {
-//    readBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", 1).then((data) => {
-//        console.log(data.toString("utf8"))
-//    })
-//})
+/*writeBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", '<DataStore Key="datatest" Scope=global Type=standard DataStoreName="datastore" Value=""true"">').then(() => {
+    readBinaryRBDF("C:\\Users\\NOAA\\Documents\\binarytest.rbdf", 1).then((data) => {
+        console.log(data.toString("utf8"))
+    })
+})*/
 
 function trueRaw(req, res, next) {
     if (req.headers["content-type"] == "*/*") {
@@ -319,7 +223,7 @@ process.on('exit', (code) => {
     console.log("\x1b[0m", "")
 })
 
-process.argv.forEach(function (val) {
+process.argv.forEach((val) => {
     if (val == "-useAuth") {
         if (useAuth == false) {
             if (ROBLOSECURITY.startsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|")) {
@@ -338,7 +242,7 @@ process.argv.forEach(function (val) {
     }
     else if (val.startsWith("-username=")) {
         if (val.slice(10).length >= 3 && val.slice(10).length <= 20) {
-            username = val.slice(10)
+            username = val.slice(10).includes('%') ? decodeURI(val.slice(10)) : val.slice(10)
         }
         else {
             console.log("\x1b[33m%s\x1b[0m", "<WARN> A valid username is required if you're using -username, using \"Player\" instead...")
@@ -363,14 +267,6 @@ process.argv.forEach(function (val) {
     }
     else if (val.startsWith("-clothes=")) {
         clothidsstring = val.slice(10).slice(0, -1)
-    }
-    else if (val == "-clothes") {
-        if (filesystem.existsSync("./clothes")) {
-            localClothes = true
-        }
-        else {
-            localClothes = false
-        }
     }
     else if (val.startsWith("-ip=")) {
         if (checkIp(val.slice(4))) {
@@ -453,8 +349,14 @@ process.argv.forEach(function (val) {
         forceCanManageTrue = true
     }
     else if (val == "--syncROBLOSECURITYfromLauncher") {
-        if (allowTCPLauncher) {
-            checkROBLOSECURITY = true
+        if (allowTCPLauncher || process.argv.includes("--disableTCP")) {
+            if (process.argv.includes("-useAuth")) {
+                console.log("\x1b[31m%s\x1b[0m", "<ERROR> -useAuth and --syncROBLOSECURITYfromLauncher can't be used together")
+                process.exit(1)
+            }
+            else {
+                checkROBLOSECURITY = true
+            }
         }
         else {
             console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't contact the launcher as TCP communication is disabled by command line. Please remove --disableTCP from your command line and restart the server!")
@@ -466,12 +368,25 @@ process.argv.forEach(function (val) {
     else if (val == "--verbose") {
         verbose = true
     }
+    else if (val == "--syncAssetPacksfromLauncher") {
+        getAssetViaTCP = true
+    }
     else if (val.startsWith("-proxyURL=")) {
         console.log("\x1b[33m%s\x1b[0m", "<WARN> Proxies are usually not recommended as it could cause your account to be at risk of being compromised, we are not responsible for the damages of your account getting terminated/hacked. It's strongly recommended to use a proxy that you know well and is trusted by other people.")
         proxyUrl = val.slice(10)
     }
-    else if (val == "-help") {
-        console.log("\r\n<INFO> Usage for RobloxAssetFixer:\r\n\r\n-ROBLOSECURITY=\"roblosecurity\" - Set your ROBLOSECURITY (required for useAuth)\r\n-useAuth - Set the asset retrieval to use Roblox's servers that requires auth\r\n-username= - Set your player's username\r\n-userid= - Set your player's userid\r\n-accountUnder13 - Mark your account <13\r\n-r15 - Set your avatar to be R15\r\n-bodycolor=[0,0,0,0,0,0] - Set your body color of your avatar (deprecated)\r\n-clothes=[] - Set the asset ids of your avatar for customzation (deprecated)\r\n-ip= - Set an IP to the server if you're joining (required for -joining)\r\n-joining - Mark the server as joining and make several functions connect to the host's server instead of simulating it (-ip required)\r\n-disableDataStore - Disable saving/loading of data via DataStore with RBDF\n-disableBadges - Disable saving badges with RBDF\r\n-disableFollowing - Disable saving followers with RBDF\r\n-rbdf=\"path\" - A path to a ReBlox Datastore File\r\n-assetFromServer - Makes the asset link attempt to contact the local server you're joining, use Roblox's server as fallback (requires -ip and -joining)\r\n-disableNewSignature - use %DATA% instead of --rbxsig%DATA% (required for 2013M and older)\r\n-disableNewSignatureAsset - makes the format for script signing %ID% instead of --rbxassetid%ID%\r\n-disableOwnedAssets - Disables saving owned assets with RBDF\r\n-robux=amount - Set the amount of ROBUX you have.\r\n--disableTCP - Disables communication between the server and the launcher.\r\n-disableDataPersistence - Disables saving/loading data via Data Persistence with RBDF\r\n--verbose - Give more information about what's happening, helpful when troubleshooting!")
+    else if (val == "--renderAvatar") {
+        renderAvatar = true
+    }
+    else if (val.startsWith("-version=")) {
+        clientVersion = val.slice(9)
+    }
+    else if (val == "--version" || val == "-v") {
+        console.log("<INFO> RobloxAssetFixer version 0.0.1330 (node " + process.version + ", " + os.platform + ", " + process.arch + ")")
+        process.exit(0)
+    }
+    else if (val == "--help" || val == "-h") {
+        console.log("\r\n<INFO> Usage for RobloxAssetFixer:\r\n\r\n--help (-h) - To show the command line usages of this server\r\n-ROBLOSECURITY=\"roblosecurity\" - Set your ROBLOSECURITY (required for useAuth)\r\n-useAuth - Set the asset retrieval to use Roblox's servers that requires auth\r\n-username= - Set your player's username\r\n-userid= - Set your player's userid\r\n-accountUnder13 - Mark your account <13\r\n-r15 - Set your avatar to be R15\r\n-bodycolor=[0,0,0,0,0,0] - Set your body color of your avatar (deprecated)\r\n-clothes=[] - Set the asset ids of your avatar for customzation (deprecated)\r\n-ip= - Set an IP to the server if you're joining (required for -joining)\r\n-joining - Mark the server as joining and make several functions connect to the host's server instead of simulating it (-ip required)\r\n-disableDataStore - Disable saving/loading of data via DataStore with RBDF\n-disableBadges - Disable saving badges with RBDF\r\n-disableFollowing - Disable saving followers with RBDF\r\n-rbdf=\"path\" - A path to a ReBlox Datastore File\r\n-assetFromServer - Makes the asset link attempt to contact the local server you're joining, use Roblox's server as fallback (requires -ip and -joining)\r\n-disableNewSignature - use %DATA% instead of --rbxsig%DATA% (required for 2013M and older)\r\n-disableNewSignatureAsset - makes the format for script signing %ID% instead of --rbxassetid%ID%\r\n-disableOwnedAssets - Disables saving owned assets with RBDF\r\n-robux=amount - Set the amount of ROBUX you have.\r\n--disableTCP - Disables communication between the server and the launcher.\r\n-disableDataPersistence - Disables saving/loading data via Data Persistence with RBDF\r\n--allowUploadingFiles - Allows the server to update or create files in the uploads folder\r\n--verbose - Give more information about what's happening, helpful when troubleshooting!\r\n-version=clientversionhere - Use the client version to check on asset packs if it's compatible\r\n--syncAssetPacksfromLauncher - Syncs up asset packs from the launcher to use as retrieving assets (ReBlox 0.0.1330+)")
         process.exit(0)
     }
 })
@@ -498,191 +413,383 @@ console.log("<INFO> Avatar Type: " + ((avatarR15) ? "R15" : "R6"))
 if (proxyUrl != "") console.log("<INFO> Proxy URL: " + proxyUrl)
 if (checkROBLOSECURITY == false) console.log("<INFO> Using Auth: " + useAuth.toString())
 if (joining && ip != "") console.log("<INFO> Server IP: " + ip)
+if (getAssetViaTCP) getListOfAssetPacks()
 
-function getROBLOSECURITYfromLauncher(times) {
-    if (checkROBLOSECURITY == true && isInternetAvailable == true && isRobloxAvailable == true) {
-        if (times < 6) {
-            const { Socket } = require("net")
+function removeItemOnce(arr, value) {
+    var index = arr.indexOf(value);
+    if (index > -1) {
+        arr.splice(index, 1);
+    }
+    return arr;
+}
 
-            const client = new Socket()
+function gzipChecker(data) {
+    if (data != undefined && Buffer.isBuffer(data)) {
+        try {
+            zlib.gunzipSync(data)
+            return true
+        }
+        catch {
+            return false
+        }
+    }
+    else {
+        return false
+    }
+}
 
-            var options = {
-                host: "127.0.0.1",
-                port: 50355
+function convertDateRangeToInt(dateRange) {
+    if (typeof (dateRange) == "string") {
+        switch (dateRange) {
+            case "E": return 1;
+            case "M": return 2;
+            case "L": return 3;
+            default: return 0
+        }
+    }
+    else {
+        return 0
+    }
+}
+function getListOfAssetPacks() {
+    if (allowTCPLauncher) {
+        if (getAssetViaTCP == false) return
+        const { Socket } = require("net")
+
+        const client = new Socket()
+
+        var options = {
+            host: "127.0.0.1",
+            port: 50355
+        }
+        if (debuglevel == 2 && verbose == true) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
+        }
+        client.connect(options, () => {
+            if (verbose == true) {
+                if (debuglevel == 2) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
+                }
+                else {
+                    console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+                }
             }
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
-            }
-            client.connect(options, () => {
-                if (verbose == true) {
-                    if (debuglevel == 2) {
-                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
-                    }
-                    else {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+            var assetList = ""
+            var assetListRaw = ""
+            var data = []
+            client.on("data", (chunk) => {
+                data.push(chunk)
+            })
+
+            client.on("end", async() => {
+                if (gzipChecker(Buffer.concat(data))) {
+                    assetList = zlib.gunzipSync(Buffer.concat(data)).toString("utf-8")
+                }
+                if (data.length < 8) {
+                    assetListRaw = Buffer.concat(data).toString("utf-8")
+                }
+                if (assetListRaw != "invalid" && assetListRaw != "") {
+                    Buffer.from(assetList, "base64").toString("utf8").split('|').forEach((dir) => {
+                        if (filesystem.existsSync(dir)) {
+                            var verified = false
+                            filesystem.readdirSync(dir).forEach(async (file) => {
+                                if (file.endsWith(".ini") == true) {
+                                    var sigver = false
+                                    const stream = filesystem.createReadStream(dir + "/" + file)
+                                    const rl = readline.createInterface({
+                                        input: stream,
+                                        crlfDelay: Infinity
+                                    })
+
+                                    for await (const line of rl) {
+                                        if (line == "[Reblox]") {
+                                            sigver = true
+                                        }
+                                        else if (line.startsWith("Clients=")) {
+                                            var client = line.slice(8)
+                                            if (client.endsWith("+") == true && client.includes(',') == false) {
+                                                if (isNumeric(client.slice(0, 4))) {
+                                                    var year = parseInt(client.slice(0, 4))
+                                                    var daterange = convertDateRangeToInt(client.slice(4, 5))
+                                                    if (isNumeric(clientVersion.slice(0, 4))) {
+                                                        var total = year + daterange
+                                                        var year1 = parseInt(clientVersion.slice(0, 4))
+                                                        var daterange1 = convertDateRangeToInt(clientVersion.slice(4, 5))
+
+                                                        var total1 = year1 + daterange1
+                                                        if (total1 >= total && year1 >= year || year1 > year) {
+                                                            verified = sigver
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else if (client.endsWith("-") == true && client.includes(',') == false) {
+                                                if (isNumeric(client.slice(0, 4))) {
+                                                    var year = parseInt(client.slice(0, 4))
+                                                    var daterange = convertDateRangeToInt(client.slice(4, 5))
+                                                    if (isNumeric(clientVersion.slice(0, 4))) {
+                                                        var total = year + daterange
+                                                        var year1 = parseInt(clientVersion.slice(0, 4))
+                                                        var daterange1 = convertDateRangeToInt(clientVersion.slice(4, 5))
+
+                                                        var total1 = year1 + daterange1
+                                                        if (total1 <= total && year1 <= year || year1 < year) {
+                                                            verified = sigver
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else if (client.includes(',')) {
+                                                var clientssplit = client.split(',')
+                                                clientssplit.forEach((client1) => {
+                                                    if (client1 == clientVersion) {
+                                                        verified = sigver
+                                                    }
+                                                })
+                                            }
+                                            else if (client == "*") {
+                                                verified = sigver
+                                            }
+                                            else if (client == clientVersion) {
+                                                verified = sigver
+                                            }
+                                        }
+                                    }
+                                    stream.destroy()
+                                    rl.close()
+                                }
+                                if (verified == true) {
+                                    if (verbose == true && debuglevel == 2) {
+                                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Adding " + dir + " to the list of asset packs to use...")
+                                    }
+                                    assetPackList.push(dir)
+                                }
+                            })
+                        }
+                    })
+                    if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Synced up the latest asset pack list!");
+                }
+                else {
+                    if (verbose == true) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Getting list of asset packs failed, you may experience assets failing to load.")
                     }
                 }
-                var roblosecurityfromlauncher = ""
-                var data = []
-                client.on("data", (chunk) => {
-                    data.push(chunk)
-                })
-
-                client.on("end", () => {
-                    roblosecurityfromlauncher = zlib.gunzipSync(Buffer.concat(data)).toString("utf-8")
-                    if (Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8").startsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|")) {
-                        ROBLOSECURITY = Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8")
-                        if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully synced ROBLOSECURITY with the launcher! Turning on useAuth...");
-                        useAuth = true
-                        if (debuglevel == 2 && verbose == true) {
-                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> useAuth is now true.")
-                        }
-                    }
-                    else if (roblosecurityfromlauncher == "invalid") {
-                        if (debuglevel == 2 && verbose == true) {
-                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Attempt " + times + " of 5 failed, trying again...")
-                        }
-                        getROBLOSECURITYfromLauncher(times + 1)
-                    }
-                    else {
-                        if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Received an invalid ROBLOSECURITY from the launcher!")
-                    }
-                })
             })
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to get ROBLOSECURITY from launcher")
-            }
-            client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("GRS", "utf8"), Buffer.from(getTimestamp(), "utf8")]))
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
-            }
-            client.end()
+        })
+        if (debuglevel == 2 && verbose == true) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to get asset pack list from launcher")
         }
-        else {
-            console.log("\x1b[31m%s\x1b[0m", "<ERROR> We're unable to sync the ROBLOSECURITY! Check your date/time settings.")
+        client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("ASL", "utf8")]))
+        if (debuglevel == 2 && verbose == true) {
+            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
         }
+        client.end()
+    }
+    else {
+        console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't contact the launcher as TCP communication is disabled by command line. Please remove --disableTCP from your command line and restart the server!")
+    }
+}
+
+function getROBLOSECURITYfromLauncher(times) {
+    if (allowTCPLauncher) {
+        if (checkROBLOSECURITY == true && isInternetAvailable == true && isRobloxAvailable == true) {
+            if (times < 6) {
+                const { Socket } = require("net")
+
+                const client = new Socket()
+
+                var options = {
+                    host: "127.0.0.1",
+                    port: 50355
+                }
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
+                }
+                client.connect(options, () => {
+                    if (verbose == true) {
+                        if (debuglevel == 2) {
+                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
+                        }
+                        else {
+                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+                        }
+                    }
+                    var roblosecurityfromlauncher = ""
+                    var rawText = ""
+                    var data = []
+                    client.on("data", (chunk) => {
+                        data.push(chunk)
+                    })
+
+                    client.on("end", () => {
+                        if (gzipChecker(Buffer.concat(data))) {
+                            roblosecurityfromlauncher = zlib.gunzipSync(Buffer.concat(data)).toString("utf-8")
+                        }
+                        else {
+                            rawText = Buffer.concat(data).toString("utf-8")
+                        }
+                        if (roblosecurityfromlauncher != undefined && Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8").startsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|")) {
+                            ROBLOSECURITY = Buffer.from(roblosecurityfromlauncher, "base64").toString("utf8")
+                            if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully synced ROBLOSECURITY with the launcher! Turning on useAuth...");
+                            useAuth = true
+                            if (debuglevel == 2 && verbose == true) {
+                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> useAuth is now true.")
+                            }
+                        }
+                        else if (rawText == "invalid") {
+                            if (debuglevel == 2 && verbose == true) {
+                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Attempt " + times + " of 5 failed, trying again...")
+                            }
+                            getROBLOSECURITYfromLauncher(times + 1)
+                        }
+                        else {
+                            if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Received an invalid ROBLOSECURITY from the launcher!")
+                        }
+                    })
+                })
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to get ROBLOSECURITY from launcher")
+                }
+                client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("GRS", "utf8"), Buffer.from(getTimestamp(), "utf8")]))
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
+                }
+                client.end()
+            }
+            else {
+                console.log("\x1b[31m%s\x1b[0m", "<ERROR> We're unable to sync the ROBLOSECURITY! Check your date/time settings.")
+            }
+        }
+    }
+    else {
+        console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't contact the launcher as TCP communication is disabled by command line. Please remove --disableTCP from your command line and restart the server!")
     }
 }
 
 async function generateJoinScript(isTeleport) {
-    if (filesystem.existsSync("./joinscript.txt")) {
-        var oldjoinscript = filesystem.readFileSync("./joinscript.txt")
-        try {
-            var joinjson = JSON.parse(oldjoinscript);
-            const { Socket } = require("net")
+    if (allowTCPLauncher) {
+        if (filesystem.existsSync("./joinscript.txt")) {
+            var oldjoinscript = filesystem.readFileSync("./joinscript.txt")
+            try {
+                var joinjson = JSON.parse(oldjoinscript);
+                const { Socket } = require("net")
 
-            const client = new Socket()
+                const client = new Socket()
 
-            var options = {
-                host: "127.0.0.1",
-                port: 50355
-            }
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
-            }
-            client.connect(options, () => {
-                if (verbose == true) {
-                    if (debuglevel == 2) {
-                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
-                    }
-                    else {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
-                    }
+                var options = {
+                    host: "127.0.0.1",
+                    port: 50355
                 }
-                var dataresult = ""
-                var data = []
-                client.on("data", (chunk) => {
-                    data.push(chunk)
-                })
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
+                }
+                client.connect(options, () => {
+                    if (verbose == true) {
+                        if (debuglevel == 2) {
+                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
+                        }
+                        else {
+                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+                        }
+                    }
+                    var dataresult = ""
+                    var data = []
+                    client.on("data", (chunk) => {
+                        data.push(chunk)
+                    })
 
-                client.on("end", () => {
-                    dataresult = Buffer.concat(data).toString("utf-8")
-                    if (dataresult == "200") {
-                        if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully generated the joinscript for the client!");
-                    }
-                    else if (dataresult == "invalid") {
-                        console.log("\x1b[33m%s\x1b[0m", "<WARN> RobloxAssetFixer is unable to send a request to generate a new joinscript, your client may not be able to join an auth-required server.")
-                    }
-                    else {
-                        if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Unknown response from the server.")
-                    }
-                    return true;
+                    client.on("end", () => {
+                        dataresult = Buffer.concat(data).toString("utf-8")
+                        if (dataresult == "200") {
+                            if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully generated the joinscript for the client!");
+                        }
+                        else if (dataresult == "invalid") {
+                            console.log("\x1b[33m%s\x1b[0m", "<WARN> RobloxAssetFixer is unable to send a request to generate a new joinscript, your client may not be able to join an auth-required server.")
+                        }
+                        else {
+                            if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Unknown response from the server.")
+                        }
+                        return true;
+                    })
                 })
-            })
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to the launcher to generate the new joinscript...")
-            }
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to the launcher to generate the new joinscript...")
+                }
 
-            client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("JSG\n" + joinjson["MachineAddress"] + "\n" + joinjson["ServerPort"] + "\n" + joinjson["UserId"] + "\n" + joinjson["UserName"] + "\n" + joinjson["PlaceId"] + "\n" + joinjson["MembershipType"] + "\n" + isTeleport, "utf8")]))
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
+                client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("JSG\n" + joinjson["MachineAddress"] + "\n" + joinjson["ServerPort"] + "\n" + joinjson["UserId"] + "\n" + joinjson["UserName"] + "\n" + joinjson["PlaceId"] + "\n" + joinjson["MembershipType"] + "\n" + isTeleport, "utf8")]))
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
+                }
+                client.end()
             }
-            client.end()
+            catch (err) {
+                console.log("\x1b[33m%s\x1b[0m", "<WARN> Something went wrong while trying to generate a new joinscript, your client may not be able to join an auth-required server.")
+                if (verbose) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Exception will be shown here:\n" + err)
+                }
+                return false;
+            }
         }
-        catch (err) {
-            console.log("\x1b[33m%s\x1b[0m", "<WARN> Something went wrong while trying to generate a new joinscript, your client may not be able to join an auth-required server.")
-            if (verbose) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Exception will be shown here:\n" + err)
+        else {
+            try {
+                const { Socket } = require("net")
+
+                const client = new Socket()
+
+                var options = {
+                    host: "127.0.0.1",
+                    port: 50355
+                }
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
+                }
+                client.connect(options, () => {
+                    if (verbose == true) {
+                        if (debuglevel == 2) {
+                            console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
+                        }
+                        else {
+                            console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+                        }
+                    }
+                    var dataresult = ""
+                    var data = []
+                    client.on("data", (chunk) => {
+                        data.push(chunk)
+                    })
+
+                    client.on("end", () => {
+                        dataresult = Buffer.concat(data).toString("utf-8")
+                        if (dataresult == "200") {
+                            if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully generated the joinscript for the client!");
+                        }
+                        else if (dataresult == "invalid") {
+                            console.log("\x1b[34m%s\x1b[0m", "<WARN> RobloxAssetFixer is unable to send a request to generate a new joinscript, your client may not be able to join a auth-required server.")
+                        }
+                        else {
+                            if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Unknown response from the server.")
+                        }
+                        return true;
+                    })
+                })
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to the launcher to generate the new joinscript...")
+                }
+
+                client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("JSG\n" + (joining ? ip : "127.0.0.1") + "\n" + 53640 + "\n" + userId + "\n" + username + "\n" + 1818, "utf8")]))
+                if (debuglevel == 2 && verbose == true) {
+                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
+                }
+                client.end()
             }
-            return false;
+            catch {
+                console.log("\x1b[34m%s\x1b[0m", "<WARN> RobloxAssetFixer is unable to send a request to generate a new joinscript, your client may not be able to join a auth-required server.")
+                return false;
+            }
         }
     }
     else {
-        try {
-            const { Socket } = require("net")
-
-            const client = new Socket()
-
-            var options = {
-                host: "127.0.0.1",
-                port: 50355
-            }
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
-            }
-            client.connect(options, () => {
-                if (verbose == true) {
-                    if (debuglevel == 2) {
-                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
-                    }
-                    else {
-                        console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
-                    }
-                }
-                var dataresult = ""
-                var data = []
-                client.on("data", (chunk) => {
-                    data.push(chunk)
-                })
-
-                client.on("end", () => {
-                    dataresult = Buffer.concat(data).toString("utf-8")
-                    if (dataresult == "200") {
-                        if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> Successfully generated the joinscript for the client!");
-                    }
-                    else if (dataresult == "invalid") {
-                        console.log("\x1b[34m%s\x1b[0m", "<WARN> RobloxAssetFixer is unable to send a request to generate a new joinscript, your client may not be able to join a auth-required server.")
-                    }
-                    else {
-                        if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Unknown response from the server.")
-                    }
-                    return true;
-                })
-            })
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data to the launcher to generate the new joinscript...")
-            }
-
-            client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("JSG\n" + (joining ? ip : "127.0.0.1") + "\n" + 53640 + "\n" + userId + "\n" + username + "\n" + 1818, "utf8")]))
-            if (debuglevel == 2 && verbose == true) {
-                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
-            }
-            client.end()
-        }
-        catch {
-            console.log("\x1b[34m%s\x1b[0m", "<WARN> RobloxAssetFixer is unable to send a request to generate a new joinscript, your client may not be able to join a auth-required server.")
-            return false;
-        }
+        console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't contact the launcher as TCP communication is disabled by command line. Please remove --disableTCP from your command line and restart the server!")
     }
 }
 
@@ -885,6 +992,38 @@ function getAsset(id, callback) {
                                     else {
                                         if (debuglevel == 2 && verbose == true) {
                                             console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending buffer to the function that called getAsset()")
+                                        }
+                                        if (saveFile) {
+                                            if (filesystem.existsSync("./saved") == false) filesystem.mkdirSync("./saved")
+                                            if (jsonresult["assetTypeId"] == 1) {
+                                                filesystem.writeFileSync("./saved/" + id + ".png", buffer)
+                                            }
+                                            else if ([2, 8, 10, 11, 12, 13, 17, 18, 19, 24, 27, 28, 29, 30, 31, 40].includes(jsonresult["assetTypeId"])) {
+                                                filesystem.writeFileSync("./saved/" + id + ".rbxm", buffer)
+                                            }
+                                            else if (jsonresult["assetTypeId"] == 5) {
+                                                filesystem.writeFileSync("./saved/" + id + ".lua", buffer)
+                                            }
+                                            else if (jsonresult["assetTypeId"] == 3) {
+                                                if ((buffer[0] == 0xFF && buffer[1] == 0xFB) || (buffer[0] == 0xFF && buffer[1] == 0xF3) || (buffer[0] == 0xFF && buffer[1] == 0xF2) || (buffer[0] == 0x49 && buffer[1] == 0x44 && buffer[2] == 0x33)) {
+                                                    filesystem.writeFileSync("./saved/" + id + ".mp3", buffer)
+                                                }
+                                                else if (buffer[0] == 0x4F && buffer[1] == 0x67 && buffer[2] == 0x67 && buffer[3] == 0x53) {
+                                                    filesystem.writeFileSync("./saved/" + id + ".ogg", buffer)
+                                                }
+                                                else {
+                                                    filesystem.writeFileSync("./saved/" + id + ".bin", buffer)
+                                                }
+                                            }
+                                            else if (jsonresult["assetTypeId"] == 9) {
+                                                filesystem.writeFileSync("./saved/" + id + ".rbxl", buffer)
+                                            }
+                                            else if (jsonresult["assetTypeId"] == 4) {
+                                                filesystem.writeFileSync("./saved/" + id + ".mesh", buffer)
+                                            }
+                                            else {
+                                                filesystem.writeFileSync("./saved/" + id + ".bin", buffer)
+                                            }
                                         }
                                         return callback(buffer)
                                     }
@@ -1158,6 +1297,38 @@ function getAsset(id, callback) {
                                         if (debuglevel == 2 && verbose == true) {
                                             console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending buffer to the function that called getAsset()")
                                         }
+                                        if (saveFile) {
+                                            if (filesystem.existsSync("./saved") == false) filesystem.mkdirSync("./saved")
+                                            if (jsonresult["assetTypeId"] == 1) {
+                                                filesystem.writeFileSync("./saved/" + id + ".png", buffer)
+                                            }
+                                            else if ([2, 8, 10, 11, 12, 13, 17, 18, 19, 24, 27, 28, 29, 30, 31, 40].includes(jsonresult["assetTypeId"])) {
+                                                filesystem.writeFileSync("./saved/" + id + ".rbxm", buffer)
+                                            }
+                                            else if (jsonresult["assetTypeId"] == 5) {
+                                                filesystem.writeFileSync("./saved/" + id + ".lua", buffer)
+                                            }
+                                            else if (jsonresult["assetTypeId"] == 3) {
+                                                if ((buffer[0] == 0xFF && buffer[1] == 0xFB) || (buffer[0] == 0xFF && buffer[1] == 0xF3) || (buffer[0] == 0xFF && buffer[1] == 0xF2) || (buffer[0] == 0x49 && buffer[1] == 0x44 && buffer[2] == 0x33)) {
+                                                    filesystem.writeFileSync("./saved/" + id + ".mp3", buffer)
+                                                }
+                                                else if (buffer[0] == 0x4F && buffer[1] == 0x67 && buffer[2] == 0x67 && buffer[3] == 0x53) {
+                                                    filesystem.writeFileSync("./saved/" + id + ".ogg", buffer)
+                                                }
+                                                else {
+                                                    filesystem.writeFileSync("./saved/" + id + ".bin", buffer)
+                                                }
+                                            }
+                                            else if (jsonresult["assetTypeId"] == 9) {
+                                                filesystem.writeFileSync("./saved/" + id + ".rbxl", buffer)
+                                            }
+                                            else if (jsonresult["assetTypeId"] == 4) {
+                                                filesystem.writeFileSync("./saved/" + id + ".mesh", buffer)
+                                            }
+                                            else {
+                                                filesystem.writeFileSync("./saved/" + id + ".bin", buffer)
+                                            }
+                                        }
                                         return callback(buffer)
                                     }
                                 })
@@ -1368,6 +1539,67 @@ app.get("/asset", (req, res) => {
 
                 }
             })
+            assetPackList.forEach((pathAsset) => {
+                if (assetfound == false) {
+                    filesystem.readdirSync(pathAsset).forEach(file => {
+                        var splitted = file.split('.')
+                        if (splitted[0] == targetId.toString().trim()) {
+                            if (verbose) {
+                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from an asset pack (Asset)")
+                            }
+
+                            if (calculateDuplicateFiles(splitted[0], pathAsset) > 1) {
+                                if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                                    duplicatecount++
+                                    //do nothing for christ sake
+                                }
+                                else {
+                                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                    if (file.endsWith(".lua")) {
+                                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(pathAsset + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(pathAsset + "/" + file, "utf8"))
+                                    }
+                                    else {
+                                        if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                            if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                                res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                            }
+                                            else {
+                                                res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                            }
+                                        }
+                                        else {
+                                            res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                        }
+                                    }
+                                    assetfound = true
+                                    return
+                                }
+                            }
+                            else {
+                                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                if (file.endsWith(".lua")) {
+                                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(pathAsset + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(pathAsset + "/" + file, "utf8"))
+                                }
+                                else {
+                                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                            res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                        }
+                                        else {
+                                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                        }
+                                    }
+                                    else {
+                                        res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                    }
+                                }
+                                assetfound = true
+                                return
+                            }
+                        }
+                    })
+                }
+            })
             if (assetfound == false) {
                 res.setHeader("Content-disposition", "attachment; filename=\"" + targetId + "\"")
                 if (assetsFromServer && joining) {
@@ -1545,6 +1777,67 @@ app.get("//asset", (req, res) => {
 
                 }
             })
+            assetPackList.forEach((pathAsset) => {
+                if (assetfound == false) {
+                    filesystem.readdirSync(pathAsset).forEach(file => {
+                        var splitted = file.split('.')
+                        if (splitted[0] == targetId.toString().trim()) {
+                            if (verbose) {
+                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from an asset pack (Asset)")
+                            }
+
+                            if (calculateDuplicateFiles(splitted[0], pathAsset) > 1) {
+                                if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                                    duplicatecount++
+                                    //do nothing for christ sake
+                                }
+                                else {
+                                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                    if (file.endsWith(".lua")) {
+                                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(pathAsset + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(pathAsset + "/" + file, "utf8"))
+                                    }
+                                    else {
+                                        if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                            if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                                res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                            }
+                                            else {
+                                                res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                            }
+                                        }
+                                        else {
+                                            res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                        }
+                                    }
+                                    assetfound = true
+                                    return
+                                }
+                            }
+                            else {
+                                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                if (file.endsWith(".lua")) {
+                                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(pathAsset + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(pathAsset + "/" + file, "utf8"))
+                                }
+                                else {
+                                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                            res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                        }
+                                        else {
+                                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                        }
+                                    }
+                                    else {
+                                        res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                    }
+                                }
+                                assetfound = true
+                                return
+                            }
+                        }
+                    })
+                }
+            })
             if (assetfound == false) {
                 res.setHeader("Content-disposition", "attachment; filename=\"" + targetId + "\"")
                 if (assetsFromServer && joining) {
@@ -1719,6 +2012,67 @@ app.get("/v1/asset", (req, res) => {
                         return
                     }
 
+                }
+            })
+            assetPackList.forEach((pathAsset) => {
+                if (assetfound == false) {
+                    filesystem.readdirSync(pathAsset).forEach(file => {
+                        var splitted = file.split('.')
+                        if (splitted[0] == targetId.toString().trim()) {
+                            if (verbose) {
+                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Getting " + targetId + " from an asset pack (Asset)")
+                            }
+
+                            if (calculateDuplicateFiles(splitted[0], pathAsset) > 1) {
+                                if (duplicatecount == 0 && (splitted[1] == "png" || splitted[1] == "jpg" || splitted[1] == "jpeg" || splitted[1] == "bmp")) {
+                                    duplicatecount++
+                                    //do nothing for christ sake
+                                }
+                                else {
+                                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                    if (file.endsWith(".lua")) {
+                                        res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(pathAsset + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(pathAsset + "/" + file, "utf8"))
+                                    }
+                                    else {
+                                        if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                            if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                                res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                            }
+                                            else {
+                                                res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                            }
+                                        }
+                                        else {
+                                            res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                        }
+                                    }
+                                    assetfound = true
+                                    return
+                                }
+                            }
+                            else {
+                                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                if (file.endsWith(".lua")) {
+                                    res.status(200).send((useNewSignatureFormat ? "--rbxsig%" : "%") + crypto.sign("SHA1", Buffer.from((useNewSignatureAssetFormat ? "\r\n--rbxassetid%" + targetId + "%\r\n" : "%" + targetId + "%\r\n"), "utf8") + filesystem.readFileSync(pathAsset + "/" + file), { key: filesystem.readFileSync(privateKey, "utf8"), padding: crypto.constants.RSA_PKCS1_PADDING }).toString("base64") + (useNewSignatureAssetFormat ? "%\r\n--rbxassetid%" + targetId + "%\r\n" : "%\r\n%" + targetId + "%\r\n") + filesystem.readFileSync(pathAsset + "/" + file, "utf8"))
+                                }
+                                else {
+                                    if (file.endsWith(".rbxl") || file.endsWith(".rbxlx")) {
+                                        if (req.ip.endsWith("127.0.0.1") || req.ip == "::1") {
+                                            res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                        }
+                                        else {
+                                            res.status(403).send("{\"errors\": [{\"code\":409, \"message\":\"User is not authorized to access Asset.\"}], \"isArchived\": false, \"assetTypeId\": 0, \"isRecordable\": false}")
+                                        }
+                                    }
+                                    else {
+                                        res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                    }
+                                }
+                                assetfound = true
+                                return
+                            }
+                        }
+                    })
                 }
             })
             if (assetfound == false) {
@@ -1908,8 +2262,6 @@ async function createBatchResponse(request) {
     else {
         return "{\"errors\": [{\"code\": 400, \"message\": \"Request was not in correct format\"}]}"
     }
-
-    
 }
 
 app.post("/v1/assets/batch", (req, res) => {
@@ -2111,9 +2463,22 @@ app.get("/Thumbs/GameIcon.ashx", (req, res) => {
                     return
                 }
             })
+            assetPackList.forEach((pathAsset) => {
+                if (assetfound == false) {
+                    filesystem.readdirSync(pathAsset).forEach(file => {
+                        var splitted = file.split('.')
+                        if (splitted[0] == req.query.assetId.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                            assetfound = true
+                            return
+                        }
+                    })
+                }
+            })
             if (assetfound == false) {
                 var options1 = {
-                    host: 'thumbnails.roblox.com',
+                    host: (proxyUrl != "" ? 'thumbnails.' + proxyUrl : 'thumbnails.roblox.com'),
                     port: 443,
                     path: '/v1/assets?assetIds=' + req.query.assetId + '&returnPolicy=PlaceHolder&size=' + req.query.width + 'x' + req.query.height + '&format=png',
                     method: "GET"
@@ -2294,6 +2659,19 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
                     return
                 }
             })
+            assetPackList.forEach((pathAsset) => {
+                if (assetfound == false) {
+                    filesystem.readdirSync(pathAsset).forEach(file => {
+                        var splitted = file.split('.')
+                        if (splitted[0] == ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID).toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                            assetfound = true
+                            return
+                        }
+                    })
+                }
+            })
             if (assetfound == false && isInternetAvailable) {
                 if (joining) {
                     var options = {
@@ -2318,7 +2696,7 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
                             }
                             else {
                                 var options1 = {
-                                    host: 'thumbnails.roblox.com',
+                                    host: (proxyUrl != "" ? 'thumbnails.' + proxyUrl : 'thumbnails.roblox.com'),
                                     port: 443,
                                     path: '/v1/assets?assetIds=' + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + '&returnPolicy=PlaceHolder&size=700x700&format=' + (req.query.format != undefined ? req.query.format : "png"),
                                     method: "GET"
@@ -2396,7 +2774,7 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
                 }
                 else {
                     var options1 = {
-                        host: 'thumbnails.roblox.com',
+                        host: (proxyUrl != "" ? 'thumbnails.' + proxyUrl : 'thumbnails.roblox.com'),
                         port: 443,
                         path: '/v1/assets?assetIds=' + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + '&returnPolicy=PlaceHolder&size=700x700&format=' + (req.query.format != undefined ? req.query.format : "png"),
                         method: "GET"
@@ -2538,9 +2916,22 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
                                         return
                                     }
                                 })
+                                assetPackList.forEach((pathAsset) => {
+                                    if (assetfound == false) {
+                                        filesystem.readdirSync(pathAsset).forEach(file => {
+                                            var splitted = file.split('.')
+                                            if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                                res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                                assetfound = true
+                                                return
+                                            }
+                                        })
+                                    }
+                                })
                                 if (assetfound == false && isInternetAvailable) {
                                     var options1 = {
-                                        host: 'thumbnails.roblox.com',
+                                        host: (proxyUrl != "" ? 'thumbnails.' + proxyUrl : 'thumbnails.roblox.com'),
                                         port: 443,
                                         path: '/v1/assets?assetIds=' + req.query.aid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
                                         method: "GET"
@@ -2648,9 +3039,22 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
                                         return
                                     }
                                 })
+                                assetPackList.forEach((pathAsset) => {
+                                    if (assetfound == false) {
+                                        filesystem.readdirSync(pathAsset).forEach(file => {
+                                            var splitted = file.split('.')
+                                            if (splitted[0] == req.query.assetversionid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                                res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                                res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                                assetfound = true
+                                                return
+                                            }
+                                        })
+                                    }
+                                })
                                 if (assetfound == false && isInternetAvailable) {
                                     var options1 = {
-                                        host: 'thumbnails.roblox.com',
+                                        host: (proxyUrl != "" ? 'thumbnails.' + proxyUrl : 'thumbnails.roblox.com'),
                                         port: 443,
                                         path: '/v1/assets?assetIds=' + req.query.assetversionid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
                                         method: "GET"
@@ -2766,9 +3170,22 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
                             return
                         }
                     })
+                    assetPackList.forEach((pathAsset) => {
+                        if (assetfound == false) {
+                            filesystem.readdirSync(pathAsset).forEach(file => {
+                                var splitted = file.split('.')
+                                if (splitted[0] == req.query.aid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                    res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                    assetfound = true
+                                    return
+                                }
+                            })
+                        }
+                    })
                     if (assetfound == false && isInternetAvailable) {
                         var options1 = {
-                            host: 'thumbnails.roblox.com',
+                            host: (proxyUrl != "" ? 'thumbnails.' + proxyUrl : 'thumbnails.roblox.com'),
                             port: 443,
                             path: '/v1/assets?assetIds=' + req.query.aid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
                             method: "GET"
@@ -2876,9 +3293,22 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
                             return
                         }
                     })
+                    assetPackList.forEach((pathAsset) => {
+                        if (assetfound == false) {
+                            filesystem.readdirSync(pathAsset).forEach(file => {
+                                var splitted = file.split('.')
+                                if (splitted[0] == req.query.assetversionid.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                    res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                                    res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                                    assetfound = true
+                                    return
+                                }
+                            })
+                        }
+                    })
                     if (assetfound == false && isInternetAvailable) {
                         var options1 = {
-                            host: 'thumbnails.roblox.com',
+                            host: (proxyUrl != "" ? 'thumbnails.' + proxyUrl : 'thumbnails.roblox.com'),
                             port: 443,
                             path: '/v1/assets?assetIds=' + req.query.assetversionid + '&returnPolicy=PlaceHolder&size=' + req.query.wd + 'x' + req.query.ht + '&format=' + req.query.fmt,
                             method: "GET"
@@ -2957,7 +3387,7 @@ app.get("/Game/Tools/ThumbnailAsset.ashx", (req, res) => {
 })
 
 app.get("/game/GetCurrentUser.ashx", (req, res) => {
-    if (AllowGetCurrentUser) {
+    if (AllowGetCurrentUser && userId > 0) {
         res.status(200).send("" + userId)
     }
     else {
@@ -3219,34 +3649,29 @@ app.get("/Asset/CharacterFetch.ashx", (req, res) => {
     }
     else {
         console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /Asset/CharacterFetch.ashx")
-        if (localClothes == true) {
-            if (isNumeric(req.query.userId)) {
-                var tempclothes = ";"
-                if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
-                    var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
-                    if (json["asset"] != undefined) {
-                        for (var i = 0; i < json["asset"].length; i++) {
-                            if (i == json["asset"].length - 1) {
-                                tempclothes = tempclothes + "http://reblox.zip/asset/?id=" + json["asset"][i]["id"]
-                            }
-                            else {
-                                tempclothes = tempclothes + "http://reblox.zip/asset/?id=" + json["asset"][i]["id"] + ";"
-                            }
+        if (isNumeric(req.query.userId)) {
+            var tempclothes = ";"
+            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
+                if (json["asset"] != undefined) {
+                    for (var i = 0; i < json["asset"].length; i++) {
+                        if (i == json["asset"].length - 1) {
+                            tempclothes = tempclothes + "http://reblox.zip/asset/?id=" + json["asset"][i]["id"]
+                        }
+                        else {
+                            tempclothes = tempclothes + "http://reblox.zip/asset/?id=" + json["asset"][i]["id"] + ";"
                         }
                     }
-                    if (tempclothes == ";") tempclothes = ""
-                    res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + tempclothes)
                 }
-                else {
-                    res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId)
-                }
+                if (tempclothes == ";") tempclothes = ""
+                res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + tempclothes)
             }
             else {
-                res.status(400).end()
+                res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId)
             }
         }
         else {
-            res.status(200).send("http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId)
+            res.status(400).end()
         }
     }
 
@@ -3502,34 +3927,29 @@ app.get("/v1.1/avatar-fetch", (req, res) => {
         }
     }
     else {
-        if (localClothes == true) {
-            if (isNumeric(req.query.userId)) {
-                console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1.1/avatar-fetch")
-                var tempclothes = ""
-                if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
-                    var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
-                    if (json["asset"] != undefined) {
-                        for (var i = 0; i < json["asset"].length; i++) {
-                            if (i == json["asset"].length - 1) {
-                                tempclothes = tempclothes + json["asset"][i]["id"]
-                            }
-                            else {
-                                tempclothes = tempclothes + json["asset"][i]["id"] + ","
-                            }
+        if (isNumeric(req.query.userId)) {
+            console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1.1/avatar-fetch")
+            var tempclothes = ""
+            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json"))
+                if (json["asset"] != undefined) {
+                    for (var i = 0; i < json["asset"].length; i++) {
+                        if (i == json["asset"].length - 1) {
+                            tempclothes = tempclothes + json["asset"][i]["id"]
+                        }
+                        else {
+                            tempclothes = tempclothes + json["asset"][i]["id"] + ","
                         }
                     }
-                    res.status(200).send("{\"resolvedAvatarType\":\"" + json["bodyType"] + "\",\"accessoryVersionIds\":[" + tempclothes + "],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":" + json["colors"]["headColor"] + ",\"LeftArmColor\":" + json["colors"]["leftArmColor"] + ",\"LeftLegColor\":" + json["colors"]["leftLegColor"] + ",\"RightArmColor\":" + json["colors"]["rightArmColor"] + ",\"RightLegColor\":" + json["colors"]["rightLegColor"] + ",\"TorsoColor\":" + json["colors"]["torsoColor"] + "},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
                 }
-                else {
-                    res.status(200).send("{\"resolvedAvatarType\":\"" + ((avatarR15) ? "R15" : "R6") + "\",\"accessoryVersionIds\":[],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":194,\"LeftArmColor\":194,\"LeftLegColor\":194,\"RightArmColor\":194,\"RightLegColor\":194,\"TorsoColor\":194},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
-                }
+                res.status(200).send("{\"resolvedAvatarType\":\"" + json["bodyType"] + "\",\"accessoryVersionIds\":[" + tempclothes + "],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":" + json["colors"]["headColor"] + ",\"LeftArmColor\":" + json["colors"]["leftArmColor"] + ",\"LeftLegColor\":" + json["colors"]["leftLegColor"] + ",\"RightArmColor\":" + json["colors"]["rightArmColor"] + ",\"RightLegColor\":" + json["colors"]["rightLegColor"] + ",\"TorsoColor\":" + json["colors"]["torsoColor"] + "},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
             }
             else {
-                res.status(400).end()
+                res.status(200).send("{\"resolvedAvatarType\":\"" + ((avatarR15) ? "R15" : "R6") + "\",\"accessoryVersionIds\":[],\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"bodyColorsUrl\":\"http://reblox.zip/Asset/BodyColors.ashx?userId=" + req.query.userId + "\",  \"bodyColors\":{\"HeadColor\":194,\"LeftArmColor\":194,\"LeftLegColor\":194,\"RightArmColor\":194,\"RightLegColor\":194,\"TorsoColor\":194},\"animations\":{},\"scales\":{\"Width\":1.0000,\"Height\":1.0000,\"Head\":1.0000,\"Depth\":1.00}}")
             }
         }
         else {
-            res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + clothidsstring + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": " + avatarBodyColor[0] + ", \"torsoColorId\": " + avatarBodyColor[5] + ", \"rightArmColorId\": " + avatarBodyColor[3] + ", \"leftArmColorId\": " + avatarBodyColor[1] + ", \"rightLegColorId\": " + avatarBodyColor[4] + ", \"leftLegColorId\": " + avatarBodyColor[2] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+            res.status(400).end()
         }
     }
 })
@@ -3723,46 +4143,41 @@ app.get("/v1/avatar-fetch", async (req, res) => {
         }
     }
     else {
-        if (localClothes == true) {
-            if (isNumeric(req.query.userId)) {
-                var tempclothes = "{"
-                if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
-                    console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1/avatar-fetch")
-                    cloth2021finished = false
-                    var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json", "utf8"))
-                    var tempi = 0
-                    if (json["asset"] != undefined) {
-                        for (var i = 0; i < json["asset"].length; i++) {
-                            await getAssetType(json["asset"][i]["id"], (typenumber) => {
-                                if (tempi == json["asset"].length - 1) {
-                                    tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}"
-                                    cloth2021finished = true
-                                    sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + tempclothes + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+        if (isNumeric(req.query.userId)) {
+            var tempclothes = "{"
+            if (filesystem.existsSync("./clothes/" + req.query.userId + ".json")) {
+                console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + req.query.userId + " via /v1/avatar-fetch")
+                cloth2021finished = false
+                var json = JSON.parse(filesystem.readFileSync("./clothes/" + req.query.userId + ".json", "utf8"))
+                var tempi = 0
+                if (json["asset"] != undefined) {
+                    for (var i = 0; i < json["asset"].length; i++) {
+                        await getAssetType(json["asset"][i]["id"], (typenumber) => {
+                            if (tempi == json["asset"].length - 1) {
+                                tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}"
+                                cloth2021finished = true
+                                sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + tempclothes + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+                            }
+                            else {
+                                if (tempi < json["asset"].length) {
+                                    tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}, {"
                                 }
-                                else {
-                                    if (tempi < json["asset"].length) {
-                                        tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}, {"
-                                    }
-                                }
-                                tempi = tempi + 1
-                            })
-                        }
-                    } else {
-                        cloth2021finished = true
-                        sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+                            }
+                            tempi = tempi + 1
+                        })
                     }
+                } else {
+                    cloth2021finished = true
+                    sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+                }
 
-                }
-                else {
-                    res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": 144, \"torsoColorId\": 144, \"rightArmColorId\": 144, \"leftArmColorId\": 144, \"rightLegColorId\": 144, \"leftLegColorId\": 144},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
-                }
             }
             else {
-                res.status(400).end()
+                res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": 144, \"torsoColorId\": 144, \"rightArmColorId\": 144, \"leftArmColorId\": 144, \"rightLegColorId\": 144, \"leftLegColorId\": 144},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
             }
         }
         else {
-            res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + clothidsstring + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": " + avatarBodyColor[0] + ", \"torsoColorId\": " + avatarBodyColor[5] + ", \"rightArmColorId\": " + avatarBodyColor[3] + ", \"leftArmColorId\": " + avatarBodyColor[1] + ", \"rightLegColorId\": " + avatarBodyColor[4] + ", \"leftLegColorId\": " + avatarBodyColor[2] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+            res.status(400).end()
         }
     }
 })
@@ -3780,41 +4195,36 @@ app.get("/v1/avatar", async (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
 
     console.log("\x1b[32m%s\x1b[0m", "<INFO> Getting the avatar of " + userId + " via /v1/avatar")
-    if (localClothes == true) {
-        var tempclothes = "{"
+    var tempclothes = "{"
 
-        if (filesystem.existsSync("./clothes/" + userId + ".json")) {
-            cloth2021finished = false
-            var json = JSON.parse(filesystem.readFileSync("./clothes/" + userId + ".json", "utf8"))
-            var tempi = 0
-            if (json["asset"] != undefined) {
-                for (var i = 0; i < json["asset"].length; i++) {
-                    await getAssetType(json["asset"][i]["id"], (typenumber) => {
-                        if (tempi == json["asset"].length - 1) {
-                            tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}"
-                            cloth2021finished = true
-                            sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + tempclothes + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+    if (filesystem.existsSync("./clothes/" + userId + ".json")) {
+        cloth2021finished = false
+        var json = JSON.parse(filesystem.readFileSync("./clothes/" + userId + ".json", "utf8"))
+        var tempi = 0
+        if (json["asset"] != undefined) {
+            for (var i = 0; i < json["asset"].length; i++) {
+                await getAssetType(json["asset"][i]["id"], (typenumber) => {
+                    if (tempi == json["asset"].length - 1) {
+                        tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}"
+                        cloth2021finished = true
+                        sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + tempclothes + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+                    }
+                    else {
+                        if (tempi < json["asset"].length) {
+                            tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}, {"
                         }
-                        else {
-                            if (tempi < json["asset"].length) {
-                                tempclothes = tempclothes + "\"assetId\":" + json["asset"][tempi]["id"] + ",\"assetTypeId\":" + typenumber + "}, {"
-                            }
-                        }
-                        tempi = tempi + 1
-                    })
-                }
-            } else {
-                cloth2021finished = true
-                sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+                    }
+                    tempi = tempi + 1
+                })
             }
+        } else {
+            cloth2021finished = true
+            sendWhenFinished(cloth2021finished, res, "{\"resolvedAvatarType\": \"" + json["bodyType"] + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + json["bodyType"] + "\", \"bodyColors\": { \"headColorId\": " + json["colors"]["headColor"] + ", \"torsoColorId\": " + json["colors"]["torsoColor"] + ", \"rightArmColorId\": " + json["colors"]["rightArmColor"] + ", \"leftArmColorId\": " + json["colors"]["leftArmColor"] + ", \"rightLegColorId\": " + json["colors"]["rightLegColor"] + ", \"leftLegColorId\": " + json["colors"]["leftLegColor"] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+        }
 
-        }
-        else {
-            res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": 144, \"torsoColorId\": 144, \"rightArmColorId\": 144, \"leftArmColorId\": 144, \"rightLegColorId\": 144, \"leftLegColorId\": 144},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
-        }
     }
     else {
-        res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[" + clothidsstring + "],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": " + avatarBodyColor[0] + ", \"torsoColorId\": " + avatarBodyColor[5] + ", \"rightArmColorId\": " + avatarBodyColor[3] + ", \"leftArmColorId\": " + avatarBodyColor[1] + ", \"rightLegColorId\": " + avatarBodyColor[4] + ", \"leftLegColorId\": " + avatarBodyColor[2] + "},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
+        res.status(200).send("{\"resolvedAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\",\"equippedGearVersionIds\":[],\"backpackGearVersionIds\":[],\"assetAndAssetTypeIds\":[],\"animationAssetIds\":{}, \"playerAvatarType\": \"" + ((avatarR15) ? "R15" : "R6") + "\", \"bodyColors\": { \"headColorId\": 144, \"torsoColorId\": 144, \"rightArmColorId\": 144, \"leftArmColorId\": 144, \"rightLegColorId\": 144, \"leftLegColorId\": 144},\"scales\": { \"height\": 1.0000, \"width\": 1.0000, \"head\": 1.0000, \"depth\": 1.00, \"proportion\": 0.0000, \"bodyType\": 0.0000},\"emotes\":[]}")
     }
 })
 
@@ -5540,7 +5950,7 @@ app.get("/toolbox-service/v1/:type", (req, res) => {
 app.post("/v2/login", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("roblox-machine-id", randomUUID())
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username, "userid": userId }, secretKey, { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
     res.status(200).send("{\"user\": { \"id\": " + userId + ", \"name\": \"" + username + "\", \"displayName\": \"" + username + "\"},\"accountBlob\":\"\",\"isBanned\": false, \"recoveryEmail\": null, \"shouldAutoLoginFromRecovery\": null}")
 })
@@ -6018,7 +6428,7 @@ app.post("/Game/Badge/AwardBadge.ashx", async (req, res) => {
             if (sent == false) {
                 if (isRobloxAvailable) {
                     var options1 = {
-                        host: 'badges.roblox.com',
+                        host: (proxyUrl != "" ? 'badges.' + proxyUrl : 'badges.roblox.com'),
                         port: 443,
                         path: '/v1/badges/' + req.query.BadgeID,
                         method: "GET"
@@ -6154,7 +6564,7 @@ app.post("/assets/award-badge", async (req, res) => {
             if (sent == false) {
                 if (isRobloxAvailable) {
                     var options1 = {
-                        host: 'badges.roblox.com',
+                        host: (proxyUrl != "" ? 'badges.' + proxyUrl : 'badges.roblox.com'),
                         port: 443,
                         path: '/v1/badges/' + req.query.badgeId,
                         method: "GET"
@@ -6752,6 +7162,7 @@ app.get("/v1/favorites/users/:userid/bundles/:id/favorite", (req, res) => {
 })
 
 app.get("/v1/users/authenticated", (_, res) => {
+    res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
     res.status(200).send("{\"id\": " + userId + ", \"name\": \"" + username + "\", \"displayName\": \"" + username + "\"}")
 })
@@ -6863,7 +7274,7 @@ app.get("/v2/assets/:id/details", (req, res) => {
 })
 
 app.get("/latency-measurements/get-servers-to-ping", (_, res) => {
-    res.status(200).end()
+    res.status(200).send("{\"servers\":[]}")
 })
 
 app.get("/ownership/hasasset", async (req, res) => {
@@ -7022,11 +7433,17 @@ app.post("/marketplace/submitpurchase", (req, res) => {
 app.post("/marketplace/purchase", async (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
+
+    // We must edit this two headers, otherwise the server will parse this incorrectly, thanks Roblox...
+    req.headers["content-type"] = "application/json; charset=utf-8"
+    req.headers["content-length"] = typeof (req.body) == "object" ? JSON.stringify(req.body).length : req.body.length
     if (joining) {
         var options = {
             "host": ip,
             "port": 80,
-            "path": "/marketplace/purchase?userId=" + userId,
+            "path": "/marketplace/purchase",
+            "setDefaultHeaders": false,
+            "headers": req.headers,
             "method": "POST"
         }
         var req1 = http.request(options, (res1) => {
@@ -7037,32 +7454,46 @@ app.post("/marketplace/purchase", async (req, res) => {
                 result += chunk
             })
             res1.on("end", () => {
-                if (result.startsWith("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"")) {
+                if (JSON.parse(result)["success"]) {
                     robux = robux - req.body["purchasePrice"]
+                    res.status(200).send(result)
                 }
-                res.status(200).send(result)
+                else {
+                    res.status(res1.statusCode).send(result)
+                }
             })
         })
         req1.write(JSON.stringify(req.body))
         req1.end()
     } else {
         try {
+            var userIdfromROBLOSECURITY = 0
             var verified = false
             var replacementtext = ""
-    
+            if (req.headers["cookie"] != undefined && req.headers["cookie"].includes(".ROBLOSECURITY=") == false) {
+                res.status(401).send("{\"errors\": [{\"code\": 9002, \"subcode\": 0, \"message\": \"Authentication token is missing\"}]}")
+                return
+            }
+            if (jwt.verify(req.headers["cookie"].slice(131), secretKey, { algorithms: "HS256" })) {
+                var userjson = jwt.decode(req.headers["cookie"].slice(131))
+
+                if (userjson["userid"] != undefined && typeof (userjson["userid"]) == "number") {
+                    userIdfromROBLOSECURITY = userjson["userid"]
+                }
+            }
+
             if (enableOwnedAssets == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
-                try {
-					if (debuglevel == 2 && verbose == true) {
+                if (debuglevel == 2 && verbose == true) {
                     console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Checking if " + RBDFpath + " exists...")
                 }
                 if (filesystem.existsSync(RBDFpath)) {
                     const stream = filesystem.createReadStream(RBDFpath)
-    
+
                     const rl = readline.createInterface({
                         input: stream,
                         crlfDelay: Infinity
                     })
-    
+
                     for await (const line of rl) {
                         if (line == "RBDF==") {
                             if (debuglevel == 2 && verbose == true) {
@@ -7070,7 +7501,7 @@ app.post("/marketplace/purchase", async (req, res) => {
                             }
                             verified = true
                         }
-                        else if (line == "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">") {
+                        else if (line == "<OwnedAsset userId=" + userIdfromROBLOSECURITY + " AssetId=" + req.body.productId + ">") {
                             replacementtext = line
                         }
                     }
@@ -7082,9 +7513,9 @@ app.post("/marketplace/purchase", async (req, res) => {
                             return
                         }
                         else {
-                            filesystem.appendFileSync(RBDFpath, "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">\r\n")
+                            filesystem.appendFileSync(RBDFpath, "<OwnedAsset userId=" + userIdfromROBLOSECURITY + " AssetId=" + req.body.productId + ">\r\n")
                         }
-    
+
                     }
                     else {
                         res.status(500).end()
@@ -7092,21 +7523,18 @@ app.post("/marketplace/purchase", async (req, res) => {
                 }
                 else {
                     filesystem.writeFileSync(RBDFpath, "RBDF==\r\n--This is a ReBlox Datastore File! This is important if you want to save your datastore/badges/followers!\r\n\r\n")
-                    filesystem.appendFileSync(RBDFpath, "<OwnedAsset userId=" + ((req.query.userId != undefined) ? req.query.userId : userId) + " AssetId=" + req.body.productId + ">\r\n")
+                    filesystem.appendFileSync(RBDFpath, "<OwnedAsset userId=" + userIdfromROBLOSECURITY + " AssetId=" + req.body.productId + ">\r\n")
                 }
                 res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
-                if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
-				}
-				catch {
-					res.status(500).send("{\"success\": false, \"status\": \"SomethingWentWrong\"}")
-				}
+                if (userIdfromROBLOSECURITY == userId) robux = robux - req.body["purchasePrice"]
             }
             else {
                 res.status(200).send("{\"success\": true, \"status\": \"Bought\", \"receipt\": \"" + randomUUID() + "\", \"message\":[]}")
-                if (req.query.userId == undefined) robux = robux - req.body["purchasePrice"]
+                if (userIdfromROBLOSECURITY == userId) robux = robux - req.body["purchasePrice"]
             }
         }
-        catch {
+        catch (err) {
+            if (verbose) console.log("\x1b[31m%s\x1b[0m", "<ERROR> Something went wrong while trying to make a purchase for " + req.ip + "! Please look in the error below for more details:\n" + err)
             res.status(500).send("{\"success\": false, \"status\": \"SomethingWentWrong\"}")
         }
     }
@@ -7117,7 +7545,7 @@ app.post("/marketplace/validatepurchase", (_, res) => {
 })
 app.get("/currency/balance", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"robux\": " + robux + ", \"tickets\": 255}")
+    res.status(200).send("{\"robux\": " + robux + ", \"tickets\": 0}")
 })
 
 app.get("/v1/name-description/games/:id", (req, res) => {
@@ -7216,8 +7644,29 @@ app.get("/v1.1/game-start-info/", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"gameAvatarType\":\"PlayerChoice\",\"allowCustomAnimations\":\"True\",\"universeAvatarCollisionType\":\"OuterBox\",\"universeAvatarBodyType\":\"Standard\",\"jointPositioningType\":\"ArtistIntent\",\"message\":\"\",\"universeAvatarAssetOverrides\":[],\"moderationStatus\":null}")
 })
+
 app.get("/studio/e.png", (_, res) => {
     res.status(200).end()
+})
+
+app.get("/pe", (_, res) => {
+    res.status(200).end()
+})
+
+app.post("/studio/pbe", (_, res) => {
+    res.status(200).end()
+})
+
+app.post("/v1.1/Counters/:count", (_, res) => {
+    res.status(200).send("{}")
+})
+
+app.post("/v1.0/SequenceStatistics/:stat", (_, res) => {
+    res.status(200).send("{}")
+})
+
+app.post("/v1.0/MultiIncrement", (_, res) => {
+    res.status(200).send("{}")
 })
 
 app.get("/ide/welcome", (_, res) => {
@@ -7232,7 +7681,7 @@ app.get("/login/RequestAuth.ashx", (_, res) => {
 })
 
 app.get("/Login/Negotiate.ashx", (_, res) => {
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username, "userid": userId }, secretKey, { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
     if (debuglevel == 2 && verbose == true) {
         console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sent the client the ROBLOSECURITY cookie with the fake value with the expires date set to March 10, 2889")
@@ -7241,7 +7690,7 @@ app.get("/Login/Negotiate.ashx", (_, res) => {
 })
 
 app.post("/Login/Negotiate.ashx", (_, res) => {
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username, "userid": userId }, secretKey, { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
     if (debuglevel == 2 && verbose == true) {
         console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sent the client the ROBLOSECURITY cookie with the fake value with the expires date set to March 10, 2889")
@@ -7250,7 +7699,7 @@ app.post("/Login/Negotiate.ashx", (_, res) => {
 })
 
 app.get("/auth/negotiate", (_, res) => {
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username, "userid": userId }, secretKey, { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; expires=Tue, 10 Mar 2889 07:28:00 GMT; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
     if (debuglevel == 2 && verbose == true) {
         console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sent the client the ROBLOSECURITY cookie with the fake value with the expires date set to March 10, 2889")
@@ -7259,7 +7708,7 @@ app.get("/auth/negotiate", (_, res) => {
 })
 
 app.post("/auth/negotiate", (_, res) => {
-    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username }, "thisisarebloxprivatekeyforjwtchange", { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; samesite=lax")
+    res.setHeader("set-cookie", ".ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_" + jwt.sign({ "username": username, "userid": userId }, secretKey, { algorithm: "HS256" }) + "; domain=.reblox.zip; path=/; samesite=lax")
     res.setHeader("strict-transport-security", "max-age=31536000")
     if (debuglevel == 2 && verbose == true) {
         console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sent the client the ROBLOSECURITY cookie with the fake value with the expires date set to March 10, 2889")
@@ -7281,7 +7730,7 @@ app.post("/Game/MachineConfiguration.ashx", (_, res) => {
 
 app.post("/game/validate-machine", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{ \"success\": true }")
+    res.status(200).send("{ \"success\": true, \"message\": \"\" }")
 })
 
 app.get("/universes/validate-place-join", (_, res) => {
@@ -7445,10 +7894,23 @@ app.get("/asset-thumbnail/image", (req, res) => {
                     return
                 }
             })
+            assetPackList.forEach((pathAsset) => {
+                if (assetfound == false) {
+                    filesystem.readdirSync(pathAsset).forEach(file => {
+                        var splitted = file.split('.')
+                        if (splitted[0] == req.query.assetId.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                            res.setHeader("Content-disposition", "attachment; filename=\"" + file + "\"")
+                            res.status(200).send(filesystem.readFileSync(pathAsset + "/" + file))
+                            assetfound = true
+                            return
+                        }
+                    })
+                }
+            })
             if (assetfound == false) {
                 if (isInternetAvailable == true) {
                     var options1 = {
-                        host: 'thumbnails.roblox.com',
+                        host: (proxyUrl != "" ? 'thumbnails.' + proxyUrl : 'thumbnails.roblox.com'),
                         port: 443,
                         path: '/v1/assets?assetIds=' + req.query.assetId + '&returnPolicy=PlaceHolder&size=' + req.query.width + 'x' + req.query.height + '&format=' + req.query.format,
                         method: "GET"
@@ -7897,6 +8359,22 @@ app.get("/v1/games/icons", (req, res) => {
                         }
                     })
                 }
+            })
+            assetPackList.forEach((pathAsset) => {
+                filesystem.readdirSync(pathAsset).forEach(file => {
+                    var splitted = file.split('.')
+
+                    if (templatesjsonparsed.length > 0) {
+                        templatesjsonparsed.forEach((template) => {
+                            if (template["universe"]["id"] == id) {
+                                if (splitted[0] == id.toString().trim() && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".bmp"))) {
+                                    idneeded.push(id)
+                                    placeidneeded.push(template["universe"]["rootPlaceId"])
+                                }
+                            }
+                        })
+                    }
+                })
             })
             filesystem.readdirSync("./icons").forEach(file => {
                 var splitted = file.split('.')
@@ -8615,11 +9093,6 @@ app.post("/Friend/CreateFriend", async (req, res) => {
     }
 })
 
-app.post("/persistence/getsortedvalues", (req, res) => {
-    res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"data\":{\"Entries\":[],\"ExclusiveStartKey\":null}}") //STUB
-})
-
 function changeROBLOSECURITYOnLauncher(roblosecurityedit) {
     if (allowTCPLauncher) {
         const { Socket } = require("net")
@@ -8656,7 +9129,11 @@ function changeROBLOSECURITYOnLauncher(roblosecurityedit) {
 
         client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from("URS", "utf8"), zlib.gzipSync(Buffer.from(roblosecurityedit, "utf8"))]))
     }
+    else {
+        console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't contact the launcher as TCP communication is disabled by command line. Please remove --disableTCP from your command line and restart the server!")
+    }
 }
+
 
 app.post("/v1/persistence/:type/multi-get", (req, res) => {
     res.setHeader("cache-control", "no-cache")
@@ -8754,9 +9231,162 @@ app.post("/v1/persistence/:type/multi-get", (req, res) => {
 
 })
 
-app.get("/v1/persistence/:type/list", (req, res) => {
+app.get("/v1/persistence/:type/list", async (req, res) => {
+    res.setHeader("cache-control", "no-cache")
     res.setHeader("content-type", "application/json; charset=utf-8")
-    res.status(200).send("{\"entries\":[], \"lastEvaluatedKey\":null}") //STUB
+    if (joining) {
+        try {
+            var options = {
+                host: ip,
+                port: 80,
+                path: req.originalUrl,
+                method: "GET"
+            }
+
+            var req1 = http.request(options, (res1) => {
+                res1.setEncoding("utf-8")
+                var data = ""
+                res1.on("data", (chunk) => {
+                    data += chunk
+                })
+                res1.on("end", () => {
+                    res.status(res1.statusCode).send(data)
+                })
+            })
+            req1.end()
+
+        } catch {
+            res.status(500).end()
+        }
+    }
+    else {
+        var verified = false
+        var replacementtext = []
+        if (enableDataStore == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+            if (filesystem.existsSync(RBDFpath)) {
+                const stream = filesystem.createReadStream(RBDFpath)
+
+                const rl = readline.createInterface({
+                    input: stream,
+                    crlfDelay: Infinity
+                })
+
+                for await (const line of rl) {
+                    if (line == "RBDF==") {
+                        verified = true
+                    }
+                    else if (line.includes("DataStoreName=\"" + req.query.key + "\"") && line.includes("Scope=" + req.query.scope) && line.includes("Type=" + req.params.type)) {
+                        replacementtext.push(line)
+                    }
+                }
+                stream.destroy()
+                rl.close()
+                if (verified == true) {
+                    if (replacementtext.length > 0) {
+                        var resulttext = ""
+                        replacementtext.forEach((datastoretext) => {
+                            var myRegExp = new RegExp('Value\=\"(.*?)\"')
+                            var myRegExp2 = new RegExp('Key\=\"(.*?)\"')
+                            var match = myRegExp.exec(datastoretext)
+                            var match2 = myRegExp2.exec(datastoretext)
+                            if (match != null && match.length > 0 && match2 != null && match2.length > 0) {
+                                var value = match[1] != undefined ? match[1] : ""
+                                var target = match2[1] != undefined ? match2[1] : ""
+                                if (req.query.minValue != undefined && req.query.maxValue != undefined) {
+                                    if (isNumeric(value)) {
+                                        if (isNumeric(req.query.minValue) && isNumeric(req.query.maxValue)) {
+                                            var valueConverted = parseFloat(value)
+                                            var minValue = parseFloat(req.query.minValue)
+                                            var maxValue = parseFloat(req.query.maxValue)
+
+                                            if (valueConverted >= minValue && valueConverted <= maxValue) {
+                                                if (datastoretext == replacementtext[replacementtext.length - 1]) {
+                                                    resulttext += "{\"value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"usn\": \"0.0.0.01\"}"
+                                                }
+                                                else {
+                                                    resulttext += "{\"value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"usn\": \"0.0.0.01\"}, "
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (req.query.minValue != undefined) {
+                                    if (isNumeric(value)) {
+                                        if (isNumeric(req.query.minValue)) {
+                                            var valueConverted = parseFloat(value)
+                                            var minValue = parseFloat(req.query.minValue)
+
+                                            if (valueConverted >= minValue) {
+                                                if (datastoretext == replacementtext[replacementtext.length - 1]) {
+                                                    resulttext += "{\"value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"usn\": \"0.0.0.01\"}"
+                                                }
+                                                else {
+                                                    resulttext += "{\"value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"usn\": \"0.0.0.01\"}, "
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (req.query.maxValue != undefined) {
+                                    if (isNumeric(value)) {
+                                        if (isNumeric(req.query.maxValue)) {
+                                            var valueConverted = parseFloat(value)
+                                            var maxValue = parseFloat(req.query.maxValue)
+
+                                            if (valueConverted <= maxValue) {
+                                                if (datastoretext == replacementtext[replacementtext.length - 1]) {
+                                                    resulttext += "{\"value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"usn\": \"0.0.0.01\"}"
+                                                }
+                                                else {
+                                                    resulttext += "{\"value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"usn\": \"0.0.0.01\"}, "
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else {
+                                    if (datastoretext == replacementtext[replacementtext.length - 1]) {
+                                        resulttext += "{\"value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"usn\": \"0.0.0.01\"}"
+                                    }
+                                    else {
+                                        resulttext += "{\"value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"usn\": \"0.0.0.01\"}, "
+                                    }
+                                }
+
+                            }
+                        })
+                        if (resulttext != "") {
+                            var beforeEditJson = JSON.parse("[" + resulttext + "]")
+                            if (req.query.direction == "asc") {
+                                beforeEditJson.sort((a, b) => a.value - b.value)
+                            }
+                            else {
+                                beforeEditJson.sort((a, b) => b.value - a.value)
+                            }
+                            var afterEdit = JSON.stringify(beforeEditJson)
+                            afterEdit = afterEdit.slice(1, afterEdit.length - 1)
+                            res.status(200).send("{\"entries\":[" + afterEdit + "],\"lastEvaluatedKey\":null}")
+                        }
+                        else {
+                            res.status(200).send("{\"entries\":[],\"lastEvaluatedKey\":null}")
+                        }
+                    }
+                    else {
+                        res.status(200).send("{\"entries\":[],\"lastEvaluatedKey\":null}")
+                    }
+                }
+                else {
+                    res.status(500).end()
+                }
+            }
+            else {
+                res.status(200).send("{\"entries\":[],\"lastEvaluatedKey\":null}")
+            }
+        }
+        else {
+            res.status(200).send("{\"entries\":[],\"lastEvaluatedKey\":null}")
+        }
+    }
 })
 
 app.get("/v1/persistence/:type", async (req, res) => {
@@ -9123,9 +9753,21 @@ app.post("/persistence/setblob.ashx", trueRaw, async (req, res) => {
                 ready = true
             })
         }
-        else {
-            ready = true
-        }
+        assetPackList.forEach((pathAsset) => {
+            if (filesystem.existsSync(pathAsset + "/" + req.query.placeid + ".rbxl")) {
+                getMD5FileHash(pathAsset + "/" + req.query.placeid + ".rbxl").then((result) => {
+                    hash = result
+                    ready = true
+                })
+            }
+            else if (filesystem.existsSync(pathAsset + "/" + req.query.placeid + ".rbxlx")) {
+                getMD5FileHash(pathAsset + "/" + req.query.placeid + ".rbxlx").then((result) => {
+                    hash = result
+                    ready = true
+                })
+            }
+        })
+        ready = true
         while (ready == false) {
             //do nothing
             await delay(50)
@@ -9198,9 +9840,21 @@ app.get("/persistence/getbloburl.ashx", async (req, res) => {
             ready = true
         })
     }
-    else {
-        ready = true
-    }
+    assetPackList.forEach((pathAsset) => {
+        if (filesystem.existsSync(pathAsset + "/" + req.query.placeid + ".rbxl")) {
+            getMD5FileHash(pathAsset + "/" + req.query.placeid + ".rbxl").then((result) => {
+                hash = result
+                ready = true
+            })
+        }
+        else if (filesystem.existsSync(pathAsset + "/" + req.query.placeid + ".rbxlx")) {
+            getMD5FileHash(pathAsset + "/" + req.query.placeid + ".rbxlx").then((result) => {
+                hash = result
+                ready = true
+            })
+        }
+    })
+    ready = true
 
     while (ready == false) {
         await delay(50)
@@ -9252,6 +9906,170 @@ app.get("/persistence/getbloburl.ashx", async (req, res) => {
     }
     else {
         res.status(200).send("<Table></Table>")
+    }
+})
+
+app.post("/persistence/getsortedvalues", async (req, res) => {
+    /*res.setHeader("content-type", "application/json; charset=utf-8")
+    res.status(200).send("{\"data\":{\"Entries\":[],\"ExclusiveStartKey\":null}}") //STUB*/
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    if (joining) {
+        try {
+            var options = {
+                host: ip,
+                port: 80,
+                path: req.originalUrl,
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-decoded"
+                }
+            }
+
+            var req1 = http.request(options, (res1) => {
+                res1.setEncoding("utf-8")
+                var data = ""
+                res1.on("data", (chunk) => {
+                    data += chunk
+                })
+                res1.on("end", () => {
+                    res.status(res1.statusCode).send(data)
+                })
+            })
+            req1.write(req.body)
+            req1.end()
+
+        } catch {
+            res.status(500).end()
+        }
+    }
+    else {
+        var verified = false
+        var replacementtext = []
+        if (enableDataStore == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+            if (filesystem.existsSync(RBDFpath)) {
+                const stream = filesystem.createReadStream(RBDFpath)
+
+                const rl = readline.createInterface({
+                    input: stream,
+                    crlfDelay: Infinity
+                })
+
+                for await (const line of rl) {
+                    if (line == "RBDF==") {
+                        verified = true
+                    }
+                    else if (line.includes("DataStoreName=\"" + req.query.key + "\"") && line.includes("Scope=" + req.query.scope) && line.includes("Type=" + req.query.type)) {
+                        replacementtext.push(line)
+                    }
+                }
+                stream.destroy()
+                rl.close()
+                if (verified == true) {
+                    if (replacementtext.length > 0) {
+                        var resulttext = ""
+                        replacementtext.forEach((datastoretext) => {
+                            var myRegExp = new RegExp('Value\=\"(.*?)\"')
+                            var myRegExp2 = new RegExp('Key\=\"(.*?)\"')
+                            var match = myRegExp.exec(datastoretext)
+                            var match2 = myRegExp2.exec(datastoretext)
+                            if (match != null && match.length > 0 && match2 != null && match2.length > 0) {
+                                var value = match[1] != undefined ? match[1] : ""
+                                var target = match2[1] != undefined ? match2[1] : ""
+                                if (req.query.inclusiveMinValue != undefined && req.query.inclusiveMaxValue != undefined) {
+                                    if (isNumeric(value)) {
+                                        if (isNumeric(req.query.inclusiveMinValue) && isNumeric(req.query.inclusiveMaxValue)) {
+                                            var valueConverted = parseFloat(value)
+                                            var minValue = parseFloat(req.query.inclusiveMinValue)
+                                            var maxValue = parseFloat(req.query.inclusiveMaxValue)
+
+                                            if (valueConverted >= minValue && valueConverted <= maxValue) {
+                                                if (datastoretext == replacementtext[replacementtext.length - 1]) {
+                                                    resulttext += "{\"Value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"Target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\"}"
+                                                }
+                                                else {
+                                                    resulttext += "{\"Value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"Target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\"}, "
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (req.query.inclusiveMinValue != undefined) {
+                                    if (isNumeric(value)) {
+                                        if (isNumeric(req.query.inclusiveMinValue)) {
+                                            var valueConverted = parseFloat(value)
+                                            var minValue = parseFloat(req.query.inclusiveMinValue)
+
+                                            if (valueConverted >= minValue) {
+                                                if (datastoretext == replacementtext[replacementtext.length - 1]) {
+                                                    resulttext += "{\"Value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"Target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\"}"
+                                                }
+                                                else {
+                                                    resulttext += "{\"Value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"Target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\"}, "
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (req.query.inclusiveMaxValue != undefined) {
+                                    if (isNumeric(value)) {
+                                        if (isNumeric(req.query.inclusiveMaxValue)) {
+                                            var valueConverted = parseFloat(value)
+                                            var maxValue = parseFloat(req.query.inclusiveMaxValue)
+
+                                            if (valueConverted <= maxValue) {
+                                                if (datastoretext == replacementtext[replacementtext.length - 1]) {
+                                                    resulttext += "{\"Value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"Target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\"}"
+                                                }
+                                                else {
+                                                    resulttext += "{\"Value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"Target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\"}, "
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else {
+                                    if (datastoretext == replacementtext[replacementtext.length - 1]) {
+                                        resulttext += "{\"Value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"Target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\"}"
+                                    }
+                                    else {
+                                        resulttext += "{\"Value\": \"" + value.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\", \"Target\": \"" + target.replace(new RegExp("\\\\", "g"), "\\\\").replace(new RegExp("\"", "g"), "\\\"") + "\"}, "
+                                    }
+                                }
+
+                            }
+                        })
+                        if (resulttext != "") {
+                            var beforeEditJson = JSON.parse("[" + resulttext + "]")
+                            if (req.query.ascending == "True") {
+                                beforeEditJson.sort((a, b) => a.Value - b.Value)
+                            }
+                            else {
+                                beforeEditJson.sort((a, b) => b.Value - a.Value)
+                            }
+                            var afterEdit = JSON.stringify(beforeEditJson)
+                            afterEdit = afterEdit.slice(1, afterEdit.length - 1)
+                            res.status(200).send("{\"data\":{\"Entries\":[" + afterEdit + "],\"ExclusiveStartKey\":null}}")
+                        }
+                        else {
+                            res.status(200).send("{\"data\":{\"Entries\":[],\"ExclusiveStartKey\":null}}")
+                        }
+                    }
+                    else {
+                        res.status(200).send("{\"data\":{\"Entries\":[],\"ExclusiveStartKey\":null}}")
+                    }
+                }
+                else {
+                    res.status(500).end()
+                }
+            }
+            else {
+                res.status(200).send("{\"data\":{\"Entries\":[],\"ExclusiveStartKey\":null}}")
+            }
+        }
+        else {
+            res.status(200).send("{\"data\":{\"Entries\":[],\"ExclusiveStartKey\":null}}")
+        }
     }
 })
 
@@ -9641,10 +10459,10 @@ app.post("/v1/batch", (req, res) => {
     for (var i = 0; i != Object.keys(req.body).length; i++) {
         if (req.body[i]["type"] == "AvatarHeadShot") {
             if (i + 1 == Object.keys(req.body).length) {
-                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/HeadShot.ashx\", \"version\": \"TN3\" }"
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/HeadShot.ashx?userId=" + req.body[i].targetId + "\", \"version\": \"TN3\" }"
             }
             else {
-                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/HeadShot.ashx\", \"version\": \"TN3\" },"
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/HeadShot.ashx?userId=" + req.body[i].targetId + "\", \"version\": \"TN3\" },"
             }
         }
         else if (req.body[i]["type"] == "GameIcon") {
@@ -9748,11 +10566,11 @@ app.get("/headshot-thumbnail/image", (req, res) => {
             }
         }
         else if (req.query.username != undefined) {
-            var path2 = path.resolve(req.query.username)
+            var path2 = path.resolve(decodeURIComponent(req.query.username))
             var found = false
             if (path2.startsWith(__dirname)) {
                 memoryUsers.forEach((user) => {
-                    if (user["username"] == req.query.username) {
+                    if (user["username"] == decodeURIComponent(req.query.username)) {
                         if (user["userId"] != undefined) {
                             found = true
                             if (filesystem.existsSync("./clothes/" + user["userId"] + ".json")) {
@@ -9789,11 +10607,11 @@ app.get("/headshot-thumbnail/image", (req, res) => {
 app.get("/headshot-thumbnail/json", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     res.setHeader("content-type", "application/json; charset=utf-8")
-    if (req.query.userId != undefined) {
-        res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image?userId=" + encodeURIComponent(req.query.userId) + "\", \"Final\": true}")
+    if (req.query.userId != undefined && isNumeric(req.query.userId)) {
+        res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image?userId=" + req.query.userId + "\", \"Final\": true}")
     }
     else if (req.query.username != undefined) {
-        res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image?userId=" + encodeURIComponent(req.query.username) + "\", \"Final\": true}")
+        res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image?username=" + encodeURIComponent(req.query.username) + "\", \"Final\": true}")
     }
     else {
         res.status(200).send("{\"Url\":\"http://www.reblox.zip/headshot-thumbnail/image\", \"Final\": true}")
@@ -9838,9 +10656,134 @@ app.get("/v2/users/:id/inventory/:typeid", (_, res) => {
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}") //STUB
 })
 
+if (renderAvatar) {
+    app.post("/avatar/setImage", (req, res) => {
+        if (typeof (req.body["image"]) == "string") {
+            if (req.body["type"] == "fullbody") {
+                if (allowTCPLauncher) {
+                    const { Socket } = require("net")
+
+                    const client = new Socket()
+
+                    var options = {
+                        host: "127.0.0.1",
+                        port: 50355
+                    }
+                    if (debuglevel == 2 && verbose == true) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
+                    }
+                    client.connect(options, () => {
+                        if (verbose == true) {
+                            if (debuglevel == 2) {
+                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
+                            }
+                            else {
+                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+                            }
+                        }
+                        var data = []
+                        client.on("data", (chunk) => {
+                            data.push(chunk)
+                        })
+
+                        client.on("end", () => {
+                            if (Buffer.concat(data).toString("utf-8") != "invalid" && Buffer.concat(data).toString("utf-8") != "") {
+                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> The image has been successfully sent to the launcher!");
+                                res.status(200).end()
+                            }
+                            else {
+                                if (verbose == true) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending image to the launcher is unsuccessful, please try again.")
+                                }
+                                res.status(500).end()
+                            }
+                        })
+                    })
+                    if (debuglevel == 2 && verbose == true) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data from RCCService* to launcher")
+                    }
+                    client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from(req.body["final"] == true ? "FCFB" : "CFB", "utf8"), zlib.gzipSync(Buffer.from(req.body["image"], "utf8"))]))
+                    if (debuglevel == 2 && verbose == true) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
+                    }
+                    client.end()
+                }
+                else {
+                    console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't contact the launcher as TCP communication is disabled by command line. Please remove --disableTCP from your command line and restart the server!")
+                }
+            }
+            else if (req.body["type"] == "headshot") {
+                if (allowTCPLauncher) {
+                    const { Socket } = require("net")
+
+                    const client = new Socket()
+
+                    var options = {
+                        host: "127.0.0.1",
+                        port: 50355
+                    }
+                    if (debuglevel == 2 && verbose == true) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connecting to 127.0.0.1:50355")
+                    }
+                    client.connect(options, () => {
+                        if (verbose == true) {
+                            if (debuglevel == 2) {
+                                console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Connection to 127.0.0.1:50355 successful!")
+                            }
+                            else {
+                                console.log("\x1b[34m%s\x1b[0m", "<INFO> Connected to the launcher via TCP!")
+                            }
+                        }
+                        var data = []
+                        client.on("data", (chunk) => {
+                            data.push(chunk)
+                        })
+
+                        client.on("end", () => {
+                            if (Buffer.concat(data).toString("utf-8") != "invalid" && Buffer.concat(data).toString("utf-8") != "") {
+                                if (verbose) console.log("\x1b[34m%s\x1b[0m", "<INFO> The image has been successfully sent to the launcher!");
+                                res.status(200).end()
+                            }
+                            else {
+                                if (verbose == true) {
+                                    console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending image to the launcher is unsuccessful, please try again.")
+                                }
+                                res.status(500).end()
+                            }
+                        })
+                    })
+                    if (debuglevel == 2 && verbose == true) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Sending data from RCCService* TO launcher")
+                    }
+                    client.write(Buffer.concat([Buffer.from((276312498).toString(16), "hex"), Buffer.from(req.body["final"] == true ? "FCHS" : "CHS", "utf8"), zlib.gzipSync(Buffer.from(req.body["image"], "utf8"))]))
+                    if (debuglevel == 2 && verbose == true) {
+                        console.log("\x1b[34m%s\x1b[0m", "<DEBUG> Ending writable stream to the server")
+                    }
+                    client.end()
+                }
+                else {
+                    console.log("\x1b[31m%s\x1b[0m", "<ERROR> You can't contact the launcher as TCP communication is disabled by command line. Please remove --disableTCP from your command line and restart the server!")
+                }
+            }
+            else {
+                console.log(req.body)
+                res.status(400).end()
+            }
+        }
+        else {
+            console.log(req.body)
+            res.status(400).end()
+        }
+    })
+}
 app.use((req, res) => {
     // res.setHeader("cache-control", "no-cache")
-    res.status(404).end();
+    res.status(501).end();
+    if (debuglevel == 2 && verbose == true) {
+        console.log("\x1b[32m%s\x1b[0m", "<DEBUG> Header of the request:")
+        console.log(req.headers)
+    }
+
     console.log("\x1b[33m%s\x1b[0m", "<WARN> NOT IMPLEMENTED: \"" + req.protocol + "://" + req.get("host") + req.originalUrl + "\" (" + req.method + ")")
     if (req.method == "POST") {
         console.log("\x1b[33m%s\x1b[0m", "<WARN> Request Body:\n" + toString(req.body))
@@ -9853,7 +10796,7 @@ app.use((req, res) => {
     }
 });
 
-app.listen(80, (req, res) => {
+app.listen(80, () => {
     console.log("\x1b[32m%s\x1b[0m", "<INFO> Started a HTTP server at port 80")
 })
 
@@ -9864,8 +10807,7 @@ if (enableHTTPS) {
         cert: filesystem.readFileSync("cert.pem")
     }
 
-    https.createServer(options, app).listen(443, (req, res) => {
+    https.createServer(options, app).listen(443, () => {
         console.log("\x1b[32m%s\x1b[0m", "<INFO> Started a HTTPS server at port 443")
     })
-
 }

@@ -25,7 +25,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1328")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1330")]
         public string version {
             get {
                 return ((string)(this["version"]));
@@ -548,22 +548,10 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int minorVersion {
             get {
                 return ((int)(this["minorVersion"]));
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("00000000-0000-0000-0000-000000000000")]
-        public global::System.Guid uuid {
-            get {
-                return ((global::System.Guid)(this["uuid"]));
-            }
-            set {
-                this["uuid"] = value;
             }
         }
         
@@ -581,13 +569,13 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool TelemetryEnabled {
+        [global::System.Configuration.DefaultSettingValueAttribute("00000000-0000-0000-0000-000000000000")]
+        public global::System.Guid uuid {
             get {
-                return ((bool)(this["TelemetryEnabled"]));
+                return ((global::System.Guid)(this["uuid"]));
             }
             set {
-                this["TelemetryEnabled"] = value;
+                this["uuid"] = value;
             }
         }
         
@@ -600,6 +588,66 @@ namespace ReBloxLauncher.Properties {
             }
             set {
                 this["launchTime"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool TelemetryEnabled {
+            get {
+                return ((bool)(this["TelemetryEnabled"]));
+            }
+            set {
+                this["TelemetryEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool PrivateServer {
+            get {
+                return ((bool)(this["PrivateServer"]));
+            }
+            set {
+                this["PrivateServer"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string FeaturesEnabled {
+            get {
+                return ((string)(this["FeaturesEnabled"]));
+            }
+            set {
+                this["FeaturesEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool NewAssetSystem {
+            get {
+                return ((bool)(this["NewAssetSystem"]));
+            }
+            set {
+                this["NewAssetSystem"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool KeepAvatars {
+            get {
+                return ((bool)(this["KeepAvatars"]));
+            }
+            set {
+                this["KeepAvatars"] = value;
             }
         }
     }

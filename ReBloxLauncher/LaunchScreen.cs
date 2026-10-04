@@ -14,7 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Runtime.InteropServices;
 
 namespace ReBloxLauncher
 {
@@ -31,6 +31,10 @@ namespace ReBloxLauncher
         bool useOldSignature = false;
         bool useOldAssetFormat = false;
         bool useSystemNode = false;
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool IsWow64Process(IntPtr hProcess, out bool wow64Process);
+
         public LaunchScreen(string version, string customDataFolder = null, bool systemNode = false)
         {
             InitializeComponent();
@@ -62,17 +66,18 @@ namespace ReBloxLauncher
                 {
                     if (File.Exists(datafolder + @"\private.txt"))
                     {
+                        string currentUTCDate = DateTime.UtcNow.ToString("G");
                         RSA.ImportCspBlob(Convert.FromBase64String(File.ReadAllText(datafolder + @"\private.txt")));
 
-                        string signature1Raw = (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "\n" + Properties.Settings.Default.username + "\n" + "http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "&placeId=1818\nTest\n" + DateTime.UtcNow.ToString("G");
-                        string signature2Raw = (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "\nTest\n" + DateTime.UtcNow.ToString("G");
+                        string signature1Raw = (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "\n" + Properties.Settings.Default.username + "\n" + "http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "&placeId=1818\nTest\n" + currentUTCDate;
+                        string signature2Raw = (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "\nTest\n" + currentUTCDate;
 
                         byte[] signedSignature1 = RSA.SignData(Encoding.UTF8.GetBytes(signature1Raw), SHA1.Create());
                         byte[] signedSignature2 = RSA.SignData(Encoding.UTF8.GetBytes(signature2Raw), SHA1.Create());
 
                         using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
                         {
-                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + currentUTCDate + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
                         }
                     }
                     else
@@ -541,7 +546,10 @@ namespace ReBloxLauncher
                         {
                             if (file.EndsWith(".ini") == false && IsDigitsOnly(Path.GetFileNameWithoutExtension(file)))
                             {
-                                File.Copy(file, datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(file), true);
+                                if (Properties.Settings.Default.NewAssetSystem == false)
+                                {
+                                    File.Copy(file, datafolder + @"\tools\RobloxAssetFixer\assets\" + Path.GetFileName(file), true);
+                                }
                                 progressBar1.Invoke(new Action(() => { progressBar1.Value++; }));
                                 if (shutdown) return;
                             }
@@ -610,14 +618,31 @@ namespace ReBloxLauncher
             public uint rightLegColor { get; set; } = 194;
             public uint torsoColor { get; set; } = 194;
         }
+
         public class AvatarType
         {
             public string bodyType { get; set; } = "R6";
             public IList<AssetData> asset { get; set; }
             public BodyColors colors { get; set; }
             public string[] inventory { get; set; }
+            public string base64FullBody { get; set; }
+            public string base64HeadShot { get; set; }
         }
 
+        private bool IsProcess64Bit(Process process)
+        {
+            if (!Environment.Is64BitOperatingSystem)
+            {
+                return false;
+            }
+
+            if (IsWow64Process(process.Handle, out bool isWow64))
+            {
+                return !isWow64;
+            }
+
+            return false;
+        }
         private bool IsNodeFromAppRunning()
         {
             bool isRunning = false;
@@ -628,9 +653,19 @@ namespace ReBloxLauncher
                     Process[] processes = Process.GetProcessesByName("node");
                     foreach (Process process in processes)
                     {
-                        if (process.MainModule.FileName == datafolder + @"\tools\node\node.exe")
+                        if (useSystemNode)
                         {
                             isRunning = true; break;
+                        }
+                        else
+                        {
+                            if (!Environment.Is64BitOperatingSystem || Environment.Is64BitProcess || (!Environment.Is64BitProcess && !IsProcess64Bit(process)))
+                            {
+                                if (process.MainModule.FileName == datafolder + @"\tools\node\node.exe")
+                                {
+                                    isRunning = true; break;
+                                }
+                            }
                         }
                     }
                 }
@@ -662,7 +697,9 @@ namespace ReBloxLauncher
                         bodyType = Properties.Settings.Default.avatarR15 ? "R15" : "R6",
                         asset = data,
                         colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor },
-                        inventory = Properties.Settings.Default.ClothesArray.Split('|')
+                        inventory = Properties.Settings.Default.ClothesArray.Split('|'),
+                        base64FullBody = Properties.Settings.Default.RenderAvatarExperiment ? Properties.Settings.Default.FullBodyBase64 : "",
+                        base64HeadShot = Properties.Settings.Default.RenderAvatarExperiment ? Properties.Settings.Default.HeadshotBase64 : ""
                     };
                 }
                 else
@@ -672,7 +709,9 @@ namespace ReBloxLauncher
                         bodyType = Properties.Settings.Default.avatarR15 ? "R15" : "R6",
                         asset = { },
                         colors = new BodyColors { headColor = Properties.Settings.Default.HeadColor, leftArmColor = Properties.Settings.Default.LeftArmColor, leftLegColor = Properties.Settings.Default.LeftLegColor, rightArmColor = Properties.Settings.Default.RightArmColor, rightLegColor = Properties.Settings.Default.RightLegColor, torsoColor = Properties.Settings.Default.TorsoColor },
-                        inventory = { }
+                        inventory = { },
+                        base64FullBody = Properties.Settings.Default.RenderAvatarExperiment ? Properties.Settings.Default.FullBodyBase64 : "",
+                        base64HeadShot = Properties.Settings.Default.RenderAvatarExperiment ? Properties.Settings.Default.HeadshotBase64 : ""
                     };
                 }
 
@@ -872,11 +911,11 @@ namespace ReBloxLauncher
                                     ps1.CreateNoWindow = true;
                                     if (Properties.Settings.Default.useAuth)
                                     {
-                                        ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                        ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + robloxversion : "");
                                     }
                                     else
                                     {
-                                        ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                        ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + robloxversion : "");
                                     }
                                     ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
                                     ps1.WindowStyle = ProcessWindowStyle.Hidden;
@@ -970,11 +1009,11 @@ namespace ReBloxLauncher
 
                             if (Properties.Settings.Default.useAuth)
                             {
-                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + Properties.Settings.Default.lastselectedversion : "");
                             }
                             else
                             {
-                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "");
+                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + Properties.Settings.Default.lastselectedversion : "");
                             }
                             ps1.WindowStyle = ProcessWindowStyle.Hidden;
                             ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";

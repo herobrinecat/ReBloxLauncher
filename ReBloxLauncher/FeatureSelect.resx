@@ -117,27 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="label2.Text" xml:space="preserve">
-    <value>This form is served with a purpose to test any regressions and performance issues with the launcher! Only use this
-if you're reporting a bug or a developer. The benchmarking will contain the following tests:
-
-• Asset loading
-• Game files loading
-• Client launching
-* RobloxAssetFixer connection (0.0.1318+)
-
-If you notice any serious problems within these tests, you can report the issue on the GitHub at 
-herobrinecat/ReBloxLauncher. You are not able to move the window to ensure the most accurate results.
-</value>
-  </data>
-  <data name="label3.Text" xml:space="preserve">
-    <value>Since you're using 0.0.1325+, this test will use the default asset packs. This test will work by loading assets 
-as 2016L, removing the assets, and repeating the process for few times to get the average time. Don't count
-the first as bad if it's red, only consider the result for 2nd and over. If you want to choose your own asset packs,
-check the "Advanced mode" at the bottom-left corner. Any assets that doesn't get loaded due to the client will not
-count as a failure.
-</value>
-  </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>

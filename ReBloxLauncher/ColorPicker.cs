@@ -485,17 +485,17 @@ namespace ReBloxLauncher
 
         private void panel1_MouseEnter(object sender, EventArgs e)
         {
-            panel1.BackColor = Color.FromArgb(70, 70, 70);
+            panel1.BackColor = Color.FromArgb(45, 45, 45);
         }
 
         private void panel1_MouseLeave(object sender, EventArgs e)
         {
-            panel1.BackColor = Color.FromArgb(60, 60, 60);
+            panel1.BackColor = Color.FromArgb(25, 25, 25);
         }
 
         private void label1_MouseEnter(object sender, EventArgs e)
         {
-            panel1.BackColor = Color.FromArgb(70, 70, 70);
+            panel1.BackColor = Color.FromArgb(45, 45, 45);
         }
 
         private void panel1_Click(object sender, EventArgs e)

@@ -12,8 +12,7 @@ using System.Windows.Forms;
 using System.IO;
 using System.IO.Compression;
 using System.Security.Cryptography;
-using System.Management;
-using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace ReBloxLauncher
 {
@@ -26,34 +25,8 @@ namespace ReBloxLauncher
         static bool serverOn = false;
         static bool serverComOn = false;
         static readonly object syncLock = new object();
-
-        private static bool CheckForInternetConnection(int timeoutMs = 10000, string url = null)
-        {
-            try
-            {
-                url ??= CultureInfo.InstalledUICulture switch
-                {
-                    { Name: var n } when n.StartsWith("fa") => //Iran
-                        "http://www.aparat.com",
-                    { Name: var n } when n.StartsWith("zh") => //China (is there even china users???)
-                        "http://www.baidu.com",
-                    _ =>
-                        "http://www.gstatic.com/generate_204"
-                };
-
-                var request = (HttpWebRequest)WebRequest.Create(url);
-                request.KeepAlive = false;
-                request.Timeout = timeoutMs;
-                using (var response = (HttpWebResponse)request.GetResponse())
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        static List<IPAddress> bannedIPs = new List<IPAddress>();
+        public static int rccrenderer = 0;
 
         private static string GenerateUUID()
         {
@@ -79,7 +52,7 @@ namespace ReBloxLauncher
             }
         }
 
-        private static byte[] GzipCompress(byte[] bytes)
+        public static byte[] GzipCompress(byte[] bytes)
         {
             using (MemoryStream stream = new MemoryStream())
             {
@@ -94,7 +67,7 @@ namespace ReBloxLauncher
             }
         }
 
-        private static byte[] GzipDecompress(byte[] bytes)
+        public static byte[] GzipDecompress(byte[] bytes)
         {
             using (MemoryStream stream = new MemoryStream(bytes))
             {
@@ -112,118 +85,41 @@ namespace ReBloxLauncher
             }
         }
 
+        private static bool CheckForInternetConnection(int timeoutMs = 10000, string url = null, bool logResult = false)
+        {
+            try
+            {
+                url ??= CultureInfo.InstalledUICulture switch
+                {
+                    { Name: var n } when n.StartsWith("fa") => //Iran
+                        "http://www.aparat.com",
+                    { Name: var n } when n.StartsWith("zh") => //China (is there even china users???)
+                        "http://www.baidu.com",
+                    _ =>
+                        "http://www.gstatic.com/generate_204"
+                };
+
+                var request = (HttpWebRequest)WebRequest.Create(url);
+                request.KeepAlive = false;
+                request.Timeout = timeoutMs;
+                using (var response = (HttpWebResponse)request.GetResponse())
+                {
+                    if (logResult) Console.WriteLine("<INFO> Internet test successful!");
+                    return true;
+                }
+            }
+            catch
+            {
+                if (logResult) Console.WriteLine("<INFO> Failed to check the internet, not checking updates...");
+                return false;
+            }
+        }
+
         public static void SetDataFolder(string datafolderNew)
         {
             if (Directory.Exists(datafolderNew))
             {
                 datafolder = datafolderNew;
-            }
-        }
-
-        private static string[] getCPUNames()
-        {
-            List<string> cpus = new List<string>();
-            ManagementObjectSearcher mos = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_Processor");
-
-            foreach (ManagementObject mo in mos.Get())
-            {
-                cpus.Add(mo["Name"].ToString());
-            }
-
-            return cpus.ToArray();
-        }
-
-        private static string[] getGPUNames()
-        {
-            List<string> gpus = new List<string>();
-            ManagementObjectSearcher mos = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
-
-            foreach (ManagementObject mo in mos.Get())
-            {
-                gpus.Add(mo["Name"].ToString());
-            }
-
-            return gpus.ToArray();
-        }
-
-        public class telemetryData
-        {
-            public string uuid { get; set; }
-            public string eventText { get; set; } = "";
-            public string logFile { get; set; } = "";
-            public string[] cpuNames { get; set; } = getCPUNames();
-            public string launcherVersion { get; set; } = Properties.Settings.Default.version + (Properties.Settings.Default.minorVersion > 0 ? "-" + Properties.Settings.Default.minorVersion : "");
-            public double windowsVersion { get; set; } = WineDetector.getOSVersion();
-            public string[] gpuList { get; set; } = getGPUNames();
-        }
-
-        private class telemetryResult
-        {
-            public bool success { get; set; }
-            public string message { get; set; }
-        }
-
-        public static void UploadTelemetry(string logFilePath = "", string eventText = "")
-        {
-            if (Properties.Settings.Default.TelemetryEnabled == false) return;
-            if (CheckForInternetConnection() == false) return;
-            telemetryData data;
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create("http://rebloxfileserver.servehttp.com/UploadLogFile");
-
-            request.Method = "POST";
-            request.ContentType = "application/json";
-            request.UserAgent = "ReBlox/" + Properties.Settings.Default.version + (Properties.Settings.Default.minorVersion > 0 ? "-" + Properties.Settings.Default.minorVersion : "") + " (Windows NT " + WineDetector.getOSVersion() + (WineDetector.IsRunningOnWine() ? "; WINE " + WineDetector.getWineVersion() + ")" : ")");
-
-            if (File.Exists(logFilePath) && logFilePath.EndsWith(".txt"))
-            {
-                data = new telemetryData
-                {
-                    uuid = Properties.Settings.Default.uuid.ToString(),
-                    logFile = Convert.ToBase64String(GzipCompress(File.ReadAllBytes(logFilePath))),
-                    eventText = eventText != "" ? eventText : ""
-                };
-            }
-            else
-            {
-                data = new telemetryData
-                {
-                    uuid = Properties.Settings.Default.uuid.ToString(),
-                    eventText = eventText != "" ? eventText : ""
-                };
-            }
-
-            try
-            {
-                string jsonResult = JsonConvert.SerializeObject(data);
-                byte[] resultBytes = Encoding.UTF8.GetBytes(jsonResult);
-                request.GetRequestStream().Write(resultBytes, 0, resultBytes.Length);
-                WebResponse response = request.GetResponse();
-                byte[] result = null;
-                using (Stream stream = response.GetResponseStream())
-                {
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        int count = 0;
-                        do
-                        {
-                            byte[] buf = new byte[1024];
-                            count = stream.Read(buf, 0, 1024);
-                            ms.Write(buf, 0, count);
-                        } while (stream.CanRead && count > 0);
-                        result = ms.ToArray();
-                    }
-                }
-                string responseResult = Encoding.UTF8.GetString(result);
-
-                telemetryResult responseJson = JsonConvert.DeserializeObject<telemetryResult>(responseResult);
-                if (responseJson.success == false)
-                {
-                    Console.WriteLine("<INFO> Something went wrong while trying to send telemetry data as the server returned the reason as \"" + responseJson.message + "\"");
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("<INFO> Something went wrong while trying to send telemetry data, please look in the error below:\r\n" + e);
             }
         }
 
@@ -337,97 +233,274 @@ namespace ReBloxLauncher
                         TcpClient client = tcpListener.AcceptTcpClient();
                         Console.WriteLine("<INFO> Potential RobloxAssetFixer server detected! Verifying...");
 
-                        NetworkStream stream = client.GetStream();
-                        byte[] buffer = new byte[2048];
-                        int bytesRead;
-
-                        while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
+                        if (bannedIPs.Contains((client.Client.RemoteEndPoint as IPEndPoint).Address))
                         {
-                            if (CallTryParse(buffer[0].ToString("x2") + buffer[1].ToString("x2") + buffer[2].ToString("x2") + buffer[3].ToString("x2"), NumberStyles.HexNumber))
+                            Console.WriteLine("<INFO> Rejecting " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " as it's restricted");
+                            if (client.Connected) client.Close();
+                        }
+                        else
+                        {
+                            NetworkStream stream = client.GetStream();
+                            byte[] buffer = new byte[262144];
+                            int bytesRead;
+
+                            while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                             {
-                                if (int.Parse(buffer[0].ToString("x2") + buffer[1].ToString("x2") + buffer[2].ToString("x2") + buffer[3].ToString("x2"), NumberStyles.HexNumber) == 276312498)
+                                if (CallTryParse(buffer[0].ToString("x2") + buffer[1].ToString("x2") + buffer[2].ToString("x2") + buffer[3].ToString("x2"), NumberStyles.HexNumber))
                                 {
-                                    if (buffer[4] == 0x55 && buffer[5] == 0x52 && buffer[6] == 0x53)
+                                    if (int.Parse(buffer[0].ToString("x2") + buffer[1].ToString("x2") + buffer[2].ToString("x2") + buffer[3].ToString("x2"), NumberStyles.HexNumber) == 276312498)
                                     {
-                                        byte[] newarray = new byte[buffer.Length - 7];
-                                        Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
+                                        try
+                                        {
+                                            if (buffer[4] == 0x55 && buffer[5] == 0x52 && buffer[6] == 0x53)
+                                            {
+                                                byte[] newarray = new byte[buffer.Length - 7];
+                                                Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
 
-                                        byte[] decompressedBuffer = GzipDecompress(newarray);
-                                        string roblosecurity = Encoding.UTF8.GetString(decompressedBuffer);
+                                                byte[] decompressedBuffer = GzipDecompress(newarray);
+                                                string roblosecurity = Encoding.UTF8.GetString(decompressedBuffer);
 
-                                        if (roblosecurity.StartsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|"))
-                                        {
-                                            Console.WriteLine("<INFO> Updating .ROBLOSECURITY");
-                                            Properties.Settings.Default.ROBLOSECURITY = Convert.ToBase64String(Encoding.UTF8.GetBytes(roblosecurity.Trim(new char[] { '\0' })));
-                                            Properties.Settings.Default.Save();
-                                            Console.WriteLine("<INFO> .ROBLOSECURITY has been updated! This should cause less 401 errors.");
-                                            stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
-                                            client.Close();
+                                                if (roblosecurity.StartsWith("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|"))
+                                                {
+                                                    Console.WriteLine("<INFO> Updating .ROBLOSECURITY");
+                                                    Properties.Settings.Default.ROBLOSECURITY = Convert.ToBase64String(Encoding.UTF8.GetBytes(roblosecurity.Trim(new char[] { '\0' })));
+                                                    Properties.Settings.Default.Save();
+                                                    Console.WriteLine("<INFO> .ROBLOSECURITY has been updated! This should cause less 401 errors.");
+                                                    stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
+                                                    client.Close();
+                                                }
+                                                else
+                                                {
+                                                    Console.WriteLine("<INFO> Invalid .ROBLOSECURITY detected, not moving on...");
+                                                    stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                                }
+                                            }
+                                            else if (buffer[4] == 0x47 && buffer[5] == 0x55 && buffer[6] == 0x53)
+                                            {
+                                                Console.WriteLine("<INFO> Sending user settings to " + (client.Client.RemoteEndPoint as IPEndPoint).Address);
+                                                stream.Write(Encoding.UTF8.GetBytes("{\"username\": \"" + Properties.Settings.Default.username + "\", \"id\": " + Properties.Settings.Default.UserId + ", \"accountOver13\": " + Properties.Settings.Default.AccountOver13 + ", \"membership\": \"" + Properties.Settings.Default.Membership.Replace(" ", "") + "\"}"), 0, Encoding.UTF8.GetBytes("{\"username\": \"" + Properties.Settings.Default.username + "\", \"id\": " + Properties.Settings.Default.UserId + ", \"accountOver13\": " + Properties.Settings.Default.AccountOver13 + ", \"membership\": \"" + Properties.Settings.Default.Membership.Replace(" ", "") + "\"}").Length);
+                                                Console.WriteLine("<INFO> User settings has been sent to the server!");
+                                                client.Close();
+                                            }
+                                            else if (buffer[4] == 0x47 && buffer[5] == 0x52 && buffer[6] == 0x53)
+                                            {
+                                                string timestamp = getTimestamp(DateTime.UtcNow);
+                                                byte[] newarray = new byte[buffer.Length - 7];
+                                                Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
+                                                if (Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }) == timestamp)
+                                                {
+                                                    byte[] roblosecurity = GzipCompress(Encoding.UTF8.GetBytes(Properties.Settings.Default.ROBLOSECURITY));
+                                                    Console.WriteLine("<INFO> Sending .ROBLOSECURITY to server...");
+                                                    stream.Write(roblosecurity, 0, roblosecurity.Length);
+                                                    Console.WriteLine("<INFO> .ROBLOSECURITY sent to the server!");
+                                                    client.Close();
+                                                }
+                                                else
+                                                {
+                                                    stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                                    Console.WriteLine("<ERROR> A server attempted to grab your ROBLOSECURITY! Server IP: " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " Expected time: " + timestamp + " Received time: " + Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }));
+                                                }
+                                            }
+                                            else if (buffer[4] == 0x41 && buffer[5] == 0x53 && buffer[6] == 0x4C)
+                                            {
+                                                string parsedAssetPacks = Properties.Settings.Default.AssetPackEnabled;
+                                                byte[] result = new byte[] { };
+                                                if (parsedAssetPacks.Length > 0)
+                                                {
+                                                    string[] assetPacks = parsedAssetPacks.Split('|');
+                                                    for (int i = 0; i < assetPacks.Length; i++)
+                                                    {
+                                                        if (assetPacks[i].StartsWith(".\\") && datafolder == Path.GetDirectoryName(Application.ExecutablePath) + @"\data")
+                                                        {
+                                                            assetPacks[i] = datafolder + assetPacks[i].Remove(0, 6);
+                                                        }
+                                                        else if (assetPacks[i].StartsWith(".\\") == false && datafolder == Path.GetDirectoryName(Application.ExecutablePath) + @"\data")
+                                                        {
+                                                            assetPacks[i] = null;
+                                                        }
+                                                        else if (assetPacks[i].StartsWith(".\\") && datafolder != Path.GetDirectoryName(Application.ExecutablePath) + @"\data")
+                                                        {
+                                                            assetPacks[i] = null;
+                                                        }
+                                                    }
+                                                    parsedAssetPacks = string.Join("|", assetPacks);
+                                                    parsedAssetPacks = parsedAssetPacks.Replace("||", "|");
+                                                    //The most ridiculous code you'll ever see
+                                                    result = GzipCompress(Encoding.UTF8.GetBytes(Convert.ToBase64String(Encoding.UTF8.GetBytes(parsedAssetPacks))));
+                                                }
+                                                Console.WriteLine("<INFO> Sending asset pack list to " + (client.Client.RemoteEndPoint as IPEndPoint).Address);
+                                                stream.Write(result, 0, result.Length);
+                                                Console.WriteLine("<INFO> The asset pack list has been sent to the server!");
+                                                client.Close();
+                                            }
+                                            else if (buffer[4] == 0x4A && buffer[5] == 0x53 && buffer[6] == 0x47)
+                                            {
+                                                byte[] newarray = new byte[buffer.Length - 8];
+                                                Buffer.BlockCopy(buffer, 8, newarray, 0, newarray.Length);
+                                                string[] data = Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }).Split('\n');
+                                                if (data.Length == 7)
+                                                {
+                                                    SetupJoinScriptEx(data[0], CallTryParse(data[1], NumberStyles.Integer) ? int.Parse(data[1]) : 53640, CallTryParse(data[2], NumberStyles.Integer) ? long.Parse(data[2]) : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId), data[3], CallTryParse(data[4], NumberStyles.Integer) ? ulong.Parse(data[4]) : 1818, data[5], CallTryParseBool(data[6]) ? bool.Parse(data[6]) : false);
+                                                    stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
+                                                    client.Close();
+                                                }
+                                                else
+                                                {
+                                                    Console.WriteLine("<INFO> Invalid length sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " (Expected length of 7, received " + data.Length + ")");
+                                                    stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                                }
+                                            }
+                                            else if (buffer[4] == 0x4A && buffer[5] == 0x53 && buffer[6] == 0x47)
+                                            {
+                                                byte[] newarray = new byte[buffer.Length - 8];
+                                                Buffer.BlockCopy(buffer, 8, newarray, 0, newarray.Length);
+                                                string[] data = Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }).Split('\n');
+                                                if (data.Length == 7)
+                                                {
+                                                    SetupJoinScriptEx(data[0], CallTryParse(data[1], NumberStyles.Integer) ? int.Parse(data[1]) : 53640, CallTryParse(data[2], NumberStyles.Integer) ? long.Parse(data[2]) : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId), data[3], CallTryParse(data[4], NumberStyles.Integer) ? ulong.Parse(data[4]) : 1818, data[5], CallTryParseBool(data[6]) ? bool.Parse(data[6]) : false);
+                                                    stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
+                                                    client.Close();
+                                                }
+                                                else
+                                                {
+                                                    Console.WriteLine("<INFO> Invalid length sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " (Expected length of 7, received " + data.Length + ")");
+                                                    stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                                }
+                                            }
+                                            else if (buffer[4] == 0x43 && buffer[5] == 0x46 && buffer[6] == 0x42)
+                                            {
+                                                byte[] newarray = new byte[buffer.Length - 7];
+                                                Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
+
+                                                using (MemoryStream stream1 = new MemoryStream(Convert.FromBase64String(Encoding.UTF8.GetString(GzipDecompress(newarray)).Trim(new char[] { '\0' }))))
+                                                {
+                                                    if (ImageUtils.isValidImage(stream1))
+                                                    {
+                                                        Properties.Settings.Default.FullBodyBase64 = Encoding.UTF8.GetString(GzipDecompress(newarray)).Trim(new char[] { '\0' });
+                                                        Properties.Settings.Default.Save();
+                                                        stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
+                                                    }
+                                                    else
+                                                    {
+                                                        stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                                    }
+                                                }
+                                            }
+                                            else if (buffer[4] == 0x43 && buffer[5] == 0x48 && buffer[6] == 0x53)
+                                            {
+                                                byte[] newarray = new byte[buffer.Length - 7];
+                                                Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
+
+                                                using (MemoryStream stream1 = new MemoryStream(Convert.FromBase64String(Encoding.UTF8.GetString(GzipDecompress(newarray)).Trim(new char[] { '\0' }))))
+                                                {
+                                                    if (ImageUtils.isValidImage(stream1))
+                                                    {
+                                                        Properties.Settings.Default.HeadshotBase64 = Encoding.UTF8.GetString(GzipDecompress(newarray));
+                                                        Properties.Settings.Default.Save();
+                                                        stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
+                                                    }
+                                                    else
+                                                    {
+                                                        stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                                    }
+                                                }
+
+                                            }
+                                            else if (buffer[4] == 0x46 && buffer[5] == 0x43 && buffer[6] == 0x48 && buffer[7] == 0x53)
+                                            {
+                                                byte[] newarray = new byte[buffer.Length - 8];
+                                                Buffer.BlockCopy(buffer, 8, newarray, 0, newarray.Length);
+
+                                                using (MemoryStream stream1 = new MemoryStream(Convert.FromBase64String(Encoding.UTF8.GetString(GzipDecompress(newarray)).Trim(new char[] { '\0' }))))
+                                                {
+                                                    if (ImageUtils.isValidImage(stream1))
+                                                    {
+                                                        Properties.Settings.Default.HeadshotBase64 = Encoding.UTF8.GetString(GzipDecompress(newarray));
+                                                        Properties.Settings.Default.Save();
+                                                        stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
+                                                        if (rccrenderer > 0)
+                                                        {
+                                                            try
+                                                            {
+                                                                Process rccservice = Process.GetProcessById(rccrenderer);
+                                                                if (rccservice.HasExited == false) rccservice.Kill();
+                                                            }
+                                                            catch
+                                                            {
+                                                                //ignore
+                                                            }
+                                                        }
+
+                                                    }
+                                                    else
+                                                    {
+                                                        stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                                    }
+                                                }
+
+                                            }
+                                            else if (buffer[4] == 0x46 && buffer[5] == 0x43 && buffer[6] == 0x46 && buffer[6] == 0x42)
+                                            {
+                                                byte[] newarray = new byte[buffer.Length - 8];
+                                                Buffer.BlockCopy(buffer, 8, newarray, 0, newarray.Length);
+
+                                                using (MemoryStream stream1 = new MemoryStream(Convert.FromBase64String(Encoding.UTF8.GetString(GzipDecompress(newarray)).Trim(new char[] { '\0' }))))
+                                                {
+                                                    if (ImageUtils.isValidImage(stream1))
+                                                    {
+                                                        Properties.Settings.Default.FullBodyBase64 = Encoding.UTF8.GetString(GzipDecompress(newarray)).Trim(new char[] { '\0' });
+                                                        Properties.Settings.Default.Save();
+                                                        stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
+                                                        if (rccrenderer > 0)
+                                                        {
+                                                            try
+                                                            {
+                                                                Process rccservice = Process.GetProcessById(rccrenderer);
+                                                                if (rccservice.HasExited == false) rccservice.Kill();
+                                                            }
+                                                            catch
+                                                            {
+                                                                //ignore
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                Console.WriteLine("<INFO> Invalid/garbage data sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address + ", banning IP for 10 seconds");
+                                                Thread thread = new Thread(() =>
+                                                {
+                                                    IPAddress bannedIP = (client.Client.RemoteEndPoint as IPEndPoint).Address;
+                                                    bannedIPs.Add(bannedIP);
+                                                    Thread.Sleep(10000);
+                                                    bannedIPs.Remove(bannedIP);
+                                                });
+                                                thread.IsBackground = true;
+                                                thread.TrySetApartmentState(ApartmentState.STA);
+                                                thread.Start();
+                                            }
                                         }
-                                        else
+                                        catch (Exception e)
                                         {
-                                            Console.WriteLine("<INFO> Invalid .ROBLOSECURITY detected, not moving on...");
-                                            stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                            Console.WriteLine("<ERROR> Something went wrong while processing the request! Disconnecting the client...\r\n\r\nMessage: " + e.Message + "\r\n\r\nStack Trace:\r\n" + e.StackTrace);
                                         }
-                                    }
-                                    else if (buffer[4] == 0x47 && buffer[5] == 0x55 && buffer[6] == 0x53)
-                                    {
-                                        Console.WriteLine("<INFO> Sending user settings to " + (client.Client.RemoteEndPoint as IPEndPoint).Address);
-                                        stream.Write(Encoding.UTF8.GetBytes("{\"username\": \"" + Properties.Settings.Default.username + "\", \"id\": " + Properties.Settings.Default.UserId + ", \"accountOver13\": " + Properties.Settings.Default.AccountOver13 + ", \"membership\": \"" + Properties.Settings.Default.Membership.Replace(" ", "") + "\"}"), 0, Encoding.UTF8.GetBytes("{\"username\": \"" + Properties.Settings.Default.username + "\", \"id\": " + Properties.Settings.Default.UserId + ", \"accountOver13\": " + Properties.Settings.Default.AccountOver13 + ", \"membership\": \"" + Properties.Settings.Default.Membership.Replace(" ", "") + "\"}").Length);
-                                        Console.WriteLine("<INFO> User settings has been sent to the server!");
-                                        client.Close();
-                                    }
-                                    else if (buffer[4] == 0x47 && buffer[5] == 0x52 && buffer[6] == 0x53)
-                                    {
-                                        string timestamp = getTimestamp(DateTime.UtcNow);
-                                        byte[] newarray = new byte[buffer.Length - 7];
-                                        Buffer.BlockCopy(buffer, 7, newarray, 0, newarray.Length);
-                                        if (Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }) == timestamp)
-                                        {
-                                            byte[] roblosecurity = GzipCompress(Encoding.UTF8.GetBytes(Properties.Settings.Default.ROBLOSECURITY));
-                                            Console.WriteLine("<INFO> Sending .ROBLOSECURITY to server...");
-                                            stream.Write(roblosecurity, 0, roblosecurity.Length);
-                                            Console.WriteLine("<INFO> .ROBLOSECURITY sent to the server!");
-                                            client.Close();
-                                        }
-                                        else
-                                        {
-                                            stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
-                                            Console.WriteLine("<ERROR> A server attempted to grab your ROBLOSECURITY! Server IP: " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " Expected time: " + timestamp + " Received time: " + Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }));
-                                        }
-                                    }
-                                    else if (buffer[4] == 0x4A && buffer[5] == 0x53 && buffer[6] == 0x47)
-                                    {
-                                        byte[] newarray = new byte[buffer.Length - 8];
-                                        Buffer.BlockCopy(buffer, 8, newarray, 0, newarray.Length);
-                                        string[] data = Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }).Split('\n');
-                                        if (data.Length == 7)
-                                        {
-                                            SetupJoinScriptEx(data[0], CallTryParse(data[1], NumberStyles.Integer) ? int.Parse(data[1]) : 53640, CallTryParse(data[2], NumberStyles.Integer) ? long.Parse(data[2]) : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId), data[3], CallTryParse(data[4], NumberStyles.Integer) ? ulong.Parse(data[4]) : 1818, data[5], CallTryParseBool(data[6]) ? bool.Parse(data[6]) : false);
-                                            stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
-                                            client.Close();
-                                        }
-                                        else
-                                        {
-                                            Console.WriteLine("<INFO> Invalid length sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " (Expected length of 7, received " + data.Length + ")");
-                                            stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        Console.WriteLine("<INFO> Invalid data sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address);
                                     }
                                 }
-                            }
-                            else
-                            {
-                                Console.WriteLine("<INFO> Failed to verify the session of " + (client.Client.RemoteEndPoint as IPEndPoint).Address);
-                                stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
-                            }
+                                else
+                                {
+                                    Console.WriteLine("<INFO> Failed to verify the session of " + (client.Client.RemoteEndPoint as IPEndPoint).Address);
+                                    stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
+                                }
 
+                            }
+                            if (client.Connected) client.Close();
+                            Console.WriteLine("<INFO> RobloxAssetFixer server disconnected from the launcher.");
                         }
-                        if (client.Connected) client.Close();
-                        Console.WriteLine("<INFO> RobloxAssetFixer server disconnected from the launcher.");
                     }
                     catch (SocketException)
                     {
@@ -465,7 +538,7 @@ namespace ReBloxLauncher
 
                 if (serverOn == false)
                 {
-                    if (checkPortUdp(50358))
+                    if (checkPortUdp(50358) || Properties.Settings.Default.PrivateServer)
                     {
                         return;
                     }

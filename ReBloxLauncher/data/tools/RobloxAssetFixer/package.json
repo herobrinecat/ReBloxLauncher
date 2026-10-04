@@ -1,5 +1,5 @@
 {
-  "name": "robloxproxy",
+  "name": "robloxassetfixer",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -11,11 +11,11 @@
   "description": "",
   "dependencies": {
     "body-parser": "^2.3.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.4",
     "express": "^5.1.0",
     "follow-redirects": "^1.16.0",
     "jsonwebtoken": "^9.0.3",
-    "morgan": "^1.12.0",
+    "morgan": "^1.12.1",
     "qs": "^6.16.0"
   }
 }

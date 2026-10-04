@@ -40,6 +40,8 @@ namespace ReBloxLauncher
             public string bodyType { get; set; } = "R6";
             public IList<AssetData> asset { get; set; }
             public BodyColors colors { get; set; }
+            public string base64FullBody { get; set; } = "";
+            public string base64HeadShot { get; set; } = "";
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -55,27 +57,8 @@ namespace ReBloxLauncher
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (Properties.Settings.Default.CharactersList != null && Properties.Settings.Default.CharactersList.Count > 0)
-            {
-                try
-                {
-                    for (int i = 0; i < Properties.Settings.Default.CharactersList.Count; i++)
-                    {
-                        SaveAvatarType avatarType = JsonConvert.DeserializeObject<SaveAvatarType>(Properties.Settings.Default.CharactersList[i]);
-                        if (avatarType.name == textBox1.Text.Trim())
-                        {
-                            MessageBox.Show("This character name is taken! Please choose a different name.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            textBox1.Text = "";
-                            return;
-                        }
-                    }
-                } catch (Exception e1)
-                {
-                    Console.WriteLine("<ERROR> Something went wrong while checking if the character name is taken! Look at the error below:\r\n" + e1);
-                    return;
-                }
-            }
             frm1.characterName = textBox1.Text.Trim();
+            frm1.allowImages = checkBox1.Checked;
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
@@ -84,28 +67,8 @@ namespace ReBloxLauncher
         {
             if (e.KeyCode == Keys.Enter)
             {
-                if (Properties.Settings.Default.CharactersList != null && Properties.Settings.Default.CharactersList.Count > 0)
-                {
-                    try
-                    {
-                        for (int i = 0; i < Properties.Settings.Default.CharactersList.Count; i++)
-                        {
-                            SaveAvatarType avatarType = JsonConvert.DeserializeObject<SaveAvatarType>(Properties.Settings.Default.CharactersList[i]);
-                            if (avatarType.name == textBox1.Text.Trim())
-                            {
-                                MessageBox.Show("This character name is taken! Please choose a different name.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                textBox1.Text = "";
-                                return;
-                            }
-                        }
-                    }
-                    catch (Exception e1)
-                    {
-                        Console.WriteLine("<ERROR> Something went wrong while checking if the character name is taken! Look at the error below:\r\n" + e1);
-                        return;
-                    }
-                }
                 frm1.characterName = textBox1.Text.Trim();
+                frm1.allowImages = checkBox1.Checked;
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

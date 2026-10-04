@@ -17,6 +17,7 @@ namespace ReBloxLauncher
         string datafolder = Path.GetDirectoryName(Application.ExecutablePath) + @"\data";
         readonly object syncLock = new object();
         readonly Random random = new Random();
+
         public SplashScreen(string dfolder = null)
         {
             InitializeComponent();
@@ -36,6 +37,7 @@ namespace ReBloxLauncher
             }
         }
 
+
         private void SplashScreen_Load(object sender, EventArgs e)
         {
             if (Directory.Exists(datafolder + @"\splashscreens"))
@@ -47,30 +49,55 @@ namespace ReBloxLauncher
                     int randomchoose = RandomNumber(0, directories.Length);
                     if (directories[randomchoose].EndsWith(".png") || directories[randomchoose].EndsWith(".jpg") || directories[randomchoose].EndsWith(".jpeg") || directories[randomchoose].EndsWith(".bmp") || directories[randomchoose].EndsWith(".gif"))
                     {
-                        Size sizecheck = ImageSize.GetDimensions(directories[randomchoose]);
-                        if (sizecheck.Width > 4000 || sizecheck.Height > 4000)
+                        using (MemoryStream stream = new MemoryStream(File.ReadAllBytes(directories[randomchoose])))
                         {
-                            this.BackgroundImage = Properties.Resources.splashscreen;
-                            Console.WriteLine("<WARN> Setting the splash screen to default due to illegal size.");
+                            if (ImageUtils.isValidImage(stream))
+                            {
+                                stream.Close();
+                                Size sizecheck = ImageUtils.GetDimensions(directories[randomchoose]);
+                                if (sizecheck.Width > 4000 || sizecheck.Height > 4000)
+                                {
+                                    this.BackgroundImage = Properties.Resources.splashscreen;
+                                    Console.WriteLine("<WARN> Setting the splash screen to default due to illegal size.");
+                                }
+                                else
+                                {
+                                    this.BackgroundImage = Image.FromFile(directories[randomchoose]);
+                                }
+                            }
+                            else
+                            {
+                                this.BackgroundImage = Properties.Resources.splashscreen;
+                                Console.WriteLine("<WARN> Setting the splash screen to default due to invalid file.");
+                            }
                         }
-                        else
-                        {
-                            this.BackgroundImage = Image.FromFile(directories[randomchoose]);
-                        }
+                        
                     }
                     else
                     {
                         if (File.Exists(datafolder + @"\splashscreen.png"))
                         {
-                            Size sizecheck = ImageSize.GetDimensions(datafolder + @"\splashscreen.png");
-                            if (sizecheck.Width > 4000 || sizecheck.Height > 4000)
+                            using (MemoryStream stream = new MemoryStream(File.ReadAllBytes(datafolder + @"\splashscreen.png")))
                             {
-                                this.BackgroundImage = Image.FromFile(datafolder + @"\splashscreen.png");
-                            }
-                            else
-                            {
-                                this.BackgroundImage = Properties.Resources.splashscreen;
-                                Console.WriteLine("<WARN> Setting the splash screen to default due to illegal size.");
+                                if (ImageUtils.isValidImage(stream))
+                                {
+                                    stream.Close();
+                                    Size sizecheck = ImageUtils.GetDimensions(datafolder + @"\splashscreen.png");
+                                    if (sizecheck.Width > 4000 || sizecheck.Height > 4000)
+                                    {
+                                        this.BackgroundImage = Properties.Resources.splashscreen;
+                                        Console.WriteLine("<WARN> Setting the splash screen to default due to illegal size.");
+                                    }
+                                    else
+                                    {
+                                        this.BackgroundImage = Image.FromFile(datafolder + @"\splashscreen.png");
+                                    }
+                                }
+                                else
+                                {
+                                    this.BackgroundImage = Properties.Resources.splashscreen;
+                                    Console.WriteLine("<WARN> Setting the splash screen to default due to invalid file.");
+                                }
                             }
                         }
                         else
@@ -83,15 +110,28 @@ namespace ReBloxLauncher
                 {
                     if (File.Exists(datafolder + @"\splashscreen.png"))
                     {
-                        Size sizecheck = ImageSize.GetDimensions(datafolder + @"\splashscreen.png");
-                        if (sizecheck.Width > 4000 || sizecheck.Height > 4000)
+                        using (MemoryStream stream = new MemoryStream(File.ReadAllBytes(datafolder + @"\splashscreen.png")))
                         {
-                            this.BackgroundImage = Image.FromFile(datafolder + @"\splashscreen.png");
-                        }
-                        else
-                        {
-                            this.BackgroundImage = Properties.Resources.splashscreen;
-                            Console.WriteLine("<WARN> Setting the splash screen to default due to illegal size.");
+                            if (ImageUtils.isValidImage(stream))
+                            {
+                                stream.Close();
+                                Size sizecheck = ImageUtils.GetDimensions(datafolder + @"\splashscreen.png");
+                                if (sizecheck.Width > 4000 || sizecheck.Height > 4000)
+                                {
+                                    this.BackgroundImage = Properties.Resources.splashscreen;
+                                    Console.WriteLine("<WARN> Setting the splash screen to default due to illegal size.");
+                                    
+                                }
+                                else
+                                {
+                                    this.BackgroundImage = Image.FromFile(datafolder + @"\splashscreen.png");
+                                }
+                            }
+                            else
+                            {
+                                this.BackgroundImage = Properties.Resources.splashscreen;
+                                Console.WriteLine("<WARN> Setting the splash screen to default due to invalid file.");
+                            }
                         }
                     }
                     else
@@ -104,16 +144,29 @@ namespace ReBloxLauncher
             {
                 if (File.Exists(datafolder + @"\splashscreen.png"))
                 {
-                    Size sizecheck = ImageSize.GetDimensions(datafolder + @"\splashscreen.png");
-                    if (sizecheck.Width > 4000 || sizecheck.Height > 4000)
+                    using (MemoryStream stream = new MemoryStream(File.ReadAllBytes(datafolder + @"\splashscreen.png")))
                     {
-                        this.BackgroundImage = Image.FromFile(datafolder + @"\splashscreen.png");
+                        if (ImageUtils.isValidImage(stream))
+                        {
+                            stream.Close();
+                            Size sizecheck = ImageUtils.GetDimensions(datafolder + @"\splashscreen.png");
+                            if (sizecheck.Width > 4000 || sizecheck.Height > 4000)
+                            {
+                                this.BackgroundImage = Properties.Resources.splashscreen;
+                                Console.WriteLine("<WARN> Setting the splash screen to default due to illegal size.");
+                                
+                            }
+                            else
+                            {
+                                this.BackgroundImage = Image.FromFile(datafolder + @"\splashscreen.png");
+                            }
+                        }
+                        else
+                        {
+                            this.BackgroundImage = Properties.Resources.splashscreen;
+                            Console.WriteLine("<WARN> Setting the splash screen to default due to invalid file.");
+                        }
                     }
-                    else
-                    {
-                        this.BackgroundImage = Properties.Resources.splashscreen;
-                        Console.WriteLine("<WARN> Setting the splash screen to default due to illegal size.");
-                    }    
                 }
                 else
                 {
