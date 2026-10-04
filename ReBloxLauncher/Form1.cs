@@ -1144,6 +1144,7 @@ namespace ReBloxLauncher
                     checkBox14.Checked = Properties.Settings.Default.FadeImageSupport;
                     checkBox15.Checked = Properties.Settings.Default.RCCServiceFullSupport;
                     checkBox17.Checked = Properties.Settings.Default.EnableDataPersistence;
+                    checkBox18.Checked = Properties.Settings.Default.NewAssetSystem;
                     checkBox19.Checked = Properties.Settings.Default.LongUserIdExperiment;
                     checkBox20.Checked = Properties.Settings.Default.RenderAvatarExperiment;
                     checkBox22.Checked = Properties.Settings.Default.PrivateServer;
@@ -1207,6 +1208,7 @@ namespace ReBloxLauncher
                         comboBox4.Visible = false;
                         pictureBox4.Visible = true;
                         pictureBox5.Visible = true;
+                        pictureBox6.Visible = false;
                         button29.Visible = false;
                         label16.Text = "Choose Your Character";
                     }
@@ -1669,23 +1671,27 @@ namespace ReBloxLauncher
             control.Invoke(new Action(() => { rgb = control.ForeColor; }));
             if (overrideThread)
             {
-                for (int i = 0; i < fadeThread.Count; i++)
-                {
-                    if (i < fadeThread.Count)
+                try {
+                    for (int i = 0; i < fadeThread.Count; i++)
                     {
-                        if (fadeThread[i].Item2 == control)
+                        if (i < fadeThread.Count)
                         {
-                            if (i < fadeThread.Count)
+                            if (fadeThread[i].Item2 == control)
                             {
-                                fadeThread[i].Item1.Abort();
-                                fadeThread[i].Item1.Join(0);
-
-                                fadeThread.RemoveAt(i);
-                                i--;
+                                if (i < fadeThread.Count)
+                                {
+                                    fadeThread[i].Item1.Abort();
+                                    fadeThread[i].Item1.Join(0);
+    
+                                    fadeThread.RemoveAt(i);
+                                    i--;
+                                }
                             }
                         }
                     }
-
+                }
+                catch {
+                    //ignore
                 }
             }
             Thread thread = new Thread(() =>
@@ -2944,11 +2950,11 @@ namespace ReBloxLauncher
 
                                 if (Properties.Settings.Default.useAuth && internetConnected)
                                 {
-                                    ps1.Arguments = "index.js -username=" + Uri.EscapeDataString(guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (guestMode == false && Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "");
+                                    ps1.Arguments = "index.js -username=" + Uri.EscapeDataString(guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (guestMode == false && Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + Properties.Settings.Default.lastselectedversion : "");
                                 }
                                 else
                                 {
-                                    ps1.Arguments = "index.js -username=" + Uri.EscapeDataString(guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (guestMode == false && Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "");
+                                    ps1.Arguments = "index.js -username=" + Uri.EscapeDataString(guestMode ? guestUsername : Properties.Settings.Default.username) + " -userid=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (guestMode == false && Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + (guestMode ? "" : " --allowGetCurrentUser") + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.UploadFilesAllowed ? " --allowUploadingFiles" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + Properties.Settings.Default.lastselectedversion : "");
                                 }
                                 ps1.WindowStyle = ProcessWindowStyle.Hidden;
                                 ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
