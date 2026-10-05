@@ -9124,7 +9124,7 @@ namespace ReBloxLauncher
                                 smartHostEdit();
                                 if (File.Exists(datafolder + @"\tools\RCCServiceRenderer\gametemplate.txt"))
                                 {
-                                    File.WriteAllText(datafolder + @"\tools\RCCServiceRenderer\gameserver.txt", File.ReadAllText(datafolder + @"\tools\RCCServiceRenderer\gametemplate.txt").Replace("{userid}", Properties.Settings.Default.UserIdLong.ToString()));
+                                    File.WriteAllText(datafolder + @"\tools\RCCServiceRenderer\gameserver.txt", File.ReadAllText(datafolder + @"\tools\RCCServiceRenderer\gametemplate.txt").Replace("{userid}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
                                 }
                                 statusText.Invoke(new Action(() => { statusText.Visible = true; }));
                                 button1.Invoke(new Action(() => { button1.Enabled = false; }));
@@ -9249,7 +9249,7 @@ namespace ReBloxLauncher
                     {
                         if (File.Exists(datafolder + @"\tools\RCCServiceRenderer\gametemplate.txt"))
                         {
-                            File.WriteAllText(datafolder + @"\tools\RCCServiceRenderer\gameserver.txt", File.ReadAllText(datafolder + @"\tools\RCCServiceRenderer\gametemplate.txt").Replace("{userid}", Properties.Settings.Default.UserIdLong.ToString()));
+                            File.WriteAllText(datafolder + @"\tools\RCCServiceRenderer\gameserver.txt", File.ReadAllText(datafolder + @"\tools\RCCServiceRenderer\gametemplate.txt").Replace("{userid}", (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)).ToString()));
                         }
                         statusText.Invoke(new Action(() => { statusText.ForeColor = Color.White; }));
                         rendering = true;
