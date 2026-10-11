@@ -110,6 +110,7 @@ namespace ReBloxLauncher
             public string logFile { get; set; } = "";
             public string[] cpuNames { get; set; } = getCPUNames();
             public string launcherVersion { get; set; } = Properties.Settings.Default.version + (Properties.Settings.Default.minorVersion > 0 ? "-" + Properties.Settings.Default.minorVersion : "");
+            public string wineVersion { get; set; } = WineDetector.IsRunningOnWine() ? WineDetector.getWineVersion() : "";
             public double windowsVersion { get; set; } = WineDetector.getOSVersion();
             public string[] gpuList { get; set; } = getGPUNames();
         }

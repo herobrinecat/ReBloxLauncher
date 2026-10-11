@@ -218,7 +218,7 @@ namespace ReBloxLauncher
                 }
                 else
                 {
-                    tcpListener = new TcpListener(IPAddress.Any, 50355);
+                    tcpListener = new TcpListener(IPAddress.Loopback, 50355);
                 }
                 Console.WriteLine("<INFO> Starting TCP Server for RobloxAssetFixer integration with port 50355");
                 serverComOn = true;
@@ -332,23 +332,6 @@ namespace ReBloxLauncher
                                                 stream.Write(result, 0, result.Length);
                                                 Console.WriteLine("<INFO> The asset pack list has been sent to the server!");
                                                 client.Close();
-                                            }
-                                            else if (buffer[4] == 0x4A && buffer[5] == 0x53 && buffer[6] == 0x47)
-                                            {
-                                                byte[] newarray = new byte[buffer.Length - 8];
-                                                Buffer.BlockCopy(buffer, 8, newarray, 0, newarray.Length);
-                                                string[] data = Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }).Split('\n');
-                                                if (data.Length == 7)
-                                                {
-                                                    SetupJoinScriptEx(data[0], CallTryParse(data[1], NumberStyles.Integer) ? int.Parse(data[1]) : 53640, CallTryParse(data[2], NumberStyles.Integer) ? long.Parse(data[2]) : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId), data[3], CallTryParse(data[4], NumberStyles.Integer) ? ulong.Parse(data[4]) : 1818, data[5], CallTryParseBool(data[6]) ? bool.Parse(data[6]) : false);
-                                                    stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
-                                                    client.Close();
-                                                }
-                                                else
-                                                {
-                                                    Console.WriteLine("<INFO> Invalid length sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " (Expected length of 7, received " + data.Length + ")");
-                                                    stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
-                                                }
                                             }
                                             else if (buffer[4] == 0x4A && buffer[5] == 0x53 && buffer[6] == 0x47)
                                             {
@@ -519,6 +502,7 @@ namespace ReBloxLauncher
 
             });
             thread.TrySetApartmentState(ApartmentState.STA);
+            thread.IsBackground = true;
             thread.Start();
         }
 

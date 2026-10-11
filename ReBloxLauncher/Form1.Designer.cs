@@ -76,6 +76,7 @@
             this.checkBox10 = new System.Windows.Forms.CheckBox();
             this.button19 = new System.Windows.Forms.Button();
             this.GeneralPage = new System.Windows.Forms.Panel();
+            this.checkBox25 = new System.Windows.Forms.CheckBox();
             this.checkBox21 = new System.Windows.Forms.CheckBox();
             this.label37 = new System.Windows.Forms.Label();
             this.checkBox3 = new System.Windows.Forms.CheckBox();
@@ -194,7 +195,6 @@
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.openFileDialog2 = new System.Windows.Forms.OpenFileDialog();
-            this.checkBox25 = new System.Windows.Forms.CheckBox();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -811,6 +811,19 @@
             this.GeneralPage.Name = "GeneralPage";
             this.GeneralPage.Size = new System.Drawing.Size(520, 259);
             this.GeneralPage.TabIndex = 29;
+            // 
+            // checkBox25
+            // 
+            this.checkBox25.AutoSize = true;
+            this.checkBox25.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.checkBox25.ForeColor = System.Drawing.Color.White;
+            this.checkBox25.Location = new System.Drawing.Point(20, 94);
+            this.checkBox25.Name = "checkBox25";
+            this.checkBox25.Size = new System.Drawing.Size(258, 21);
+            this.checkBox25.TabIndex = 32;
+            this.checkBox25.Text = "Keep the avatar when leaving clients";
+            this.checkBox25.UseVisualStyleBackColor = true;
+            this.checkBox25.CheckedChanged += new System.EventHandler(this.checkBox25_CheckedChanged);
             // 
             // checkBox21
             // 
@@ -1822,7 +1835,7 @@
             // label30
             // 
             this.label30.AutoSize = true;
-            this.label30.Location = new System.Drawing.Point(228, 176);
+            this.label30.Location = new System.Drawing.Point(227, 176);
             this.label30.Name = "label30";
             this.label30.Size = new System.Drawing.Size(84, 13);
             this.label30.TabIndex = 15;
@@ -2225,7 +2238,7 @@
             this.label33.AutoSize = true;
             this.label33.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F);
             this.label33.ForeColor = System.Drawing.Color.White;
-            this.label33.Location = new System.Drawing.Point(413, 533);
+            this.label33.Location = new System.Drawing.Point(414, 533);
             this.label33.Name = "label33";
             this.label33.Size = new System.Drawing.Size(132, 13);
             this.label33.TabIndex = 36;
@@ -2292,20 +2305,7 @@
             this.openFileDialog2.DefaultExt = "rbcf";
             this.openFileDialog2.FileName = "openFileDialog2";
             this.openFileDialog2.Filter = "RBCF files|*.rbcf";
-            this.openFileDialog2.Title = "Import a character form";
-            // 
-            // checkBox25
-            // 
-            this.checkBox25.AutoSize = true;
-            this.checkBox25.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.checkBox25.ForeColor = System.Drawing.Color.White;
-            this.checkBox25.Location = new System.Drawing.Point(20, 94);
-            this.checkBox25.Name = "checkBox25";
-            this.checkBox25.Size = new System.Drawing.Size(258, 21);
-            this.checkBox25.TabIndex = 32;
-            this.checkBox25.Text = "Keep the avatar when leaving clients";
-            this.checkBox25.UseVisualStyleBackColor = true;
-            this.checkBox25.CheckedChanged += new System.EventHandler(this.checkBox25_CheckedChanged);
+            this.openFileDialog2.Title = "Import a character from";
             // 
             // Form1
             // 

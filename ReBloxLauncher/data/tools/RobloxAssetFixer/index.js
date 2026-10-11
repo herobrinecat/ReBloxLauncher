@@ -1154,6 +1154,9 @@ function getAsset(id, callback) {
                                             return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
                                         }
                                     }
+                                    else {
+                                        return callback("{\"errors\":[{\"code\":0,\"message\":\"Something went wrong\"}]}")
+                                    }
                                 })
                             })
                         }
@@ -2633,7 +2636,7 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
     var assetfound1 = false
-    if (isNumeric((((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID)))) {
+    if (isNumeric((((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID))) && (req.query.format == "png" || req.query.format == "jpeg" || req.query.format == "webp")) {
 
 
         if (verbose) {
@@ -2752,8 +2755,12 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
                                                         var buffer = Buffer.concat(data)
                                                         res.setHeader("Content-disposition", "attachment; filename=\"" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png") + "\"")
                                                         res.status(200).send(buffer)
-                                                        if (saveFile) filesystem.writeFileSync("./saved/" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png"))
-                                                        assetfound = true
+                                                        if (saveFile) 
+														{
+															if (filesystem.existsSync("./saved") == false) filesystem.mkdirSync("./saved");
+															filesystem.writeFileSync("./saved/" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png"), buffer)
+                                                        }
+														assetfound = true
                                                     })
                                                 })
                                             } else {
@@ -2830,7 +2837,11 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
                                             var buffer = Buffer.concat(data)
                                             res.setHeader("Content-disposition", "attachment; filename=\"" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png") + "\"")
                                             res.status(200).send(buffer)
-                                            if (saveFile) filesystem.writeFileSync("./saved/" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png"))
+                                            if (saveFile) 
+											{
+												if (filesystem.existsSync("./saved") == false) filesystem.mkdirSync("./saved");
+												filesystem.writeFileSync("./saved/" + ((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID) + "." + (req.query.format != undefined ? req.query.format : "png"), buffer)
+                                            }
                                             assetfound = true
                                         })
                                     })
@@ -5958,6 +5969,7 @@ app.post("/v2/login", (req, res) => {
 app.get("/studio-user-settings/plugin-permissions", (req, res) => {
     res.status(200).send("[]") //STUB
 })
+
 app.post("/sign-out/v1", (req, res) => {
     res.status(200).send("{}")
 })
@@ -7736,6 +7748,7 @@ app.post("/game/validate-machine", (_, res) => {
 app.get("/universes/validate-place-join", (_, res) => {
     res.status(200).send(true)
 })
+
 app.get("/groups/can-manage-games", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("[]")
@@ -7986,10 +7999,12 @@ app.get("/asset-thumbnail/image", (req, res) => {
 app.get("/UploadMedia/PostImage.aspx", (_, res) => {
     res.status(200).send("Caught you screenshotting ;)")
 })
+
 app.get("/gameicon.png", (_, res) => {
     res.setHeader("Content-disposition", "attachment; filename=\"gameicon.png\"")
     res.status(200).send(filesystem.readFileSync(assetfolder + "/gameicon.png"))
 })
+
 app.get("/v1/user/studiodata", (req, res) => {
     //STUB
     res.status(200).send("{}")
@@ -8079,6 +8094,7 @@ app.get("/My/Places.aspx&version=:version", (_, res) => {
 })
 
 app.get("/IDE/ClientToolbox.aspx", (_, res) => {
+    res.setHeader("cache-control", "no-cache")
     //STUB (if you wanna add actual toolbox, you can)
     res.status(200).send("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"></head><body><select><option value=\"images\">Decals</option><option value=\"default\" selected=\"selected\">Models</option><option value=\"setup\">ROBLOX Sets</option></select><input type=\"text\" id=\"searchtext\"><br><h2>*insert toolbox here*</h2></body></html>")
 })
@@ -10159,6 +10175,144 @@ app.post("/persistence/getV2", async (req, res) => {
     }
 })
 
+app.post("/v1/user/following-exists", async (req, res) => {
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    if (joining) {
+        try {
+            var options = {
+                host: ip,
+                port: 80,
+                path: "/v1/user/following-exists",
+                method: "POST",
+                headers: req.headers
+            }
+
+            var req1 = http.request(options, (res1) => {
+                res1.setEncoding("utf-8")
+                var data = ""
+                res1.on("data", (chunk) => {
+                    data += chunk
+                })
+                res1.on("end", () => {
+                    res.status(res1.statusCode).send(data)
+                })
+            })
+
+            req1.write(JSON.stringify(req.body))
+            req1.end()
+        } catch {
+            res.status(500).end()
+        }
+    }
+    else {
+        var verified = false
+        var result = []
+
+        if (req.headers["cookie"] != undefined && req.headers["cookie"].includes(".ROBLOSECURITY=") == false) {
+            res.status(401).send("{\"errors\": [{\"code\": 9002, \"subcode\": 0, \"message\": \"Authentication token is missing\"}]}")
+            return
+        }
+
+        if (req.headers["cookie"] != undefined) {
+            if (jwt.verify(req.headers["cookie"].slice(req.headers["cookie"].lastIndexOf("|_") + 2), secretKey, { algorithms: "HS256" })) {
+                var userjson = jwt.decode(req.headers["cookie"].slice(req.headers["cookie"].lastIndexOf("|_") + 2))
+
+                if (userjson["userid"] != undefined && typeof (userjson["userid"]) == "number") {
+                    userIdfromROBLOSECURITY = userjson["userid"]
+                }
+                else {
+                    res.status(401).send("{\"errors\":[{\"code\": 0, \"message\": \"Authorization has been denied for this request.\"}]}")
+                    return
+                }
+            } else {
+                res.status(401).send("{\"errors\":[{\"code\": 0, \"message\": \"Authorization has been denied for this request.\"}]}")
+                return
+            }
+        }
+        else {
+            res.status(401).send("{\"errors\":[{\"code\": 9002, \"subecode\": 0 \"message\": \"Authorization token is missing\"}]}")
+            return
+        }
+
+        if (Array.isArray(req.body["targetUserIds"]) == false) {
+            res.status(400).send("{\"errors\":[{\"code\": 1, \"message\": \"Request is not in the correct format\"}]}")
+            return
+        }
+
+        if (enableFollow == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+            if (filesystem.existsSync(RBDFpath)) {
+                const stream = filesystem.createReadStream(RBDFpath)
+
+                const rl = readline.createInterface({
+                    input: stream,
+                    crlfDelay: Infinity
+                })
+
+                for await (const line of rl) {
+                    if (line == "RBDF==") {
+                        verified = true
+                    }
+                    else {
+                        req.body["targetUserIds"].forEach((id) => {
+                            if (line.trim() == "<Following userId=" + userIdfromROBLOSECURITY + " followerUserId=" + id + ">") {
+                                if (result.find((a) => a.userId == id) != undefined) {
+                                    if (result.map(e => (e.userId, e.isFollowed)).indexOf((id, true)) > -1) {
+                                        result[result.map(e => (e.userId, e.isFollowed)).indexOf((id, true))] = { isFollowing: true, isFollowed: true, userId: id }
+                                    }
+                                }
+                                else {
+                                    result.push({ isFollowing: true, isFollowed: false, userId: id })
+                                }
+                            }
+                            else if (line.trim() == "<Following userId=" + id + " followerUserId=" + userIdfromROBLOSECURITY + ">") {
+                                if (result.find((a) => a.userId == id) != undefined) {
+                                    if (result.map(e => (e.userId, e.isFollowing)).indexOf((id, true)) > -1) {
+                                        result[result.map(e => (e.userId, e.isFollowing)).indexOf((id, true))] = { isFollowing: true, isFollowed: true, userId: id }
+                                    }
+                                }
+                                else {
+                                    result.push({ isFollowing: false, isFollowed: true, userId: id })
+                                }
+                            }
+                        })
+                    }
+                }
+                stream.destroy()
+                rl.close()
+                req.body["targetUserIds"].forEach((id) => {
+                    if (result.find((a) => a.userId == id) == undefined) {
+                        result.push({ isFollowing: false, isFollowed: false, userId: id })
+                    }
+                })
+
+                if (verified == true) {
+                    res.status(200).send("{\"followings\": " + JSON.stringify(result) + "}")
+                }
+                else {
+                    res.status(500).end()
+                }
+            }
+            else {
+                req.body["targetUserIds"].forEach((id) => {
+                    if (result.find((a) => a.userId == id) == undefined) {
+                        result.push({ isFollowing: false, isFollowed: false, userId: id })
+                    }
+                })
+                res.status(200).send("{\"followings\": " + JSON.stringify(result) + "}")
+            }
+        }
+        else {
+            req.body["targetUserIds"].forEach((id) => {
+                if (result.find((a) => a.userId == id) == undefined) {
+                    result.push({ isFollowing: false, isFollowed: false, userId: id })
+                }
+            })
+            res.status(200).send("{\"followings\": " + JSON.stringify(result) + "}")
+        }
+    }
+})
+
 app.get("/user/following-exists", async (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     if (joining) {
@@ -10448,10 +10602,12 @@ app.get("/user/get-friendship-count", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"success\": true, \"message\": \"Success\", \"count\": 0}")
 })
+
 app.post("/user/request-friendship", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.status(200).send("{\"success\":true, \"message\":\"Success\"}")
 })
+
 app.post("/v1/batch", (req, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
     res.setHeader("cache-control", "no-cache")
@@ -10463,6 +10619,14 @@ app.post("/v1/batch", (req, res) => {
             }
             else {
                 unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/HeadShot.ashx?userId=" + req.body[i].targetId + "\", \"version\": \"TN3\" },"
+            }
+        }
+        else if (req.body[i]["type"] == "Avatar") {
+            if (i + 1 == Object.keys(req.body).length) {
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/Avatar.ashx?userId=" + req.body[i].targetId + "\", \"version\": \"TN3\" }"
+            }
+            else {
+                unfinishedstring += " {\"requestId\": \"" + req.body[i].requestId + "\", \"errorCode\": 0, \"errorMessage\": \"\", \"targetId\": " + req.body[i].targetId + ", \"state\": \"Completed\", \"imageUrl\": \"http://reblox.zip/Thumbs/Avatar.ashx?userId=" + req.body[i].targetId + "\", \"version\": \"TN3\" },"
             }
         }
         else if (req.body[i]["type"] == "GameIcon") {
@@ -10623,6 +10787,12 @@ app.get("/v1/locales", (req, res) => {
     res.status(200).send("{\"data\": [{\"locale\":{\"id\":1, \"locale\":\"en_us\", \"name\": \"English (United States)\", \"nativeName\":\"English (United States)\",\"language\":{\"id\":41,\"name\":\"English\",\"nativeName\":\"English\",\"languageCode\":\"en\", \"isRightToLeft\": false}},\"isEnabledForFullExperience\":true,\"IsEnabledForSignupAndLogin\":true,\"IsEnabledForInGameUgc\":true}]}")
 })
 
+app.post("/v1/logout", (_, res) => {
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+    res.status(200).send("{}")
+})
+
 app.get("/v1/game-localization-roles/games/:id/current-user/roles", (req, res) => {
     res.setHeader("cache-control", "no-cache")
 
@@ -10654,6 +10824,19 @@ app.get("/v2/users/:id/inventory/:typeid", (_, res) => {
     res.setHeader("content-type", "application/json; charset=utf-8")
 
     res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}") //STUB
+})
+
+app.get("/v2/users/:id/inventory/", (_, res) => {
+    res.setHeader("cache-control", "no-cache")
+    res.setHeader("content-type", "application/json; charset=utf-8")
+
+    res.status(200).send("{\"previousPageCursor\": null, \"nextPageCursor\": null, \"data\": []}") //STUB
+})
+
+app.get("/users/:id/profile", (_, res) => {
+    res.setHeader("cache-control", "no-cache")
+
+    res.status(200).send("<pre>*insert profile here*</pre>")
 })
 
 if (renderAvatar) {
@@ -10776,6 +10959,7 @@ if (renderAvatar) {
         }
     })
 }
+
 app.use((req, res) => {
     // res.setHeader("cache-control", "no-cache")
     res.status(501).end();

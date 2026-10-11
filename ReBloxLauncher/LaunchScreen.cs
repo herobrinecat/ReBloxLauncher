@@ -799,8 +799,37 @@ namespace ReBloxLauncher
             }
         }
 
+        public bool smartHostDetector()
+        {
+            string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip", "gametest.reblox.zip" };
+            string[] hosts = File.ReadAllLines(@"C:\Windows\System32\drivers\etc\hosts");
+
+            List<string> neededEdits = new List<string>();
+            neededEdits.AddRange(urls);
+            for (int i = 0; i < hosts.Length; i++)
+            {
+                for (int x = 0; x < urls.Length; x++)
+                {
+                    if (hosts[i] == "127.0.0.1 " + urls[x])
+                    {
+                        neededEdits.Remove(urls[x]);
+                    }
+                }
+            }
+
+            if (neededEdits.Count > 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
         private void LaunchScreen_Load(object sender, EventArgs e)
         {
+            ServerUtils.SetDataFolder(datafolder);
             ServerUtils.StartServerCom();
             if (File.Exists(datafolder + @"\clients\" + robloxversion + @"\ReBlox.ini"))
             {
@@ -884,7 +913,7 @@ namespace ReBloxLauncher
             {
                 try
                 {
-                    if (File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts").Contains("\r\n127.0.0.1 reblox.zip\r\n127.0.0.1 www.reblox.zip\r\n127.0.0.1 api.reblox.zip\r\n127.0.0.1 assetgame.reblox.zip\r\n127.0.0.1 auth.reblox.zip\r\n127.0.0.1 assetdelivery.reblox.zip\r\n127.0.0.1 develop.reblox.zip\r\n127.0.0.1 clientsettings.api.reblox.zip\r\n127.0.0.1 gamepersistence.reblox.zip\r\n127.0.0.1 avatar.reblox.zip\r\n127.0.0.1 thumbnails.reblox.zip\r\n127.0.0.1 groups.reblox.zip\r\n127.0.0.1 clientsettingscdn.reblox.zip\r\n127.0.0.1 catalog.reblox.zip\r\n127.0.0.1 apis.reblox.zip\r\n127.0.0.1 games.reblox.zip\r\n127.0.0.1 friends.reblox.zip\r\n127.0.0.1 economy.reblox.zip\r\n127.0.0.1 badges.reblox.zip\r\n127.0.0.1 users.reblox.zip\r\n127.0.0.1 locale.reblox.zip\r\n127.0.0.1 versioncompatibility.api.reblox.zip\r\n127.0.0.1 data.reblox.zip\r\n127.0.0.1 abtesting.reblox.zip\r\n127.0.0.1 inventory.reblox.zip\r\n127.0.0.1 premiumfeatures.reblox.zip\r\n127.0.0.1 chat.reblox.zip\r\n127.0.0.1 gameinternationalization.reblox.zip\r\n127.0.0.1 publish.reblox.zip\r\n127.0.0.1 translationroles.reblox.zip\r\n127.0.0.1 voice.reblox.zip") == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
+                    if (smartHostDetector() == false && Properties.Settings.Default.UsePatchInStudio == true && (WineDetector.IsRunningOnWine() == false))
                     {
                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                         {
@@ -1085,6 +1114,7 @@ namespace ReBloxLauncher
                 }
             });
             thread.TrySetApartmentState(ApartmentState.MTA);
+            thread.IsBackground = true;
             thread.Start();
         }
 

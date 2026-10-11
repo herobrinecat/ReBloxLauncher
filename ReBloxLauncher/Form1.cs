@@ -715,8 +715,11 @@ namespace ReBloxLauncher
                                             }
                                         }
                                     }
-                                    totalAssets++;
-                                    if (Properties.Settings.Default.AssetPackEnabled.Length > 0) progressBar1.Invoke(new Action(() => { progressBar1.Value++; }));
+                                    if (IsDigitsOnly(Path.GetFileNameWithoutExtension(files[i])))
+                                    {
+                                        totalAssets++;
+                                        if (Properties.Settings.Default.AssetPackEnabled.Length > 0) progressBar1.Invoke(new Action(() => { progressBar1.Value++; }));
+                                    }
                                 }
                                 else
                                 {
@@ -1147,6 +1150,7 @@ namespace ReBloxLauncher
                     checkBox18.Checked = Properties.Settings.Default.NewAssetSystem;
                     checkBox19.Checked = Properties.Settings.Default.LongUserIdExperiment;
                     checkBox20.Checked = Properties.Settings.Default.RenderAvatarExperiment;
+                    checkBox21.Checked = Properties.Settings.Default.TelemetryEnabled;
                     checkBox22.Checked = Properties.Settings.Default.PrivateServer;
                     checkBox25.Checked = Properties.Settings.Default.KeepAvatars;
                     comboBox1.SelectedIndex = Properties.Settings.Default.avatarR15 ? 1 : 0;
@@ -1208,8 +1212,8 @@ namespace ReBloxLauncher
                         comboBox4.Visible = false;
                         pictureBox4.Visible = true;
                         pictureBox5.Visible = true;
-                        pictureBox6.Visible = false;
                         button29.Visible = false;
+                        pictureBox6.Visible = false;
                         label16.Text = "Choose Your Character";
                     }
 
@@ -1671,7 +1675,8 @@ namespace ReBloxLauncher
             control.Invoke(new Action(() => { rgb = control.ForeColor; }));
             if (overrideThread)
             {
-                try {
+                try
+                {
                     for (int i = 0; i < fadeThread.Count; i++)
                     {
                         if (i < fadeThread.Count)
@@ -1682,15 +1687,17 @@ namespace ReBloxLauncher
                                 {
                                     fadeThread[i].Item1.Abort();
                                     fadeThread[i].Item1.Join(0);
-    
+
                                     fadeThread.RemoveAt(i);
                                     i--;
                                 }
                             }
                         }
+
                     }
                 }
-                catch {
+                catch
+                {
                     //ignore
                 }
             }
@@ -2593,7 +2600,7 @@ namespace ReBloxLauncher
         {
             if (IsAdministrator())
             {
-                string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip" };
+                string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip", "gametest.reblox.zip" };
                 string[] hosts = File.ReadAllLines(@"C:\Windows\System32\drivers\etc\hosts");
 
                 List<string> neededEdits = new List<string>();
@@ -2622,7 +2629,7 @@ namespace ReBloxLauncher
         {
             if (IsAdministrator())
             {
-                string[] urls = new string[] { "assetgame.roblox.com", "api.roblox.com", "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip" };
+                string[] urls = new string[] { "assetgame.roblox.com", "api.roblox.com", "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip", "gametest.reblox.zip" };
                 string hosts = File.ReadAllText(@"C:\Windows\System32\drivers\etc\hosts");
 
                 for (int i = 0; i < urls.Length; i++)
@@ -2640,7 +2647,7 @@ namespace ReBloxLauncher
 
         public bool smartHostDetector()
         {
-            string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip" };
+            string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip", "gametest.reblox.zip" };
             string[] hosts = File.ReadAllLines(@"C:\Windows\System32\drivers\etc\hosts");
 
             List<string> neededEdits = new List<string>();
@@ -2668,7 +2675,7 @@ namespace ReBloxLauncher
 
         public bool smartHostDetectorAny()
         {
-            string[] urls = new string[] { "api.roblox.com", "assetgame.roblox.com", "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip" };
+            string[] urls = new string[] { "api.roblox.com", "assetgame.roblox.com", "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip", "gametest.reblox.zip"};
             string[] hosts = File.ReadAllLines(@"C:\Windows\System32\drivers\etc\hosts");
 
             List<string> neededEdits = new List<string>();
@@ -2752,8 +2759,6 @@ namespace ReBloxLauncher
             {
                 Console.WriteLine("<ERROR> Something went wrong while looking for servers! " + e);
             }
-
-
         }
 
         /*public void SearchNetworks(bool limitServersByLauncherVersion = false)
@@ -3099,6 +3104,7 @@ namespace ReBloxLauncher
                         button8.Invoke(new Action(() => { button8.Enabled = false; }));
                         button27.Invoke(new Action(() => { button27.Enabled = false; }));
                         statusText.Invoke(new Action(() => { statusText.Visible = true; }));
+                        statusText.Invoke(new Action(() => { statusText.ForeColor = Color.White; }));
                         Process[] processes = Process.GetProcessesByName("node");
                         if (processes.Length > 0)
                         {
@@ -9209,9 +9215,8 @@ namespace ReBloxLauncher
                                     button3.Invoke(new Action(() => { button3.Enabled = true; }));
                                     button27.Invoke(new Action(() => { button27.Enabled = true; }));
                                     rendering = false;
-                                    await Task.Delay(3000);
-                                    statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                                    statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                                    await Task.Delay(1500);
+                                    FadeOutControl(statusText, this.BackColor);
                                 }
                             }
                             else
@@ -9240,9 +9245,8 @@ namespace ReBloxLauncher
                             button27.Invoke(new Action(() => { button27.Enabled = true; }));
                             rendering = false;
                             MessageBox.Show("Rendering on RCCService requires changing your hosts file!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            await Task.Delay(3000);
-                            statusText.Invoke(new Action(() => { statusText.Visible = false; }));
-                            statusText.Invoke(new Action(() => { statusText.Text = ""; }));
+                            await Task.Delay(1500);
+                            FadeOutControl(statusText, this.BackColor);
                         }
                     }
                     else
@@ -9788,7 +9792,7 @@ namespace ReBloxLauncher
 
         private void button30_Click(object sender, EventArgs e)
         {
-            new FeatureSelect(loadedFeatures, Properties.Settings.Default.lastselectedversion).Show();
+            new FeatureSelect(loadedFeatures, Properties.Settings.Default.lastselectedversion).ShowDialog();
         }
 
         private void checkBox21_CheckedChanged(object sender, EventArgs e)
