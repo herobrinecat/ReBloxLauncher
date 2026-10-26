@@ -2636,7 +2636,7 @@ app.get("/Thumbs/Asset.ashx", (req, res) => {
     res.setHeader("cache-control", "no-cache")
     var assetfound = false
     var assetfound1 = false
-    if (isNumeric((((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID))) && (req.query.format == "png" || req.query.format == "jpeg" || req.query.format == "webp")) {
+    if (isNumeric((((req.query.assetid != undefined) ? req.query.assetid : (req.query.assetId != undefined) ? req.query.assetId : req.query.AssetID))) && (req.query.format == "png" || req.query.format == "jpeg" || req.query.format == "webp" || req.query.format == undefined)) {
 
 
         if (verbose) {
