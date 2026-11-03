@@ -105,6 +105,7 @@ namespace ReBloxLauncher
         List<(Thread, Control)> fadeThread = new List<(Thread, Control)>();
         string[] loadedFeatures = new string[] { };
         public bool allowImages = false;
+        List<string> acknowlodgedWarningVersion = new List<string>();
 
         //Functions
         [DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
@@ -1650,14 +1651,14 @@ namespace ReBloxLauncher
 
                         using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
                         {
-                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (guestMode ? guestUsername : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (guestMode ? "None" : Properties.Settings.Default.Membership).Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!guestMode == false && Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (guestMode ? guestUsername : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (guestMode ? "None" : Properties.Settings.Default.Membership).Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!guestMode == false && Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
                         }
                     }
                     else
                     {
                         using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
                         {
-                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (guestMode ? guestUsername : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (guestMode ? "None" : Properties.Settings.Default.Membership).Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!guestMode == false && Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (guestMode ? guestUsername : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (guestMode ? guestUserId : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId)) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (guestMode ? "None" : Properties.Settings.Default.Membership).Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + (!guestMode == false && Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
                         }
                     }
                 }
@@ -2202,7 +2203,7 @@ namespace ReBloxLauncher
                     string rawJSON = client.DownloadString(updateurl + @"/updates/version.json");
                     Newtonsoft.Json.Linq.JObject jObject = Newtonsoft.Json.Linq.JObject.Parse(rawJSON);
 
-                    if ((Properties.Settings.Default.isBeta ? (string)jObject["betaLauncherVersion"] : (string)jObject["launcherVersion"]) != Properties.Settings.Default.version)
+                    if ((Properties.Settings.Default.isBeta ? (string)jObject["betaLauncherVersion"] : (string)jObject["launcherVersion"]) != Properties.Settings.Default.version || (int)jObject["minorVersion"] != Properties.Settings.Default.minorVersion)
                     {
                         Console.WriteLine("<INFO> Update is available for the ReBlox Launcher!");
                         return true;
@@ -3168,7 +3169,7 @@ namespace ReBloxLauncher
             }
         }
 
-        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private async void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             try
             {
@@ -3357,7 +3358,17 @@ namespace ReBloxLauncher
                                 }
                                 else if (config[i].Trim() == "HasSecurityVulnerability=true")
                                 {
-                                    MessageBox.Show("This client version that you have selected appears to have security vulnerabilities, which could put your PC at risk! Please be careful when using this client, especially when hosting/joining a public server!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                    if (acknowlodgedWarningVersion.Contains(Properties.Settings.Default.lastselectedversion) == false)
+                                    {
+                                        while (starting == true)
+                                        {
+                                            await Task.Delay(250);
+                                        }
+                                        if (MessageBox.Show("This client version that you have selected appears to have security vulnerabilities, which could put your PC at risk! Please be careful when using this client, especially when hosting/joining a public server!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Warning) == DialogResult.OK)
+                                        {
+                                            acknowlodgedWarningVersion.Add(Properties.Settings.Default.lastselectedversion);
+                                        }
+                                    }
                                 }
                                 else if (config[i].Trim() == "Type=RCCService")
                                 {
@@ -3591,10 +3602,6 @@ namespace ReBloxLauncher
                         else if (config[i].Trim() == "DontLoadMapFromArgument=true")
                         {
                             dontLoadMapFromArgument = true;
-                        }
-                        else if (config[i].Trim() == "HasSecurityVulnerability=true")
-                        {
-                            MessageBox.Show("This client version that you have selected appears to have security vulnerabilities, which could put your PC at risk! Please be careful when using this client, especially when hosting/joining a public server!", aprilFools ? "Sodikm Premium" : "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
                         else if (config[i].Trim() == "Type=RCCService")
                         {
@@ -10002,6 +10009,11 @@ namespace ReBloxLauncher
                 Properties.Settings.Default.KeepAvatars = checkBox25.Checked;
                 Properties.Settings.Default.Save();
             }
+        }
+
+        private void label45_Click(object sender, EventArgs e)
+        {
+            Process.Start(updateurl + "/privacypolicy");
         }
     }
 }

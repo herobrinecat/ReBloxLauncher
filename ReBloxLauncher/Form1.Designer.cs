@@ -195,6 +195,7 @@
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.openFileDialog2 = new System.Windows.Forms.OpenFileDialog();
+            this.label45 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -461,6 +462,7 @@
             // panel2
             // 
             this.panel2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.panel2.Controls.Add(this.label45);
             this.panel2.Controls.Add(this.ExperimentsPanel);
             this.panel2.Controls.Add(this.button22);
             this.panel2.Controls.Add(this.UpdatePage);
@@ -2307,6 +2309,19 @@
             this.openFileDialog2.Filter = "RBCF files|*.rbcf";
             this.openFileDialog2.Title = "Import a character from";
             // 
+            // label45
+            // 
+            this.label45.AutoSize = true;
+            this.label45.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.label45.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Underline);
+            this.label45.ForeColor = System.Drawing.Color.DodgerBlue;
+            this.label45.Location = new System.Drawing.Point(285, 336);
+            this.label45.Name = "label45";
+            this.label45.Size = new System.Drawing.Size(95, 17);
+            this.label45.TabIndex = 34;
+            this.label45.Text = "Privacy Policy";
+            this.label45.Click += new System.EventHandler(this.label45_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -2566,6 +2581,7 @@
         private System.Windows.Forms.SaveFileDialog saveFileDialog1;
         private System.Windows.Forms.OpenFileDialog openFileDialog2;
         private System.Windows.Forms.CheckBox checkBox25;
+        private System.Windows.Forms.Label label45;
     }
 }
 

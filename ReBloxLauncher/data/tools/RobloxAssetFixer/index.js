@@ -77,6 +77,8 @@ var assetPackList = []
 var secretKey = "thisisarebloxprivatekeyforjwtchange" //A signature for .ROBLOSECURITY
 var renderAvatar = false //Allows a endpoint meant for setting headshot and full-body images
 var clientVersion = "2021E"
+const nodePatched = zlib.constants.BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH !== undefined;
+
 if (filesystem.existsSync(privateKey)) {
     publicKeyObj = crypto.createPublicKey({
         key: filesystem.readFileSync(privateKey),
@@ -406,6 +408,7 @@ checkInternet().then((result) => {
     }
 })
 
+if (nodePatched == false) console.log("\x1b[33m%s\x1b[0m", "<WARN> The Node.js version you're using appears to be vulnerable to CVE-2026-111497. Please update your Node.js version to either above 22.23.4, 24.22.1, or 26.12.1.")
 console.log("<INFO> Username: " + username)
 console.log("<INFO> User ID: " + userId)
 console.log("<INFO> Account Age: " + ((accountOver13) ? "13+" : "<13"))
