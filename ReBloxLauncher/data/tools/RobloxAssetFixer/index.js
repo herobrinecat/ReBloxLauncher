@@ -8742,7 +8742,7 @@ app.get("/Friend/AreFriends", async (req, res) => {
         var verified = false
         var friendsarray = (req.query.otherUserIds.includes(",")) ? req.query.otherUserIds.split(",") : req.query.otherUserIds
         var friendsExistsList = []
-        if (enableDataStore == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
+        if (enableFriendships == true && RBDFpath != "" && RBDFpath.endsWith(".rbdf")) {
             if (filesystem.existsSync(RBDFpath)) {
                 const stream = filesystem.createReadStream(RBDFpath)
 
