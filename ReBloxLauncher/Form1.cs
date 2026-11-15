@@ -1160,7 +1160,7 @@ namespace ReBloxLauncher
                     textBox4.ReadOnly = guestMode;
                     textBox5.ReadOnly = guestMode;
                     checkBox5.Enabled = !guestMode;
-                    button5.Visible = Properties.Settings.Default.CADontShow && caInstalled;
+                    button5.Visible = !caInstalled;
                     button25.Visible = Properties.Settings.Default.RenderAvatarExperiment && guestMode == false;
                     button26.Visible = Properties.Settings.Default.RenderAvatarExperiment && guestMode == false;
                     numericUpDown1.Value = Properties.Settings.Default.HeadColor;
