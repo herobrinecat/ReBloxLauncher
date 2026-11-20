@@ -14,6 +14,9 @@ namespace ReBloxLauncher
     {
         string[] allowedFeatures;
         string clientVersion;
+
+        string[] numberFlags = new string[] { "ChangeMaxPlayers" };
+        (int, int, int)[] maxMinDefaultNumberFlags = new (int, int, int)[] { (1000, 1, 15) };
         public FeatureSelect()
         {
             InitializeComponent();
@@ -46,7 +49,7 @@ namespace ReBloxLauncher
             public VersionFlag[] data { get; set; }
         }
 
-        private bool SaveFlag(string version, string flag)
+        private bool SaveFlag(string version, string flag, object value = null)
         {
             if (version != "" && flag != "")
             {
@@ -57,7 +60,7 @@ namespace ReBloxLauncher
                         if (Properties.Settings.Default.FeaturesEnabled.EndsWith("}") && Properties.Settings.Default.FeaturesEnabled.StartsWith("{"))
                         {
                             VersionFlags flags = JsonConvert.DeserializeObject<VersionFlags>(Properties.Settings.Default.FeaturesEnabled);
-                            if (flags.data.All(e => e.version == version))
+                            if (flags.data.Any(e => e.version == version))
                             {
                                 for (int i = 0; i < flags.data.Length; i++)
                                 {
@@ -107,9 +110,7 @@ namespace ReBloxLauncher
                             }
                             else
                             {
-                                VersionFlag[] flags1 = new VersionFlag[] { };
-
-                                List<VersionFlag> flagsList = flags1.ToList();
+                                List<VersionFlag> flagsList = flags.data.ToList();
                                 flagsList.Add(new VersionFlag { version = version, flags = flag.Contains(",") ? flag.Split(',') : new string[] { flag } });
 
                                 flags.data = flagsList.ToArray();
@@ -152,6 +153,7 @@ namespace ReBloxLauncher
         private string getDescription(string flag)
         {
             if (flag == "DisableRCCAuth") return "Sets the \"SetIsPlayerAuthenticationRequired\" to false, allowing older launcher versions to join.";
+            if (flag == "ChangeMaxPlayers") return "Change the maximum number of players that can join the server.";
             return flag;
         }
 
@@ -223,21 +225,46 @@ namespace ReBloxLauncher
                 descriptionLabel.ForeColor = Color.White;
                 descriptionLabel.Name = "description" + i.ToString();
                 descriptionLabel.Size = new Size(243, 69);
-                CheckBox enableBox = new CheckBox();
-                enableBox.Text = "Enable";
-                enableBox.Font = new Font("Arial", 8.25f, FontStyle.Regular, GraphicsUnit.Point);
-                enableBox.Location = new Point(9, 120);
-                enableBox.AutoSize = true;
-                enableBox.ForeColor = Color.White;
-                enableBox.Tag = allowedFeatures[i];
-                enableBox.Name = "checkBox" + i.ToString();
-                enableBox.Checked = CheckFlag(clientVersion, allowedFeatures[i]);
-                enableBox.CheckedChanged += EnableBox_CheckedChanged;
+                if (numberFlags.Contains(allowedFeatures[i]))
+                {
+                    NumericUpDown numberBox = new NumericUpDown();
+                    numberBox.Font = new Font("Arial", 8.25f, FontStyle.Regular, GraphicsUnit.Point);
+                    numberBox.Location = new Point(9, 120);
+                    numberBox.AutoSize = true;
+                    numberBox.ForeColor = Color.White;
+                    numberBox.Tag = allowedFeatures[i];
+                    numberBox.Name = "checkBox" + i.ToString();
+                    numberBox.Value = maxMinDefaultNumberFlags[Array.IndexOf(numberFlags, allowedFeatures[i])].Item3;
+                    numberBox.Maximum = maxMinDefaultNumberFlags[Array.IndexOf(numberFlags, allowedFeatures[i])].Item1;
+                    numberBox.Minimum = maxMinDefaultNumberFlags[Array.IndexOf(numberFlags, allowedFeatures[i])].Item2;
+                    numberBox.ValueChanged += NumberBox_ValueChanged;
+                    panel.Controls.Add(numberBox);
+                }
+                else
+                {
+                    CheckBox enableBox = new CheckBox();
+                    enableBox.Text = "Enable";
+                    enableBox.Font = new Font("Arial", 8.25f, FontStyle.Regular, GraphicsUnit.Point);
+                    enableBox.Location = new Point(9, 120);
+                    enableBox.AutoSize = true;
+                    enableBox.ForeColor = Color.White;
+                    enableBox.Tag = allowedFeatures[i];
+                    enableBox.Name = "checkBox" + i.ToString();
+                    enableBox.Checked = CheckFlag(clientVersion, allowedFeatures[i]);
+                    enableBox.CheckedChanged += EnableBox_CheckedChanged;
+                    panel.Controls.Add(enableBox);
+                }
                 panel.Controls.Add(titleLabel);
                 panel.Controls.Add(descriptionLabel);
-                panel.Controls.Add(enableBox);
+                
                 this.Controls.Add(panel);
             }    
+        }
+
+        private void NumberBox_ValueChanged(object sender, EventArgs e)
+        {
+            NumericUpDown numberbox = sender as NumericUpDown;
+            SaveFlag(clientVersion, (string)numberbox.Tag, numberbox.Value);
         }
 
         private void EnableBox_CheckedChanged(object sender, EventArgs e)

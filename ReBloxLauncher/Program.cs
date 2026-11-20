@@ -65,18 +65,18 @@ namespace ReBloxLauncher
         {
             AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
-                Console.WriteLine("<ERROR> Something went wrong in the launcher that's not handled on the main thread! The error can be seen below:\r\n" + e.ExceptionObject.ToString());
+                TelemetryHandler.LogText(2, "Something went wrong in the launcher that's not handled on the main thread! The error can be seen below:\r\n" + e.ExceptionObject.ToString(), "Launcher");
             };
 
             TaskScheduler.UnobservedTaskException += (sender, e) =>
             {
-                Console.WriteLine("<ERROR> Something went wrong in the launcher that's not observed! The error can be seen below:\r\n" + e.Exception);
+                TelemetryHandler.LogText(2, "Something went wrong in the launcher that's not observed! The error can be seen below:\r\n" + e.Exception, "Launcher");
                 e.SetObserved();
             };
 
             Application.ThreadException += (sender, e) =>
             {
-                Console.WriteLine("<ERROR> Something went wrong in the launcher that's not handled! The error can be seen below:\r\n" + e.Exception);
+                TelemetryHandler.LogText(2, "Something went wrong in the launcher that's not handled! The error can be seen below:\r\n" + e.Exception, "Launcher");
             };
 
             if (Directory.Exists(Path.GetDirectoryName(Application.ExecutablePath) + @"\logs"))
@@ -107,8 +107,8 @@ namespace ReBloxLauncher
                     {
                         Console.SetOut(writer);
                         Console.WriteLine("ReBlox Launcher Log (" + DateTime.Now.ToString("D") + ")\r\n");
-                        Console.WriteLine("<INFO> Logging has started!");
-                        Console.WriteLine("<INFO> ReBlox Version: " + Properties.Settings.Default.version);
+                        TelemetryHandler.LogText(0, "Logging has started!", "Logging");
+                        TelemetryHandler.LogText(0, "ReBlox Version: " + Properties.Settings.Default.version, "Logging");
                     }
                 }
             }
@@ -120,7 +120,7 @@ namespace ReBloxLauncher
 
         private static void Application_ApplicationExit(object sender, EventArgs e)
         {
-            Console.WriteLine("<INFO> Ending logging session");
+            TelemetryHandler.LogText(0, "Ending logging session...", "Logging");
             try
             {
                 if (Console.Out != oldOut)

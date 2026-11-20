@@ -25,7 +25,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1330")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.0.1335")]
         public string version {
             get {
                 return ((string)(this["version"]));
@@ -539,7 +539,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool isBeta {
             get {
                 return ((bool)(this["isBeta"]));
@@ -548,7 +548,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int minorVersion {
             get {
                 return ((int)(this["minorVersion"]));
@@ -629,7 +629,7 @@ namespace ReBloxLauncher.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool NewAssetSystem {
             get {
                 return ((bool)(this["NewAssetSystem"]));
@@ -648,6 +648,29 @@ namespace ReBloxLauncher.Properties {
             }
             set {
                 this["KeepAvatars"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool SOAPCom {
+            get {
+                return ((bool)(this["SOAPCom"]));
+            }
+            set {
+                this["SOAPCom"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public global::System.Collections.Specialized.StringCollection SavedServers {
+            get {
+                return ((global::System.Collections.Specialized.StringCollection)(this["SavedServers"]));
+            }
+            set {
+                this["SavedServers"] = value;
             }
         }
     }

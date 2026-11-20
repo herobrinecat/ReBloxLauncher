@@ -155,7 +155,7 @@ namespace ReBloxLauncher
                                                 headshotBase64 = uncompressedBase64;
                                             }
                                             else {
-                                                Console.WriteLine("<WARN> Expecting 1-2 image(s), got " + imagecount + " images, skipping...");
+                                                TelemetryHandler.LogText(1, "Expecting 1-2 image(s), got " + imagecount + " images, skipping...", "CharacterImporter");
                                             }
                                         }
                                     }

@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="version" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">0.0.1330</Value>
+      <Value Profile="(Default)">0.0.1335</Value>
     </Setting>
     <Setting Name="lastselectedversion" Type="System.String" Scope="User">
       <Value Profile="(Default)">2017L</Value>
@@ -132,10 +132,10 @@
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="isBeta" Type="System.Boolean" Scope="Application">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="minorVersion" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">2</Value>
+      <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="firstTime" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
@@ -156,10 +156,16 @@
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="NewAssetSystem" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="KeepAvatars" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SOAPCom" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="SavedServers" Type="System.Collections.Specialized.StringCollection" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

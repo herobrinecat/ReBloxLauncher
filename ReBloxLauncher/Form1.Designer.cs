@@ -50,6 +50,7 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.label5 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.label45 = new System.Windows.Forms.Label();
             this.ExperimentsPanel = new System.Windows.Forms.Panel();
             this.checkBox23 = new System.Windows.Forms.CheckBox();
             this.checkBox20 = new System.Windows.Forms.CheckBox();
@@ -95,6 +96,7 @@
             this.label10 = new System.Windows.Forms.Label();
             this.checkBox5 = new System.Windows.Forms.CheckBox();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.button32 = new System.Windows.Forms.Button();
             this.button16 = new System.Windows.Forms.Button();
             this.button15 = new System.Windows.Forms.Button();
             this.label31 = new System.Windows.Forms.Label();
@@ -156,6 +158,9 @@
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.tabPage4 = new System.Windows.Forms.TabPage();
             this.tabPage7 = new System.Windows.Forms.TabPage();
+            this.checkBox26 = new System.Windows.Forms.CheckBox();
+            this.textBox7 = new System.Windows.Forms.TextBox();
+            this.button31 = new System.Windows.Forms.Button();
             this.checkBox22 = new System.Windows.Forms.CheckBox();
             this.checkBox16 = new System.Windows.Forms.CheckBox();
             this.label35 = new System.Windows.Forms.Label();
@@ -192,10 +197,11 @@
             this.fadeImageTimer = new System.Windows.Forms.Timer(this.components);
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.button28 = new System.Windows.Forms.Button();
-            this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.openFileDialog2 = new System.Windows.Forms.OpenFileDialog();
-            this.label45 = new System.Windows.Forms.Label();
+            this.pictureBox2 = new System.Windows.Forms.PictureBox();
+            this.button33 = new System.Windows.Forms.Button();
+            this.button34 = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -235,11 +241,11 @@
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F);
+            this.label1.Font = new System.Drawing.Font("Arial", 24F);
             this.label1.ForeColor = System.Drawing.Color.White;
-            this.label1.Location = new System.Drawing.Point(208, 19);
+            this.label1.Location = new System.Drawing.Point(216, 17);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(117, 37);
+            this.label1.Size = new System.Drawing.Size(114, 36);
             this.label1.TabIndex = 0;
             this.label1.Text = "ReBlox";
             // 
@@ -250,7 +256,7 @@
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
             this.label2.ForeColor = System.Drawing.Color.White;
-            this.label2.Location = new System.Drawing.Point(229, 53);
+            this.label2.Location = new System.Drawing.Point(235, 51);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(78, 20);
             this.label2.TabIndex = 1;
@@ -479,6 +485,19 @@
             this.panel2.Size = new System.Drawing.Size(526, 372);
             this.panel2.TabIndex = 15;
             // 
+            // label45
+            // 
+            this.label45.AutoSize = true;
+            this.label45.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.label45.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Underline);
+            this.label45.ForeColor = System.Drawing.Color.DodgerBlue;
+            this.label45.Location = new System.Drawing.Point(285, 336);
+            this.label45.Name = "label45";
+            this.label45.Size = new System.Drawing.Size(95, 17);
+            this.label45.TabIndex = 38;
+            this.label45.Text = "Privacy Policy";
+            this.label45.Click += new System.EventHandler(this.label45_Click);
+            // 
             // ExperimentsPanel
             // 
             this.ExperimentsPanel.AutoScroll = true;
@@ -503,12 +522,12 @@
             this.checkBox23.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.checkBox23.Location = new System.Drawing.Point(20, 241);
             this.checkBox23.Name = "checkBox23";
-            this.checkBox23.Size = new System.Drawing.Size(204, 21);
+            this.checkBox23.Size = new System.Drawing.Size(257, 21);
             this.checkBox23.TabIndex = 37;
-            this.checkBox23.Text = "Enable RBDF Binary Format";
+            this.checkBox23.Text = "Use SOAP instead of gameserver.txt";
             this.toolTip1.SetToolTip(this.checkBox23, "Switches from text-based RBDF to binary-based RBDF");
             this.checkBox23.UseVisualStyleBackColor = true;
-            this.checkBox23.Visible = false;
+            this.checkBox23.CheckedChanged += new System.EventHandler(this.checkBox23_CheckedChanged);
             // 
             // checkBox20
             // 
@@ -973,9 +992,9 @@
             this.listBox2.ForeColor = System.Drawing.Color.White;
             this.listBox2.FormattingEnabled = true;
             this.listBox2.ItemHeight = 16;
-            this.listBox2.Location = new System.Drawing.Point(8, 9);
+            this.listBox2.Location = new System.Drawing.Point(7, 41);
             this.listBox2.Name = "listBox2";
-            this.listBox2.Size = new System.Drawing.Size(526, 306);
+            this.listBox2.Size = new System.Drawing.Size(526, 274);
             this.listBox2.TabIndex = 17;
             this.listBox2.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listBox2_DrawItem);
             this.listBox2.SelectedIndexChanged += new System.EventHandler(this.listBox2_SelectedIndexChanged);
@@ -1062,6 +1081,7 @@
             // panel3
             // 
             this.panel3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.panel3.Controls.Add(this.button32);
             this.panel3.Controls.Add(this.button16);
             this.panel3.Controls.Add(this.button15);
             this.panel3.Controls.Add(this.label31);
@@ -1073,6 +1093,21 @@
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(526, 372);
             this.panel3.TabIndex = 20;
+            // 
+            // button32
+            // 
+            this.button32.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.button32.BackColor = System.Drawing.Color.White;
+            this.button32.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F);
+            this.button32.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.button32.Location = new System.Drawing.Point(415, 349);
+            this.button32.Name = "button32";
+            this.button32.Size = new System.Drawing.Size(98, 21);
+            this.button32.TabIndex = 34;
+            this.button32.Text = "Open Folder";
+            this.button32.UseVisualStyleBackColor = false;
+            this.button32.Visible = false;
+            this.button32.Click += new System.EventHandler(this.button32_Click);
             // 
             // button16
             // 
@@ -1837,7 +1872,7 @@
             // label30
             // 
             this.label30.AutoSize = true;
-            this.label30.Location = new System.Drawing.Point(227, 176);
+            this.label30.Location = new System.Drawing.Point(231, 176);
             this.label30.Name = "label30";
             this.label30.Size = new System.Drawing.Size(84, 13);
             this.label30.TabIndex = 15;
@@ -1847,6 +1882,8 @@
             // tabPage2
             // 
             this.tabPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
+            this.tabPage2.Controls.Add(this.button34);
+            this.tabPage2.Controls.Add(this.button33);
             this.tabPage2.Controls.Add(this.button10);
             this.tabPage2.Controls.Add(this.button9);
             this.tabPage2.Controls.Add(this.listBox2);
@@ -1883,6 +1920,9 @@
             // tabPage7
             // 
             this.tabPage7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
+            this.tabPage7.Controls.Add(this.checkBox26);
+            this.tabPage7.Controls.Add(this.textBox7);
+            this.tabPage7.Controls.Add(this.button31);
             this.tabPage7.Controls.Add(this.checkBox22);
             this.tabPage7.Controls.Add(this.checkBox16);
             this.tabPage7.Controls.Add(this.label35);
@@ -1896,6 +1936,46 @@
             this.tabPage7.Size = new System.Drawing.Size(539, 386);
             this.tabPage7.TabIndex = 6;
             this.tabPage7.Text = "Servers";
+            // 
+            // checkBox26
+            // 
+            this.checkBox26.AutoSize = true;
+            this.checkBox26.Checked = true;
+            this.checkBox26.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBox26.Location = new System.Drawing.Point(315, 23);
+            this.checkBox26.Name = "checkBox26";
+            this.checkBox26.Size = new System.Drawing.Size(66, 17);
+            this.checkBox26.TabIndex = 44;
+            this.checkBox26.Text = "Secured";
+            this.toolTip1.SetToolTip(this.checkBox26, "Filter the LAN Servers list to the format of the server. You must refresh the ser" +
+        "ver list for this change to take effect.");
+            this.checkBox26.UseVisualStyleBackColor = true;
+            // 
+            // textBox7
+            // 
+            this.textBox7.Location = new System.Drawing.Point(186, 359);
+            this.textBox7.MaxLength = 15;
+            this.textBox7.Name = "textBox7";
+            this.textBox7.Size = new System.Drawing.Size(98, 20);
+            this.textBox7.TabIndex = 43;
+            this.textBox7.Visible = false;
+            this.textBox7.WordWrap = false;
+            this.textBox7.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox7_KeyDown);
+            this.textBox7.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textBox7_KeyPress);
+            // 
+            // button31
+            // 
+            this.button31.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button31.BackColor = System.Drawing.Color.White;
+            this.button31.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button31.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.button31.Location = new System.Drawing.Point(290, 358);
+            this.button31.Name = "button31";
+            this.button31.Size = new System.Drawing.Size(78, 23);
+            this.button31.TabIndex = 42;
+            this.button31.Text = "Add Server";
+            this.button31.UseVisualStyleBackColor = false;
+            this.button31.Click += new System.EventHandler(this.button31_Click);
             // 
             // checkBox22
             // 
@@ -2285,17 +2365,6 @@
             this.button28.Visible = false;
             this.button28.Click += new System.EventHandler(this.button28_Click);
             // 
-            // pictureBox2
-            // 
-            this.pictureBox2.BackColor = System.Drawing.Color.Transparent;
-            this.pictureBox2.Location = new System.Drawing.Point(206, 18);
-            this.pictureBox2.Name = "pictureBox2";
-            this.pictureBox2.Size = new System.Drawing.Size(127, 34);
-            this.pictureBox2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.pictureBox2.TabIndex = 37;
-            this.pictureBox2.TabStop = false;
-            this.pictureBox2.Visible = false;
-            // 
             // saveFileDialog1
             // 
             this.saveFileDialog1.DefaultExt = "rbcf";
@@ -2309,18 +2378,44 @@
             this.openFileDialog2.Filter = "RBCF files|*.rbcf";
             this.openFileDialog2.Title = "Import a character from";
             // 
-            // label45
+            // pictureBox2
             // 
-            this.label45.AutoSize = true;
-            this.label45.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.label45.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Underline);
-            this.label45.ForeColor = System.Drawing.Color.DodgerBlue;
-            this.label45.Location = new System.Drawing.Point(285, 336);
-            this.label45.Name = "label45";
-            this.label45.Size = new System.Drawing.Size(95, 17);
-            this.label45.TabIndex = 34;
-            this.label45.Text = "Privacy Policy";
-            this.label45.Click += new System.EventHandler(this.label45_Click);
+            this.pictureBox2.BackColor = System.Drawing.Color.Transparent;
+            this.pictureBox2.Location = new System.Drawing.Point(212, 16);
+            this.pictureBox2.Name = "pictureBox2";
+            this.pictureBox2.Size = new System.Drawing.Size(127, 34);
+            this.pictureBox2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox2.TabIndex = 37;
+            this.pictureBox2.TabStop = false;
+            this.pictureBox2.Visible = false;
+            // 
+            // button33
+            // 
+            this.button33.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button33.BackColor = System.Drawing.Color.White;
+            this.button33.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button33.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.button33.Location = new System.Drawing.Point(145, 9);
+            this.button33.Name = "button33";
+            this.button33.Size = new System.Drawing.Size(116, 24);
+            this.button33.TabIndex = 22;
+            this.button33.Text = "Local Maps";
+            this.button33.UseVisualStyleBackColor = false;
+            this.button33.Click += new System.EventHandler(this.button33_Click);
+            // 
+            // button34
+            // 
+            this.button34.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button34.BackColor = System.Drawing.Color.White;
+            this.button34.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button34.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.button34.Location = new System.Drawing.Point(267, 9);
+            this.button34.Name = "button34";
+            this.button34.Size = new System.Drawing.Size(116, 24);
+            this.button34.TabIndex = 23;
+            this.button34.Text = "Published Games";
+            this.button34.UseVisualStyleBackColor = false;
+            this.button34.Click += new System.EventHandler(this.button34_Click);
             // 
             // Form1
             // 
@@ -2582,6 +2677,12 @@
         private System.Windows.Forms.OpenFileDialog openFileDialog2;
         private System.Windows.Forms.CheckBox checkBox25;
         private System.Windows.Forms.Label label45;
+        private System.Windows.Forms.Button button31;
+        private System.Windows.Forms.TextBox textBox7;
+        private System.Windows.Forms.Button button32;
+        private System.Windows.Forms.CheckBox checkBox26;
+        private System.Windows.Forms.Button button34;
+        private System.Windows.Forms.Button button33;
     }
 }
 

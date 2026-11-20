@@ -14,6 +14,32 @@ namespace ReBloxLauncher
 {
     public class TelemetryHandler
     {
+
+        public static void LogText(int code, string text, string category = "")
+        {
+            string convertedCode = "";
+
+            switch (code)
+            {
+                case 1:
+                    convertedCode = "WARN";
+                    break;
+                case 2:
+                    convertedCode = "ERROR";
+                    break;
+                case 3:
+                    convertedCode = "FATAL";
+                    break;
+                default:
+                    convertedCode = "INFO";
+                    break;
+            }
+
+            string currentTime = DateTime.Now.ToString("O");
+
+            Console.WriteLine("<" + convertedCode + " " + category + " " + currentTime + "> " + text);
+        }
+
         private static byte[] GzipCompress(byte[] bytes)
         {
             using (MemoryStream stream = new MemoryStream())
@@ -66,13 +92,14 @@ namespace ReBloxLauncher
                 request.Timeout = timeoutMs;
                 using (var response = (HttpWebResponse)request.GetResponse())
                 {
-                    if (logResult) Console.WriteLine("<INFO> Internet test successful!");
+                    if (logResult) LogText(0, "Internet test successful!", "InternetCheck");
                     return true;
                 }
             }
             catch
             {
-                if (logResult) Console.WriteLine("<INFO> Failed to check the internet, not checking updates...");
+                
+                if (logResult) LogText(1, "Failed to check the internet, not checking updates...", "InternetCheck");
                 return false;
             }
         }
@@ -178,12 +205,12 @@ namespace ReBloxLauncher
                 telemetryResult responseJson = JsonConvert.DeserializeObject<telemetryResult>(responseResult);
                 if (responseJson.success == false)
                 {
-                    Console.WriteLine("<INFO> Something went wrong while trying to send telemetry data as the server returned the reason as \"" + responseJson.message + "\"");
+                    LogText(1, "Something went wrong while trying to send telemetry data as the server returned the reason as \"" + responseJson.message + "\"", "Telemetry");
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine("<INFO> Something went wrong while trying to send telemetry data, please look in the error below:\r\n" + e);
+                LogText(2, "Something went wrong while trying to send telemetry data, please look in the error below:\r\n" + e, "Telemetry");
             }
         }
 

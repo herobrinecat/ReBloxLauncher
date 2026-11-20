@@ -72,7 +72,7 @@ namespace ReBloxLauncher
             info.dwOsVersionInfoSize = (uint)Marshal.SizeOf(info);
             GetVersionEx(ref info);
 
-            return (int)(info.dwMajorVersion) + ((double)(info.dwMinorVersion)/10);
+            return (int)info.dwMajorVersion + ((double)info.dwMinorVersion/10);
         }
     }
 }

@@ -38,7 +38,7 @@
             // 
             // progressBar1
             // 
-            this.progressBar1.Location = new System.Drawing.Point(35, 285);
+            this.progressBar1.Location = new System.Drawing.Point(34, 285);
             this.progressBar1.MarqueeAnimationSpeed = 50;
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(522, 25);
@@ -51,9 +51,9 @@
             this.button1.BackColor = System.Drawing.Color.Transparent;
             this.button1.FlatAppearance.BorderColor = System.Drawing.Color.Silver;
             this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.5F);
+            this.button1.Font = new System.Drawing.Font("Arial", 11.5F);
             this.button1.ForeColor = System.Drawing.SystemColors.WindowFrame;
-            this.button1.Location = new System.Drawing.Point(226, 321);
+            this.button1.Location = new System.Drawing.Point(225, 321);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(140, 36);
             this.button1.TabIndex = 1;
@@ -64,7 +64,7 @@
             // label1
             // 
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label1.Location = new System.Drawing.Point(13, 244);
+            this.label1.Location = new System.Drawing.Point(12, 244);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(567, 23);
             this.label1.TabIndex = 2;
@@ -74,7 +74,7 @@
             // pictureBox1
             // 
             this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
-            this.pictureBox1.Location = new System.Drawing.Point(246, 87);
+            this.pictureBox1.Location = new System.Drawing.Point(245, 87);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(100, 100);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        #toolboxTopBackground { background:rgb(236,236,236); width: 100%; height: 55px; position: relative}
+        #toolboxFooterBackground { background:rgb(236,236,236); width: 100%; height: 30px; bottom: 0; position: fixed}
+        #toolboxFooterBackground p {font-family: sans-serif; font-size: 14px; position: absolute; }
+        .fixpos { margin-left: 7px; margin-top: 15px; float: left}
+        body { margin: 0; padding: 0; overflow-x: hidden; }
+        html,body { margin: 0; padding: 0; overflow-x: hidden; }
+        #searchtext { height: 22px; width: auto; position: absolute; top: 15px; left: 130px; right: 5px; font-family: sans-serif; border: 1px solid #b8b8b8;}
+        .assetitem { display: inline-block }
+        .circlebtn { border: none; border-radius: 100%;}
+        .circlebtn:focus,
+        .circlebtn:active {
+            border: 3px solid #3098E2;
+        }
+    </style>
+    <script type="text/javascript" src="./scripts/toolbox.js"></script>
+</head>
+
+<body>
+    <div id="toolboxTopBackground">
+        <select class="fixpos" style="font-family: sans-serif; max-width: 45%; height: 25px; font-size: 14px; line-height: 22px">
+            <option value="images">Decals</option>
+            <option value="default" selected="selected">Models</option>
+            <option value="setup">ROBLOX Sets</option>
+        </select>
+        <input type="text" id="searchtext">
+        <button style="background: rgb(0,0,0); border: none; height: 22px; width: 22px; right: 9px; top: 16px; position: absolute; background: url(./images/btn-search_glass.png) right center no-repeat white; "/>
+    </div>
+    <br>
+    <center>
+        <button id="treehousebtn" class="assetitem" onclick="insertContent(125459331)">Tree House</button>
+        <button id="swordbtn" class="assetitem" onclick="insertContent(47433)">Sword</button>
+        <button id="rocketbtn" class="assetitem" onclick="insertContent(47637)">Rocket Launcher</button>
+        <button id="nslbtn" class="assetitem" onclick="insertContent(53326)">Natural Spawn Location</button>
+    </center>
+    <div id="toolboxFooterBackground">
+        <p style="float: left; top: -5px; left: 5px">BG</p>
+        <button class="circlebtn" id="whitebtn" style="position: absolute; width: 25px; height: 25px; top: 4.5px; left: 32px; background: white"></button>
+        <button class="circlebtn" id="blackbtn" style="position: absolute; width: 25px; height: 25px; top: 4.5px; left: 64px; background: black"></button>
+        <button class="circlebtn" id="transbtn" style="position: absolute; width: 25px; height: 25px; top: 4.5px; left: 96px; background: url(./images/transparent.png);"></button>
+    </div>
+</body>
+
+</html>

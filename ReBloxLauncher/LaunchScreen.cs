@@ -31,6 +31,10 @@ namespace ReBloxLauncher
         bool useOldSignature = false;
         bool useOldAssetFormat = false;
         bool useSystemNode = false;
+        bool useOldToolbox = false;
+        List<Process> clientProcesses = new List<Process>();
+        System.Timers.Timer timerClient = new System.Timers.Timer(1000);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool IsWow64Process(IntPtr hProcess, out bool wow64Process);
@@ -70,21 +74,21 @@ namespace ReBloxLauncher
                         RSA.ImportCspBlob(Convert.FromBase64String(File.ReadAllText(datafolder + @"\private.txt")));
 
                         string signature1Raw = (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "\n" + Properties.Settings.Default.username + "\n" + "http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "&placeId=1818\nTest\n" + currentUTCDate;
-                        string signature2Raw = (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "\nTest\n" + currentUTCDate;
+                        string signature2Raw = (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + "\n\n" + currentUTCDate;
 
                         byte[] signedSignature1 = RSA.SignData(Encoding.UTF8.GetBytes(signature1Raw), SHA1.Create());
                         byte[] signedSignature2 = RSA.SignData(Encoding.UTF8.GetBytes(signature2Raw), SHA1.Create());
 
                         using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
                         {
-                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + currentUTCDate + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + currentUTCDate + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
                         }
                     }
                     else
                     {
                         using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
                         {
-                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + ipaddr + @""",""ServerPort"":" + port.ToString() + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + Properties.Settings.Default.username + @""",""SeleniumTestMode"":false,""UserId"":" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + (ReserveAssetIdForMap ? placeid : 1) + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + Properties.Settings.Default.Membership.Replace(" ", "") + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":false,""IsUnknownOrUnder13"":" + Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
                         }
                     }
                 }
@@ -192,8 +196,9 @@ namespace ReBloxLauncher
 
         private void Roblox_Exited(object sender, EventArgs e)
         {
+            clientProcesses.Remove(sender as Process);
             Process[] processesr = Process.GetProcessesByName("RobloxStudioBeta");
-            if (processesr.Length <= 0)
+            if (clientProcesses.Count < 1)
             {
                 Process[] processes = Process.GetProcessesByName("node");
                 if (processes.Length > 0)
@@ -777,7 +782,7 @@ namespace ReBloxLauncher
         {
             if (IsAdministrator())
             {
-                string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip" };
+                string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip", "gametest.reblox.zip", "gameinstances.api.reblox.zip", "games.api.reblox.zip", "textfilter.reblox.zip" };
                 string[] hosts = File.ReadAllLines(@"C:\Windows\System32\drivers\etc\hosts");
 
                 List<string> neededEdits = new List<string>();
@@ -801,7 +806,7 @@ namespace ReBloxLauncher
 
         public bool smartHostDetector()
         {
-            string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip", "gametest.reblox.zip" };
+            string[] urls = new string[] { "reblox.zip", "www.reblox.zip", "api.reblox.zip", "assetgame.reblox.zip", "auth.reblox.zip", "assetdelivery.reblox.zip", "develop.reblox.zip", "clientsettings.api.reblox.zip", "gamepersistence.reblox.zip", "avatar.reblox.zip", "thumbnails.reblox.zip", "groups.reblox.zip", "clientsettingscdn.reblox.zip", "catalog.reblox.zip", "apis.reblox.zip", "games.reblox.zip", "friends.reblox.zip", "economy.reblox.zip", "badges.reblox.zip", "users.reblox.zip", "locale.reblox.zip", "versioncompatibility.api.reblox.zip", "data.reblox.zip", "abtesting.reblox.zip", "inventory.reblox.zip", "premiumfeatures.reblox.zip", "chat.reblox.zip", "gameinternationalization.reblox.zip", "publish.reblox.zip", "translationroles.reblox.zip", "voice.reblox.zip", "ecsv2.reblox.zip", "ephemeralcounters.api.reblox.zip", "gametest.reblox.zip", "gameinstances.api.reblox.zip", "games.api.reblox.zip", "textfilter.reblox.zip" };
             string[] hosts = File.ReadAllLines(@"C:\Windows\System32\drivers\etc\hosts");
 
             List<string> neededEdits = new List<string>();
@@ -842,7 +847,7 @@ namespace ReBloxLauncher
                     useNewRoblox = false;
                     useOldAssetFormat = false;
                     useOldSignature = false;
-
+                    useOldToolbox = false;
                     for (int i = 0; i < config.Length; i++)
                     {
 
@@ -897,6 +902,10 @@ namespace ReBloxLauncher
                         {
                             useOldAssetFormat = true;
                         }
+                        else if (config[i].Trim() == "UseOldToolbox=true")
+                        {
+                            useOldToolbox = true;
+                        }
                     }
                 }
                 else
@@ -906,14 +915,16 @@ namespace ReBloxLauncher
                 }
 
             }
-            this.Text = (useNewRoblox ? "Roblox Studio" : "ROBLOX Studio");
+            this.Text = useNewRoblox ? "Roblox Studio" : "ROBLOX Studio";
 
+            timerClient.AutoReset = true;
+            timerClient.Elapsed += TimerClient_Elapsed;
 
             Thread thread = new Thread(async () =>
             {
                 try
                 {
-                    if (smartHostDetector() == false && Properties.Settings.Default.UsePatchInStudio == true && (WineDetector.IsRunningOnWine() == false))
+                    if (smartHostDetector() == false && Properties.Settings.Default.UsePatchInStudio == true && WineDetector.IsRunningOnWine() == false)
                     {
                         if (MessageBox.Show("Wanna edit the hosts file to make sure that decals loads? This is recommended for best experience!\n\nIf you wanna load assets, provide your .ROBLOSECURITY in the settings section and enable Use auth for loading assets. (This will not conflict with your latest Roblox Studio)", "ReBlox", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                         {
@@ -958,14 +969,17 @@ namespace ReBloxLauncher
                                             {
                                                 if (e1.Data != null)
                                                 {
-                                                    if (e1.Data.Contains("<INFO> Started a HTTP"))
+                                                    if (e1.Data.Contains("<INFO> Started a HTTP") || e1.Data.Contains("Http Server started"))
                                                     {
                                                         setupAvatarOnServer();
-                                                        label1.Invoke(new Action(() => { label1.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
+                                                        label1.Invoke(new Action(() => { label1.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                         Process roblox = Process.Start(ps);
                                                         roblox.EnableRaisingEvents = true;
                                                         roblox.Exited += Roblox_Exited;
                                                         test.CancelOutputRead();
+                                                        clientProcesses.Add(roblox);
+                                                        timerClient.Enabled = true;
+                                                        timerClient.Start();
                                                         await Task.Delay(5000);
                                                         this.Invoke(new Action(() => { this.Hide(); }));
                                                     }
@@ -977,10 +991,13 @@ namespace ReBloxLauncher
                                         {
                                             setupAvatarOnServer();
                                             button1.Invoke(new Action(() => { button1.Visible = false; }));
-                                            label1.Invoke(new Action(() => { label1.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
+                                            label1.Invoke(new Action(() => { label1.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                             Process roblox = Process.Start(ps);
                                             roblox.EnableRaisingEvents = true;
                                             roblox.Exited += Roblox_Exited;
+                                            clientProcesses.Add(roblox);
+                                            timerClient.Enabled = true;
+                                            timerClient.Start();
                                             await Task.Delay(5000);
                                             this.Invoke(new Action(() => { this.Hide(); }));
                                         }
@@ -1007,7 +1024,7 @@ namespace ReBloxLauncher
                         else
                         {
                             button1.Invoke(new Action(() => { button1.Visible = false; }));
-                            label1.Invoke(new Action(() => { label1.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
+                            label1.Invoke(new Action(() => { label1.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                             ProcessStartInfo ps = new ProcessStartInfo();
                             ps.FileName = datafolder + @"\clients\" + robloxversion + @"\Studio\RobloxStudioBeta.exe";
                             Process.Start(ps);
@@ -1038,11 +1055,11 @@ namespace ReBloxLauncher
 
                             if (Properties.Settings.Default.useAuth)
                             {
-                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + Properties.Settings.Default.lastselectedversion : "");
+                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser --syncROBLOSECURITYfromLauncher" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + Properties.Settings.Default.lastselectedversion : "") + (useOldToolbox ? " --useOldToolbox" : "");
                             }
                             else
                             {
-                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + Properties.Settings.Default.lastselectedversion : "");
+                                ps1.Arguments = "index.js -username=" + Properties.Settings.Default.username + " -userid=" + (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId) + (Properties.Settings.Default.EnableBadges ? "" : " -disableBadges") + (Properties.Settings.Default.EnableDataStore ? "" : " -disableDataStore") + (Properties.Settings.Default.EnableFollowing ? "" : " -disableFollowing") + (Properties.Settings.Default.EnableFriendships ? "" : " -disableFriendships") + (Properties.Settings.Default.EnableOwnedAssets ? "" : " -disableOwnedAssets") + (Properties.Settings.Default.AccountOver13 ? "" : " -accountUnder13") + " -robux=" + Properties.Settings.Default.Robux + " --allowGetCurrentUser" + (useOldAssetFormat ? " -disableNewSignatureAsset" : "") + (useOldSignature ? " -disableNewSignature" : "") + (Properties.Settings.Default.EnableDataPersistence ? "" : " -disableDataPersistence") + (Properties.Settings.Default.RBDFPath != "default.rbdf" && Properties.Settings.Default.RBDFPath != "" ? " -rbdf=\"" + Properties.Settings.Default.RBDFPath + "\"" : "") + (Properties.Settings.Default.NewAssetSystem ? " --syncAssetPacksfromLauncher -version=" + Properties.Settings.Default.lastselectedversion : "") + (useOldToolbox ? " --useOldToolbox" : "");
                             }
                             ps1.WindowStyle = ProcessWindowStyle.Hidden;
                             ps1.WorkingDirectory = datafolder + @"\tools\RobloxAssetFixer";
@@ -1064,11 +1081,14 @@ namespace ReBloxLauncher
                                                 if (e1.Data.Contains("<INFO> Started a HTTP"))
                                                 {
                                                     setupAvatarOnServer();
-                                                    label1.Invoke(new Action(() => { label1.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
+                                                    label1.Invoke(new Action(() => { label1.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                                     Process roblox = Process.Start(ps);
                                                     roblox.EnableRaisingEvents = true;
                                                     roblox.Exited += Roblox_Exited;
                                                     test.CancelOutputRead();
+                                                    clientProcesses.Add(roblox);
+                                                    timerClient.Enabled = true;
+                                                    timerClient.Start();
                                                     await Task.Delay(5000);
                                                     this.Invoke(new Action(() => { this.Hide(); }));
                                                 }
@@ -1079,20 +1099,26 @@ namespace ReBloxLauncher
                                     else
                                     {
                                         setupAvatarOnServer();
-                                        label1.Invoke(new Action(() => { label1.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
+                                        label1.Invoke(new Action(() => { label1.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                         Process roblox = Process.Start(ps);
                                         roblox.EnableRaisingEvents = true;
                                         roblox.Exited += Roblox_Exited;
+                                        clientProcesses.Add(roblox);
+                                        timerClient.Enabled = true;
+                                        timerClient.Start();
                                         await Task.Delay(5000);
                                         this.Invoke(new Action(() => { this.Hide(); }));
                                     }
                                 }
                                 else
                                 {
-                                    label1.Invoke(new Action(() => { label1.Text = (useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."); }));
+                                    label1.Invoke(new Action(() => { label1.Text = useNewRoblox ? "Starting Roblox..." : "Starting ROBLOX..."; }));
                                     Process roblox = Process.Start(ps);
                                     roblox.EnableRaisingEvents = true;
                                     roblox.Exited += Roblox_Exited;
+                                    clientProcesses.Add(roblox);
+                                    timerClient.Enabled = true;
+                                    timerClient.Start();
                                     await Task.Delay(5000);
                                     this.Invoke(new Action(() => { this.Hide(); }));
                                 }
@@ -1110,12 +1136,45 @@ namespace ReBloxLauncher
                 catch (Exception e1)
                 {
                     MessageBox.Show("Something went wrong while trying to launch Studio, please look in the error message for details: " + e1.Message, "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    Console.WriteLine("<ERROR> Something went wrong when attempting to launch Studio! Please look in the error below and report it to the developer if it's launcher-sided!\n" + e1.Message + "\nStack Trace:\n" + e1.StackTrace);
+                    TelemetryHandler.LogText(2, "Something went wrong when attempting to launch Studio! Please look in the error below and report it to the developer if it's launcher-sided!\n" + e1.Message + "\nStack Trace:\n" + e1.StackTrace, "ClientLaunch");
                 }
             });
             thread.TrySetApartmentState(ApartmentState.MTA);
             thread.IsBackground = true;
             thread.Start();
+        }
+
+        private void TimerClient_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (clientProcesses.Count > 0)
+            {
+                Process[] studios = Process.GetProcessesByName("RobloxStudioBeta");
+                Process[] players = Process.GetProcessesByName("RobloxPlayerBeta");
+
+                for (int i = 0; i < studios.Length; i++)
+                {
+                    if (clientProcesses.Any(process => process.Id == studios[i].Id) == false)
+                    {
+                        var parent = ParentProcessUtilities.GetParentProcess(studios[i].Id);
+                        if (parent != null)
+                        {
+                            if (parent.Id != Process.GetCurrentProcess().Id)
+                            {
+                                for (int y = 0; y < clientProcesses.Count; y++)
+                                {
+                                    if (parent.Id == clientProcesses[y].Id)
+                                    {
+                                        studios[i].EnableRaisingEvents = true;
+                                        studios[i].Exited += Roblox_Exited;
+                                        clientProcesses.Add(studios[i]);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void button1_Click(object sender, EventArgs e)

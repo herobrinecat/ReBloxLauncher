@@ -28,6 +28,7 @@ namespace ReBloxLauncher
         static List<IPAddress> bannedIPs = new List<IPAddress>();
         public static int rccrenderer = 0;
 
+        //ReBlox-specific server utils
         private static string GenerateUUID()
         {
             lock (syncLock)
@@ -85,33 +86,21 @@ namespace ReBloxLauncher
             }
         }
 
-        private static bool CheckForInternetConnection(int timeoutMs = 10000, string url = null, bool logResult = false)
+        private static byte[] HashAndSignBytes(byte[] DataToSign, RSAParameters Key)
         {
             try
             {
-                url ??= CultureInfo.InstalledUICulture switch
+                using (RSACryptoServiceProvider RSAalg = new RSACryptoServiceProvider())
                 {
-                    { Name: var n } when n.StartsWith("fa") => //Iran
-                        "http://www.aparat.com",
-                    { Name: var n } when n.StartsWith("zh") => //China (is there even china users???)
-                        "http://www.baidu.com",
-                    _ =>
-                        "http://www.gstatic.com/generate_204"
-                };
+                    RSAalg.ImportParameters(Key);
 
-                var request = (HttpWebRequest)WebRequest.Create(url);
-                request.KeepAlive = false;
-                request.Timeout = timeoutMs;
-                using (var response = (HttpWebResponse)request.GetResponse())
-                {
-                    if (logResult) Console.WriteLine("<INFO> Internet test successful!");
-                    return true;
+                    return RSAalg.SignData(DataToSign, SHA1.Create());
                 }
             }
-            catch
+            catch (CryptographicException e)
             {
-                if (logResult) Console.WriteLine("<INFO> Failed to check the internet, not checking updates...");
-                return false;
+                Console.WriteLine("<ERROR> " + e.Message);
+                return null;
             }
         }
 
@@ -123,7 +112,7 @@ namespace ReBloxLauncher
             }
         }
 
-        public static void SetupJoinScriptEx(string ipaddr, int port, long userId, string username, ulong placeid, string membership, bool isTeleport = false)
+        public static void SetupJoinScriptEx(string ipaddr, int port, long userId, string username, ulong placeid, string membership, bool isTeleport = false, bool usesNewAvatarAPI = false) // doesn't support 2020 joinscripts yet
         {
             if (Directory.Exists(datafolder + @"\tools\RobloxAssetFixer"))
             {
@@ -138,7 +127,7 @@ namespace ReBloxLauncher
                         string currentUTCDate = DateTime.UtcNow.ToString("G");
                         RSA.ImportCspBlob(Convert.FromBase64String(File.ReadAllText(datafolder + @"\private.txt")));
 
-                        string signature1Raw = userId + "\n" + (username != string.Empty ? username : Properties.Settings.Default.username) + "\n" + "http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + userId + "&placeId=" + placeid + "\nTest\n" + currentUTCDate;
+                        string signature1Raw = userId + "\n" + (username != string.Empty ? username : Properties.Settings.Default.username) + "\n" + (usesNewAvatarAPI ? "http://api.reblox.zip/v1.1/avatar-fetch/?placeId=" + placeid + "&userId=" + userId : "http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + userId + "&placeId=" + placeid) + "\nTest\n" + currentUTCDate;
                         string signature2Raw = userId + "\nTest\n" + currentUTCDate;
 
                         byte[] signedSignature1 = RSA.SignData(Encoding.UTF8.GetBytes(signature1Raw), SHA1.Create());
@@ -146,14 +135,14 @@ namespace ReBloxLauncher
 
                         using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
                         {
-                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + (ipaddr == string.Empty ? "127.0.0.1" : ipaddr) + @""",""ServerPort"":" + (port > 0 ? port : 53640) + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (username != string.Empty ? username : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + userId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + userId + @"&placeId=" + placeid + @""",""ClientTicket"":""" + currentUTCDate + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + placeid + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (membership != "" ? membership : Properties.Settings.Default.Membership.Replace(" ", "")) + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":" + isTeleport.ToString().ToLower() + @",""IsUnknownOrUnder13"":" +  Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + (ipaddr == string.Empty ? "127.0.0.1" : ipaddr) + @""",""ServerPort"":" + (port > 0 ? port : 53640) + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (username != string.Empty ? username : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + userId + @",""SuperSafeChat"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""CharacterAppearance"":""" + (usesNewAvatarAPI ? "http://api.reblox.zip/v1.1/avatar-fetch/?placeId=" + placeid + "&userId=" + userId : "http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + userId + "&placeId=" + placeid) + @""",""ClientTicket"":""" + currentUTCDate + @";" + Convert.ToBase64String(signedSignature1) + @";" + Convert.ToBase64String(signedSignature2) + @""",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + placeid + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (membership != "" ? membership : Properties.Settings.Default.Membership.Replace(" ", "")) + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":" + isTeleport.ToString().ToLower() + @",""IsUnknownOrUnder13"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""GameChatType"":""" + (userId < 1 ? "NoOne" : "AllUsers") + @""",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
                         }
                     }
                     else
                     {
                         using (StreamWriter writer = File.AppendText(datafolder + @"\tools\RobloxAssetFixer\joinscript.txt"))
                         {
-                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + (ipaddr == string.Empty ? "127.0.0.1" : ipaddr) + @""",""ServerPort"":" + (port > 0 ? port : 53640) + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (username != string.Empty ? username : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + userId + @",""SuperSafeChat"":false,""CharacterAppearance"":""http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + userId + @"&placeId=" + placeid + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + placeid + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (membership != "" ? membership : Properties.Settings.Default.Membership.Replace(" ", "")) + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":" + isTeleport.ToString().ToLower() + @",""IsUnknownOrUnder13"":" + Properties.Settings.Default.AccountOver13.ToString().ToLower() + @",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
+                            writer.Write(@"{""ClientPort"":0,""MachineAddress"":""" + (ipaddr == string.Empty ? "127.0.0.1" : ipaddr) + @""",""ServerPort"":" + (port > 0 ? port : 53640) + @",""PingUrl"":"""",""PingInterval"":120,""UserName"":""" + (username != string.Empty ? username : Properties.Settings.Default.username) + @""",""SeleniumTestMode"":false,""UserId"":" + userId + @",""SuperSafeChat"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""CharacterAppearance"":""" + (usesNewAvatarAPI ? "http://api.reblox.zip/v1.1/avatar-fetch/?placeId=" + placeid + "&userId=" + userId : "http://assetgame.reblox.zip/Asset/CharacterFetch.ashx?userId=" + userId + "&placeId=" + placeid) + @""",""ClientTicket"":""" + DateTime.UtcNow.ToString("G") + @";h0eeFX/hZrNHXjP01PeaXT8dA8yVZbGKSMR6omd818fXJwuc/RceXUA8EJwdlfn7IWDfqjF2e22EhFyPXhucHqxQjY3GQd+zPAfS7KfQzItRVIFnjXbfWEGPKKFFEP4QcTs9Q141sd3G83ye9ZdGbOXPjy9VwpdvEnFToarYX7Q=;TCtJG0d2d0pFaHYnHDzJQttKfZlZyHZmcRtUNcy9vyivgiwQtB/illTbHvaUc/9w+oy8XRi+giLEvwuRmRttGKKnpA5Qt7dwCyXz2UIzt5/8TSJYqIKT99iPjBg0/PQFmguI7LoSk1KfElEDwzCWGT3tryAiT7S7a1SjInteSAU="",""GameId"":""00000000-0000-0000-0000-000000000000"",""PlaceId"":" + placeid + @",""MeasurementUrl"":"""",""WaitingForCharacterGuid"":""" + waitingForCharacterGuid + @""",""BaseUrl"":""http://www.reblox.zip/"",""ChatStyle"":""" + Properties.Settings.Default.ChatStyle + @""",""VendorId"":0,""ScreenShotInfo"":"""",""VideoInfo"":""<?xml version=\""1.0\""?><entry xmlns=\""http://www.w3.org/2005/Atom\"" xmlns:media=\""http://search.yahoo.com/mrss/\"" xmlns:yt=\""http://gdata.youtube.com/schemas/2007\""><media:group><media:title type=\""plain\""><![CDATA[ROBLOX Place]]></media:title><media:description type=\""plain\""><![CDATA[ For more games visit http://www.roblox.com]]></media:description><media:category scheme=\""http://gdata.youtube.com/schemas/2007/categories.cat\"">Games</media:category><media:keywords>ROBLOX, video, free game, online virtual world</media:keywords></media:group></entry>"",""CreatorId"":1,""CreatorTypeEnum"":""User"",""MembershipType"":""" + (membership != "" ? membership : Properties.Settings.Default.Membership.Replace(" ", "")) + @""",""AccountAge"":365,""CookieStoreFirstTimePlayKey"":""rbx_evt_ftp"",""CookieStoreFiveMinutePlayKey"":""rbx_evt_fmp"",""CookieStoreEnabled"":true,""IsRobloxPlace"":false,""GenerateTeleportJoin"":" + isTeleport.ToString().ToLower() + @",""IsUnknownOrUnder13"":" + (!Properties.Settings.Default.AccountOver13).ToString().ToLower() + @",""GameChatType"":""" + (userId < 1 ? "NoOne" : "AllUsers") + @""",""SessionId"":""" + sessionId + @"|00000000-0000-0000-0000-000000000000|0|www.reblox.zip|0|" + DateTime.UtcNow.ToString("O") + @"|0|null|null|null|null"",""DataCenterId"":0,""UniverseId"":2,""BrowserTrackerId"":0,""UsePortraitMode"":false,""FollowUserId"":0,""characterAppearanceId"":0}");
                         }
                     }
                 }
@@ -186,7 +175,7 @@ namespace ReBloxLauncher
             return success;
         }
 
-        private static string getTimestamp(DateTime value)
+        public static string getTimestamp(DateTime value)
         {
             return value.ToString("yyyyMMddHHmmss");
         }
@@ -214,13 +203,13 @@ namespace ReBloxLauncher
                 if (checkPortTcp(50355))
                 {
                     MessageBox.Show("It appears that another program/launcher is using the port that ReBlox uses, please close the program that uses the port and relaunch the launcher.", "ReBlox", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;  
+                    return;
                 }
                 else
                 {
                     tcpListener = new TcpListener(IPAddress.Loopback, 50355);
                 }
-                Console.WriteLine("<INFO> Starting TCP Server for RobloxAssetFixer integration with port 50355");
+                TelemetryHandler.LogText(0, "Starting TCP Server for RobloxAssetFixer integration with port 50355", "ServerUtils");
                 serverComOn = true;
                 tcpListener.Start();
 
@@ -228,7 +217,7 @@ namespace ReBloxLauncher
                 {
                     try
                     {
-                        Console.WriteLine("<INFO> Waiting for RobloxAssetFixer request...");
+                        TelemetryHandler.LogText(0, "Waiting for RobloxAssetFixer request...", "ServerUtils");
 
                         TcpClient client = tcpListener.AcceptTcpClient();
                         Console.WriteLine("<INFO> Potential RobloxAssetFixer server detected! Verifying...");
@@ -338,15 +327,15 @@ namespace ReBloxLauncher
                                                 byte[] newarray = new byte[buffer.Length - 8];
                                                 Buffer.BlockCopy(buffer, 8, newarray, 0, newarray.Length);
                                                 string[] data = Encoding.UTF8.GetString(newarray).Trim(new char[] { '\0' }).Split('\n');
-                                                if (data.Length == 7)
+                                                if (data.Length == 8)
                                                 {
-                                                    SetupJoinScriptEx(data[0], CallTryParse(data[1], NumberStyles.Integer) ? int.Parse(data[1]) : 53640, CallTryParse(data[2], NumberStyles.Integer) ? long.Parse(data[2]) : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId), data[3], CallTryParse(data[4], NumberStyles.Integer) ? ulong.Parse(data[4]) : 1818, data[5], CallTryParseBool(data[6]) ? bool.Parse(data[6]) : false);
+                                                    SetupJoinScriptEx(data[0], CallTryParse(data[1], NumberStyles.Integer) ? int.Parse(data[1]) : 53640, CallTryParse(data[2], NumberStyles.Integer) ? long.Parse(data[2]) : (Properties.Settings.Default.LongUserIdExperiment ? Properties.Settings.Default.UserIdLong : Properties.Settings.Default.UserId), data[3], CallTryParse(data[4], NumberStyles.Integer) ? ulong.Parse(data[4]) : 1818, data[5], CallTryParseBool(data[6]) ? bool.Parse(data[6]) : false, CallTryParseBool(data[7]) ? bool.Parse(data[7]) : false);
                                                     stream.Write(Encoding.UTF8.GetBytes("200"), 0, Encoding.UTF8.GetBytes("200").Length);
                                                     client.Close();
                                                 }
                                                 else
                                                 {
-                                                    Console.WriteLine("<INFO> Invalid length sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " (Expected length of 7, received " + data.Length + ")");
+                                                    Console.WriteLine("<INFO> Invalid length sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address + " (Expected length of 8, received " + data.Length + ")");
                                                     stream.Write(Encoding.UTF8.GetBytes("invalid"), 0, Encoding.UTF8.GetBytes("invalid").Length);
                                                 }
                                             }
@@ -456,16 +445,16 @@ namespace ReBloxLauncher
                                             else
                                             {
                                                 Console.WriteLine("<INFO> Invalid/garbage data sent from " + (client.Client.RemoteEndPoint as IPEndPoint).Address + ", banning IP for 10 seconds");
-                                                Thread thread = new Thread(() =>
+                                                Thread thread2 = new Thread(() =>
                                                 {
                                                     IPAddress bannedIP = (client.Client.RemoteEndPoint as IPEndPoint).Address;
                                                     bannedIPs.Add(bannedIP);
                                                     Thread.Sleep(10000);
                                                     bannedIPs.Remove(bannedIP);
                                                 });
-                                                thread.IsBackground = true;
-                                                thread.TrySetApartmentState(ApartmentState.STA);
-                                                thread.Start();
+                                                thread2.IsBackground = true;
+                                                thread2.TrySetApartmentState(ApartmentState.STA);
+                                                thread2.Start();
                                             }
                                         }
                                         catch (Exception e)
@@ -515,70 +504,228 @@ namespace ReBloxLauncher
             }
         }
 
+        static private IEnumerable<string> Split(string str, int chunkSize)
+        {
+            return Enumerable.Range(0, str.Length / chunkSize).Select(i => str.Substring(i * chunkSize, chunkSize));
+        }
+
         public static void StartListServer(string version, string mapName, string serverName, int port = 53640)
         {
             try
             {
+
                 if (serverOn == false)
                 {
-                    if (Properties.Settings.Default.PrivateServer) return;
-                    if (checkPortUdp(50358) && serverUdpClient == null)
+                    if (port < 65535 && port > 0)
                     {
-                        return;
+                        if (File.Exists(datafolder + @"\public.txt") && File.Exists(datafolder + @"\private.txt"))
+                        {
+                            if (Properties.Settings.Default.PrivateServer) return;
+                            if (checkPortUdp(50358) && serverUdpClient == null)
+                            {
+                                return;
+                            }
+                            else
+                            {
+                                if (serverUdpClient == null)
+                                {
+                                    serverUdpClient = new UdpClient(50358);
+                                }
+                            }
+                            serverOn = true;
+                            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+                            foreach (NetworkInterface n in nics)
+                            {
+                                IPInterfaceProperties ip_properties = n.GetIPProperties();
+                                if (!n.GetIPProperties().MulticastAddresses.Any()) continue; // most of VPN adapters will be skipped
+                                if (!n.SupportsMulticast)
+                                    continue; // Multicast is meaningless for this type of connection
+                                if (OperationalStatus.Up != n.OperationalStatus)
+                                    continue; // This adapter is off or not connected
+                                IPv4InterfaceProperties p = n.GetIPProperties().GetIPv4Properties();
+                                if (null == p)
+                                    continue; // IPv4 is not configured on this adapter
+                                serverUdpClient.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, (int)IPAddress.HostToNetworkOrder(p.Index));
+                            }
+                            serverUdpClient.JoinMulticastGroup(IPAddress.Parse("231.100.2.3"));
+                            serverUdpClient.Client.ReceiveTimeout = 5500;
+                            serverUdpClient.Client.SendTimeout = 5500;
+                            Thread thread = new Thread(() =>
+                            {
+                                IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                                while (serverOn == true)
+                                {
+                                    try
+                                    {
+                                        byte[] data = serverUdpClient.Receive(ref ipEndPoint);
+                                        
+                                        using (MemoryStream stream = new MemoryStream(data))
+                                        {
+                                            using (BinaryReader reader = new BinaryReader(stream))
+                                            {
+                                                int publicKeyLength = reader.ReadInt32();
+                                                if (publicKeyLength > 0)
+                                                {
+                                                    byte[] publicKeyfromClient = reader.ReadBytes(publicKeyLength);
+                                                    byte[] publicKeyfromServer = Convert.FromBase64String(File.ReadAllText(datafolder + @"\public.txt"));
+                                                    byte[] privateKeyfromServer = Convert.FromBase64String(File.ReadAllText(datafolder + @"\private.txt"));
+                                                    //time to compare!
+                                                    if (publicKeyfromClient.SequenceEqual(publicKeyfromServer))
+                                                    {
+                                                        //has the same exact public key, so should be easy to write a response to make them verify on their side
+                                                        int timestampLength = reader.ReadInt32();
+                                                        if (timestampLength > 0)
+                                                        {
+                                                            List<byte> timestampList = new List<byte>(); //needed for size check
+                                                            string timestampGenerated = getTimestamp(DateTime.UtcNow);
+                                                            string[] timestampSplitted = Split(timestampGenerated, 2).ToArray();
+
+                                                            for (int i = 0; i < timestampSplitted.Length; i++)
+                                                            {
+                                                                timestampList.Add(byte.Parse(timestampSplitted[i]));
+                                                            }
+
+                                                            byte[] timestampConverted = timestampList.ToArray();
+                                                            if (timestampLength == timestampConverted.Length)
+                                                            {
+                                                                byte[] timestamp = reader.ReadBytes(timestampLength);
+                                                                reader.BaseStream.Seek(-1, SeekOrigin.Current);
+                                                                int timestampSeconds = reader.ReadByte();
+                                                                int timestampGeneratedSeconds = int.Parse(timestampSplitted[timestampSplitted.Length - 1]);
+
+                                                                if (timestamp.SequenceEqual(timestampConverted) && timestampGeneratedSeconds <= timestampSeconds + 2 && timestampGeneratedSeconds >= timestampSeconds - 2) //consider the drift as well
+                                                                {
+                                                                    byte action = reader.ReadByte();
+                                                                    if (action == 0x01)
+                                                                    {
+                                                                        //ping this guy
+                                                                        byte[] container = new byte[] { 0x52, 0x53, 0x4C, 0x31 };
+
+                                                                        timestampList.Clear();
+
+                                                                        timestampGenerated = getTimestamp(DateTime.UtcNow);
+                                                                        timestampSplitted = Split(timestampGenerated, 2).ToArray();
+
+                                                                        for (int i = 0; i < timestampSplitted.Length; i++)
+                                                                        {
+                                                                            timestampList.Add(byte.Parse(timestampSplitted[i]));
+                                                                        }
+
+                                                                        timestampConverted = timestampList.ToArray();
+
+                                                                        //content now
+
+
+                                                                        using (RSACryptoServiceProvider provider = new RSACryptoServiceProvider())
+                                                                        {
+                                                                            provider.ImportCspBlob(privateKeyfromServer);
+                                                                            string content = "pong|-|";
+
+                                                                            byte[] contentbytes = Encoding.UTF8.GetBytes(content);
+                                                                            byte[] encryptedValue = provider.Encrypt(Encoding.UTF8.GetBytes(port.ToString()), false);
+                                                                            byte[] encryptedValue2 = provider.Encrypt(Encoding.UTF8.GetBytes(version), false);
+                                                                            byte[] beforethecherry =  Encoding.UTF8.GetBytes("|-|" + Uri.EscapeDataString(mapName) + "|-|" + Uri.EscapeDataString(Properties.Settings.Default.version) + "|-|");
+                                                                            byte[] cherriesontop = Encoding.UTF8.GetBytes("|-|" + Uri.EscapeDataString(serverName));
+                                                                            byte[] combined = new byte[contentbytes.Length + encryptedValue2.Length + beforethecherry.Length + encryptedValue.Length + cherriesontop.Length];
+
+                                                                            Buffer.BlockCopy(contentbytes, 0, combined, 0, contentbytes.Length);
+                                                                            Buffer.BlockCopy(encryptedValue2, 0, combined, contentbytes.Length, encryptedValue2.Length);
+                                                                            Buffer.BlockCopy(beforethecherry, 0, combined, contentbytes.Length + encryptedValue2.Length, beforethecherry.Length);
+                                                                            Buffer.BlockCopy(encryptedValue, 0, combined, contentbytes.Length + encryptedValue2.Length + beforethecherry.Length, encryptedValue.Length);
+                                                                            Buffer.BlockCopy(cherriesontop, 0, combined, contentbytes.Length + encryptedValue2.Length + beforethecherry.Length + encryptedValue.Length, cherriesontop.Length);
+
+                                                                            byte[] contentCompressed = GzipCompress(combined);
+
+                                                                            byte[] signature = HashAndSignBytes(contentCompressed, provider.ExportParameters(true));
+
+                                                                            byte[] resultResponse = new byte[container.Length + 4 + publicKeyfromServer.Length + 4 + timestampConverted.Length + 4 + signature.Length + 4 + contentCompressed.Length];
+
+                                                                            Buffer.BlockCopy(container, 0, resultResponse, 0, container.Length);
+                                                                            byte[] publicKeyLengthServer = BitConverter.GetBytes(publicKeyfromServer.Length);
+                                                                            if (BitConverter.IsLittleEndian == false)
+                                                                                Array.Reverse(publicKeyLengthServer);
+
+                                                                            Buffer.BlockCopy(publicKeyLengthServer, 0, resultResponse, container.Length, 4);
+                                                                            Buffer.BlockCopy(publicKeyfromServer, 0, resultResponse, container.Length + 4, publicKeyfromServer.Length);
+                                                                            byte[] timestampLengthServer = BitConverter.GetBytes(timestampConverted.Length);
+                                                                            if (BitConverter.IsLittleEndian == false)
+                                                                                Array.Reverse(timestampLengthServer);
+
+                                                                            Buffer.BlockCopy(timestampLengthServer, 0, resultResponse, container.Length + 4 + publicKeyfromServer.Length, 4);
+                                                                            Buffer.BlockCopy(timestampConverted, 0, resultResponse, container.Length + 4 + publicKeyfromServer.Length + 4, timestampConverted.Length);
+
+                                                                            byte[] signatureLength = BitConverter.GetBytes(signature.Length);
+                                                                            if (BitConverter.IsLittleEndian == false)
+                                                                                Array.Reverse(signatureLength);
+
+                                                                            Buffer.BlockCopy(signatureLength, 0, resultResponse, container.Length + 4 + publicKeyfromServer.Length + 4 + timestampConverted.Length, 4);
+                                                                            Buffer.BlockCopy(signature, 0, resultResponse, container.Length + 4 + publicKeyfromServer.Length + 4 + timestampConverted.Length + 4, signature.Length);
+
+                                                                            byte[] contentLength = BitConverter.GetBytes(contentCompressed.Length);
+                                                                            if (BitConverter.IsLittleEndian == false)
+                                                                                Array.Reverse(contentLength);
+
+                                                                            Buffer.BlockCopy(contentLength, 0, resultResponse, container.Length + 4 + publicKeyfromServer.Length + 4 + timestampConverted.Length + 4 + signature.Length, 4);
+                                                                            Buffer.BlockCopy(contentCompressed, 0, resultResponse, container.Length + 4 + publicKeyfromServer.Length + 4 + timestampConverted.Length + 4 + signature.Length + 4, contentCompressed.Length);
+                                                                            
+                                                                            serverUdpClient.Send(resultResponse, resultResponse.Length, ipEndPoint);
+                                                                        }
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        Console.WriteLine("<INFO> Ignoring " + ipEndPoint.Address.ToString() + " due to an invalid request.");
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    Console.WriteLine("<INFO> Ignoring " + ipEndPoint.Address.ToString() + " due to invalid timestamp received.");
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                Console.WriteLine("<INFO> Ignoring " + ipEndPoint.Address.ToString() + " due to invalid timestamp length received.");
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            Console.WriteLine("<INFO> Ignoring " + ipEndPoint.Address.ToString() + " due to no timestamp received.");
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        Console.WriteLine("<INFO> Ignoring " + ipEndPoint.Address.ToString() + " due to invalid public key received.");
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    Console.WriteLine("<INFO> Ignoring " + ipEndPoint.Address.ToString() + " due to invalid public key received.");
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch (SocketException)
+                                    {
+
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine("<WARN> Something went wrong while running the UDP Server! Server listing may not be available! " + ex);
+                                    }
+                                }
+                            });
+                            thread.IsBackground = true;
+                            thread.TrySetApartmentState(ApartmentState.STA);
+                            thread.Start();
+                        }
+                        else
+                        {
+                            Console.WriteLine("<ERROR> Can't start the server list without the proper private and public key!");
+                        }
                     }
                     else
                     {
-                        if (serverUdpClient == null)
-                        {
-                            serverUdpClient = new UdpClient(50358);
-                        }
+                        Console.WriteLine("<ERROR> Can't start the server list due to invalid port.");
                     }
-                    serverOn = true;
-                    NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
-                    foreach (NetworkInterface n in nics)
-                    {
-                        IPInterfaceProperties ip_properties = n.GetIPProperties();
-                        if (!n.GetIPProperties().MulticastAddresses.Any()) continue; // most of VPN adapters will be skipped
-                        if (!n.SupportsMulticast)
-                            continue; // Multicast is meaningless for this type of connection
-                        if (OperationalStatus.Up != n.OperationalStatus)
-                            continue; // This adapter is off or not connected
-                        IPv4InterfaceProperties p = n.GetIPProperties().GetIPv4Properties();
-                        if (null == p)
-                            continue; // IPv4 is not configured on this adapter
-                        serverUdpClient.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, (int)IPAddress.HostToNetworkOrder(p.Index));
-                    }
-                    serverUdpClient.JoinMulticastGroup(IPAddress.Parse("231.100.2.3"));
-                    serverUdpClient.Client.ReceiveTimeout = 5000;
-                    serverUdpClient.Client.SendTimeout = 5000;
-                    Thread thread = new Thread(() =>
-                    {
-                        IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                        while (serverOn == true)
-                        {
-                            try
-                            {
-                                byte[] data = serverUdpClient.Receive(ref ipEndPoint);
-
-                                var convertstring = Encoding.UTF8.GetString(data);
-                                if (convertstring == "ping")
-                                {
-                                    serverUdpClient.Send(Encoding.UTF8.GetBytes("pong|" + version + "|" + mapName + "|" + Properties.Settings.Default.version + "|" + port + "|0|" + serverName), Encoding.UTF8.GetByteCount("pong|" + version + "|" + mapName + "|" + Properties.Settings.Default.version + "|" + port + "|0|" + serverName), ipEndPoint);
-                                }
-                            }
-                            catch (SocketException)
-                            {
-
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine("<WARN> Something went wrong while running the UDP Server! Server listing may not be available! " + ex);
-                            }
-                        }
-                    });
-                    thread.IsBackground = true;
-                    thread.TrySetApartmentState(ApartmentState.STA);
-                    thread.Start();
                 }
             }
             catch (Exception ex)
@@ -594,6 +741,20 @@ namespace ReBloxLauncher
                 serverUdpClient.DropMulticastGroup(IPAddress.Parse("231.100.2.3"));
             }
             serverOn = false;
+        }
+
+        //SOAP server
+
+        public static bool isSOAPReady()
+        {
+            for (int i = 0; i < 16; i++)
+            {
+                if (SOAP.HelloWorld(64989, "reblox.zip", "127.0.0.1", false).Contains("Hello World"))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }
