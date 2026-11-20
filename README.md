@@ -6,6 +6,7 @@ A launcher revival for old ROBLOX that is built from scratch and currently under
 
 ReBlox is a offline launcher revival of ROBLOX, with its purpose is to support clients such as 2016E, 2014L, 2019M, etc. This project contains C# (ReBloxLauncher) and JS code (RobloxAssetFixer).
 
+This is the minorupdates branch, which means in case a beta is out for ReBlox, minor updates will be posted here instead until the non-beta version is released.
 ## Building
 
 Building this application requires:
