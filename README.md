@@ -12,7 +12,9 @@ Building this application requires:
 
 * Visual Studio 2019+ (Visual Studio 2012-2017 is not tested, but is theoretically possible)
 * .NET Framework 4.8
+* npm to install the dependencies of RobloxAssetFixer
 
+To install all of the dependencies for RobloxAssetFixer, run 'npm install' in the same directory where RobloxAssetFixer is located at.
 
 ## Downloads
 You can download the latest stable release in the [download server](http://rebloxfileserver.servehttp.com), however you can also download the beta version patches by signing up to be a Beta Tester in the [Discord server](https://discord.gg/74s7U4Sbef). Even though this repo will be used for the launcher, it will **NOT** contain the clients, asset packs, maps, and node included if you downloaded from the Actions tab.
